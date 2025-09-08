@@ -38,7 +38,7 @@ jobs:
       run: semgrep --config=auto app/ --json --output=semgrep-report.json || true
 
     - name: Upload security reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: security-reports
