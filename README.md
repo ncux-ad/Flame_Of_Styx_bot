@@ -211,3 +211,4 @@ MIT License - см. файл [LICENSE](LICENSE)
 
 **Создано с ❤️ для защиты Telegram сообществ**
 CI cleanup check
+trigger CI cleanup
