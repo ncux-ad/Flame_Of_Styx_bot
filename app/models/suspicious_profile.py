@@ -47,4 +47,5 @@ class SuspiciousProfile(Base):
 
     def __repr__(self) -> str:
         from app.models.secure_repr import secure_repr_suspicious_profile
+
         return secure_repr_suspicious_profile(self)

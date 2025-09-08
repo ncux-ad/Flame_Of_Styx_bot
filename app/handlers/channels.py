@@ -20,10 +20,7 @@ channel_router = Router()
 
 
 @channel_router.message()
-async def handle_channel_message(
-    message: Message,
-    data: dict
-) -> None:
+async def handle_channel_message(message: Message, data: dict) -> None:
     """Handle messages from channels (sender_chat)."""
     try:
         # Only handle messages from channels
@@ -35,9 +32,9 @@ async def handle_channel_message(
             return
 
         # Get services from data
-        channel_service = data.get('channel_service')
-        link_service = data.get('link_service')
-        profile_service = data.get('profile_service')
+        channel_service = data.get("channel_service")
+        link_service = data.get("link_service")
+        profile_service = data.get("profile_service")
 
         if not channel_service or not link_service or not profile_service:
             logger.error("Services not injected properly")
@@ -45,6 +42,7 @@ async def handle_channel_message(
 
         # Get admin ID from config
         from app.config import load_config
+
         config = load_config()
         admin_id = config.admin_ids_list[0] if config.admin_ids_list else 0
 
@@ -61,7 +59,11 @@ async def handle_channel_message(
             )
 
     except Exception as e:
-        logger.error(safe_format_message("Error handling channel message: {error}", error=sanitize_for_logging(e)))
+        logger.error(
+            safe_format_message(
+                "Error handling channel message: {error}", error=sanitize_for_logging(e)
+            )
+        )
 
 
 async def _handle_foreign_channel_message(
@@ -69,7 +71,7 @@ async def _handle_foreign_channel_message(
     channel_service: ChannelService,
     link_service: LinkService,
     profile_service: ProfileService,
-    admin_id: int
+    admin_id: int,
 ) -> None:
     """Handle messages from foreign channels with spam checking."""
     try:
@@ -83,7 +85,7 @@ async def _handle_foreign_channel_message(
             await channel_service.mark_channel_as_suspicious(
                 channel_id=message.sender_chat.id,
                 reason="Bot links detected in foreign channel",
-                admin_id=admin_id
+                admin_id=admin_id,
             )
             return
 
@@ -94,9 +96,7 @@ async def _handle_foreign_channel_message(
         if is_rate_limited:
             # Block channel for too frequent messages
             await channel_service.block_channel(
-                channel_id=message.sender_chat.id,
-                reason="Rate limit exceeded",
-                admin_id=admin_id
+                channel_id=message.sender_chat.id, reason="Rate limit exceeded", admin_id=admin_id
             )
             return
 
@@ -104,7 +104,11 @@ async def _handle_foreign_channel_message(
         await channel_service.handle_channel_message(message, admin_id)
 
     except Exception as e:
-        logger.error(safe_format_message("Error handling foreign channel message: {error}", error=sanitize_for_logging(e)))
+        logger.error(
+            safe_format_message(
+                "Error handling foreign channel message: {error}", error=sanitize_for_logging(e)
+            )
+        )
 
 
 @channel_router.my_chat_member()
@@ -113,7 +117,15 @@ async def handle_channel_member_update(update) -> None:
     try:
         # This can be used to track when channels are added/removed
         # For now, just log the event
-        logger.info(safe_format_message("Channel member update: {update}", update=sanitize_for_logging(update)))
+        logger.info(
+            safe_format_message(
+                "Channel member update: {update}", update=sanitize_for_logging(update)
+            )
+        )
 
     except Exception as e:
-        logger.error(safe_format_message("Error handling channel member update: {error}", error=sanitize_for_logging(e)))
+        logger.error(
+            safe_format_message(
+                "Error handling channel member update: {error}", error=sanitize_for_logging(e)
+            )
+        )

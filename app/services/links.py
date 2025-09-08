@@ -32,7 +32,7 @@ class LinkService:
             return []
 
         # Find all t.me/username patterns
-        t_me_pattern = r't\.me/([a-zA-Z0-9_]+)'
+        t_me_pattern = r"t\.me/([a-zA-Z0-9_]+)"
         matches = re.findall(t_me_pattern, message.text, re.IGNORECASE)
 
         results = []
@@ -53,8 +53,7 @@ class LinkService:
             # Try to get chat member info
             try:
                 chat_member = await self.bot.get_chat_member(
-                    chat_id=f"@{username}",
-                    user_id=self.bot.id
+                    chat_id=f"@{username}", user_id=self.bot.id
                 )
 
                 # If we can get chat member info, it's likely a bot
@@ -66,24 +65,27 @@ class LinkService:
                 return False
 
         except Exception as e:
-            logger.error(safe_format_message("Error checking if {username} is bot: {error}", username=sanitize_for_logging(username), error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error checking if {username} is bot: {error}",
+                    username=sanitize_for_logging(username),
+                    error=sanitize_for_logging(e),
+                )
+            )
             return False
 
     @require_admin
     async def _is_bot_whitelisted(self, username: str) -> bool:
         """Check if bot is in whitelist."""
         result = await self.db.execute(
-            select(BotModel.is_whitelisted)
-            .where(BotModel.username == username)
+            select(BotModel.is_whitelisted).where(BotModel.username == username)
         )
         is_whitelisted = result.scalar_one_or_none()
         return is_whitelisted is True
 
     @require_admin
     async def handle_bot_link_detection(
-        self,
-        message: Message,
-        bot_links: List[Tuple[str, bool]]
+        self, message: Message, bot_links: List[Tuple[str, bool]]
     ) -> bool:
         """Handle detection of bot links in message."""
         if not bot_links:
@@ -95,9 +97,7 @@ class LinkService:
         if non_whitelisted_bots:
             # Delete message and ban user
             await self.moderation_service.delete_message(
-                chat_id=message.chat.id,
-                message_id=message.message_id,
-                admin_id=0  # System action
+                chat_id=message.chat.id, message_id=message.message_id, admin_id=0  # System action
             )
 
             if message.from_user:
@@ -105,27 +105,27 @@ class LinkService:
                     user_id=message.from_user.id,
                     chat_id=message.chat.id,
                     admin_id=0,  # System action
-                    reason=f"Posted bot links: {', '.join(non_whitelisted_bots)}"
+                    reason=f"Posted bot links: {', '.join(non_whitelisted_bots)}",
                 )
 
-            logger.info(safe_format_message("Deleted message with bot links: {bots}", bots=sanitize_for_logging(non_whitelisted_bots)))
+            logger.info(
+                safe_format_message(
+                    "Deleted message with bot links: {bots}",
+                    bots=sanitize_for_logging(non_whitelisted_bots),
+                )
+            )
             return True
 
         return False
 
     @require_admin
     async def add_bot_to_whitelist(
-        self,
-        username: str,
-        admin_id: int,
-        telegram_id: Optional[int] = None
+        self, username: str, admin_id: int, telegram_id: Optional[int] = None
     ) -> bool:
         """Add bot to whitelist."""
         try:
             # Check if bot already exists
-            result = await self.db.execute(
-                select(BotModel).where(BotModel.username == username)
-            )
+            result = await self.db.execute(select(BotModel).where(BotModel.username == username))
             existing_bot = result.scalar_one_or_none()
 
             if existing_bot:
@@ -135,58 +135,69 @@ class LinkService:
             else:
                 # Create new bot entry
                 new_bot = BotModel(
-                    username=username,
-                    telegram_id=telegram_id or 0,
-                    is_whitelisted=True
+                    username=username, telegram_id=telegram_id or 0, is_whitelisted=True
                 )
                 self.db.add(new_bot)
 
             await self.db.commit()
-            logger.info(safe_format_message(
-                "Bot {username} added to whitelist by admin {admin_id}",
-                username=sanitize_for_logging(username),
-                admin_id=sanitize_for_logging(admin_id)
-            ))
+            logger.info(
+                safe_format_message(
+                    "Bot {username} added to whitelist by admin {admin_id}",
+                    username=sanitize_for_logging(username),
+                    admin_id=sanitize_for_logging(admin_id),
+                )
+            )
             return True
 
         except Exception as e:
-            logger.error(safe_format_message(
-                "Error adding bot {username} to whitelist: {error}",
-                username=sanitize_for_logging(username),
-                error=sanitize_for_logging(e)
-            ))
+            logger.error(
+                safe_format_message(
+                    "Error adding bot {username} to whitelist: {error}",
+                    username=sanitize_for_logging(username),
+                    error=sanitize_for_logging(e),
+                )
+            )
             return False
 
     @require_admin
-    async def remove_bot_from_whitelist(
-        self,
-        username: str,
-        admin_id: int
-    ) -> bool:
+    async def remove_bot_from_whitelist(self, username: str, admin_id: int) -> bool:
         """Remove bot from whitelist."""
         try:
-            result = await self.db.execute(
-                select(BotModel).where(BotModel.username == username)
-            )
+            result = await self.db.execute(select(BotModel).where(BotModel.username == username))
             bot = result.scalar_one_or_none()
 
             if bot:
                 bot.is_whitelisted = False
                 await self.db.commit()
-                logger.info(safe_format_message("Bot {username} removed from whitelist by admin {admin_id}", username=sanitize_for_logging(username), admin_id=sanitize_for_logging(admin_id)))
+                logger.info(
+                    safe_format_message(
+                        "Bot {username} removed from whitelist by admin {admin_id}",
+                        username=sanitize_for_logging(username),
+                        admin_id=sanitize_for_logging(admin_id),
+                    )
+                )
                 return True
             else:
-                logger.warning(safe_format_message("Bot {username} not found in whitelist", username=sanitize_for_logging(username)))
+                logger.warning(
+                    safe_format_message(
+                        "Bot {username} not found in whitelist",
+                        username=sanitize_for_logging(username),
+                    )
+                )
                 return False
 
         except Exception as e:
-            logger.error(safe_format_message("Error removing bot {username} from whitelist: {error}", username=sanitize_for_logging(username), error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error removing bot {username} from whitelist: {error}",
+                    username=sanitize_for_logging(username),
+                    error=sanitize_for_logging(e),
+                )
+            )
             return False
 
     @require_admin
     async def get_whitelisted_bots(self) -> List[BotModel]:
         """Get list of whitelisted bots."""
-        result = await self.db.execute(
-            select(BotModel).where(BotModel.is_whitelisted == True)
-        )
+        result = await self.db.execute(select(BotModel).where(BotModel.is_whitelisted == True))
         return result.scalars().all()

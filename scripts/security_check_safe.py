@@ -13,11 +13,9 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 # Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 class SafeSecurityChecker:
     """Безопасный класс для проверки безопасности бота."""
@@ -54,7 +52,9 @@ class SafeSecurityChecker:
         # Проверка .env файла
         env_file = self.project_root / ".env"
         if env_file.exists():
-            self.warnings.append("⚠️ .env файл найден в репозитории. Убедитесь, что он не содержит секретов.")
+            self.warnings.append(
+                "⚠️ .env файл найден в репозитории. Убедитесь, что он не содержит секретов."
+            )
 
         # Проверка .env.example
         env_example = self.project_root / "env.example"
@@ -66,9 +66,9 @@ class SafeSecurityChecker:
         # Проверка .gitignore
         gitignore = self.project_root / ".gitignore"
         if gitignore.exists():
-            with open(gitignore, 'r', encoding='utf-8') as f:
+            with open(gitignore, "r", encoding="utf-8") as f:
                 content = f.read()
-                if '.env' in content:
+                if ".env" in content:
                     self.recommendations.append("✅ .env файл исключен из Git")
                 else:
                     self.issues.append("❌ .env файл не исключен из .gitignore")
@@ -82,7 +82,7 @@ class SafeSecurityChecker:
         # Проверка Dockerfile
         dockerfile = self.project_root / "Dockerfile"
         if dockerfile.exists():
-            with open(dockerfile, 'r', encoding='utf-8') as f:
+            with open(dockerfile, "r", encoding="utf-8") as f:
                 content = f.read()
 
                 # Проверка на использование root пользователя
@@ -102,7 +102,7 @@ class SafeSecurityChecker:
         # Проверка docker-compose.yml
         compose_file = self.project_root / "docker-compose.yml"
         if compose_file.exists():
-            with open(compose_file, 'r', encoding='utf-8') as f:
+            with open(compose_file, "r", encoding="utf-8") as f:
                 content = f.read()
 
                 # Проверка на хардкод секретов
@@ -145,22 +145,30 @@ class SafeSecurityChecker:
                 continue
 
             try:
-                with open(py_file, 'r', encoding='utf-8') as f:
+                with open(py_file, "r", encoding="utf-8") as f:
                     content = f.read()
 
                     # Проверка на опасные функции
                     if "os.system" in content:
-                        self.issues.append(f"❌ {py_file.relative_to(self.project_root)} использует os.system")
+                        self.issues.append(
+                            f"❌ {py_file.relative_to(self.project_root)} использует os.system"
+                        )
 
                     if "eval(" in content:
-                        self.issues.append(f"❌ {py_file.relative_to(self.project_root)} использует eval()")
+                        self.issues.append(
+                            f"❌ {py_file.relative_to(self.project_root)} использует eval()"
+                        )
 
                     if "exec(" in content:
-                        self.issues.append(f"❌ {py_file.relative_to(self.project_root)} использует exec()")
+                        self.issues.append(
+                            f"❌ {py_file.relative_to(self.project_root)} использует exec()"
+                        )
 
                     # Проверка на логирование секретов
                     if "logger" in content and "token" in content.lower():
-                        self.warnings.append(f"⚠️ {py_file.relative_to(self.project_root)} может логировать токены")
+                        self.warnings.append(
+                            f"⚠️ {py_file.relative_to(self.project_root)} может логировать токены"
+                        )
 
             except Exception as e:
                 logger.warning(f"Ошибка при проверке {py_file}: {e}")
@@ -175,15 +183,11 @@ class SafeSecurityChecker:
             self.recommendations.append("✅ requirements.txt найден")
 
             # Проверка на устаревшие пакеты
-            with open(requirements, 'r', encoding='utf-8') as f:
+            with open(requirements, "r", encoding="utf-8") as f:
                 content = f.read()
 
                 # Проверка на конкретные уязвимые пакеты
-                vulnerable_packages = [
-                    "requests<2.20.0",
-                    "urllib3<1.24.0",
-                    "pyyaml<5.1"
-                ]
+                vulnerable_packages = ["requests<2.20.0", "urllib3<1.24.0", "pyyaml<5.1"]
 
                 for package in vulnerable_packages:
                     if package.split("<")[0] in content:
@@ -205,7 +209,7 @@ class SafeSecurityChecker:
         # Проверка nginx конфигурации
         nginx_conf = self.project_root / "nginx" / "nginx.conf"
         if nginx_conf.exists():
-            with open(nginx_conf, 'r', encoding='utf-8') as f:
+            with open(nginx_conf, "r", encoding="utf-8") as f:
                 content = f.read()
 
                 # Проверка на SSL
@@ -219,7 +223,7 @@ class SafeSecurityChecker:
                     "X-Frame-Options",
                     "X-Content-Type-Options",
                     "X-XSS-Protection",
-                    "Strict-Transport-Security"
+                    "Strict-Transport-Security",
                 ]
 
                 for header in security_headers:
@@ -251,16 +255,16 @@ class SafeSecurityChecker:
             "summary": {
                 "total_issues": total_issues,
                 "total_warnings": total_warnings,
-                "total_recommendations": total_recommendations
+                "total_recommendations": total_recommendations,
             },
             "issues": self.issues,
             "warnings": self.warnings,
-            "recommendations": self.recommendations
+            "recommendations": self.recommendations,
         }
 
         # Сохранение отчета
         report_file = self.project_root / "security-report.json"
-        with open(report_file, 'w', encoding='utf-8') as f:
+        with open(report_file, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, ensure_ascii=False)
 
         logger.info(f"📊 Отчет сохранен в {report_file}")
@@ -269,31 +273,31 @@ class SafeSecurityChecker:
 
     def print_report(self, report: Dict[str, Any]):
         """Вывод отчета в консоль."""
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🔒 ОТЧЕТ О БЕЗОПАСНОСТИ ANTI-SPAM BOT")
-        print("="*60)
+        print("=" * 60)
 
         print(f"\n📊 Статус безопасности: {report['security_status']}")
         print(f"📈 Всего проблем: {report['summary']['total_issues']}")
         print(f"⚠️ Предупреждений: {report['summary']['total_warnings']}")
         print(f"✅ Рекомендаций: {report['summary']['total_recommendations']}")
 
-        if report['issues']:
+        if report["issues"]:
             print("\n❌ КРИТИЧЕСКИЕ ПРОБЛЕМЫ:")
-            for issue in report['issues']:
+            for issue in report["issues"]:
                 print(f"  {issue}")
 
-        if report['warnings']:
+        if report["warnings"]:
             print("\n⚠️ ПРЕДУПРЕЖДЕНИЯ:")
-            for warning in report['warnings']:
+            for warning in report["warnings"]:
                 print(f"  {warning}")
 
-        if report['recommendations']:
+        if report["recommendations"]:
             print("\n✅ РЕКОМЕНДАЦИИ:")
-            for rec in report['recommendations']:
+            for rec in report["recommendations"]:
                 print(f"  {rec}")
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
 
         # Рекомендации по улучшению
         print("\n🚀 РЕКОМЕНДАЦИИ ПО УЛУЧШЕНИЮ:")
@@ -304,7 +308,8 @@ class SafeSecurityChecker:
         print("5. Регулярно обновляйте зависимости")
         print("6. Настройте мониторинг безопасности")
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
+
 
 def main():
     """Главная функция."""
@@ -313,10 +318,11 @@ def main():
     checker.print_report(report)
 
     # Возвращаем код выхода в зависимости от количества проблем
-    if report['summary']['total_issues'] > 0:
+    if report["summary"]["total_issues"] > 0:
         sys.exit(1)
     else:
         sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

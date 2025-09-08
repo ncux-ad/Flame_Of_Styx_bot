@@ -25,11 +25,7 @@ class ModerationService:
 
     @require_admin
     async def ban_user(
-        self,
-        user_id: int,
-        chat_id: int,
-        admin_id: int,
-        reason: Optional[str] = None
+        self, user_id: int, chat_id: int, admin_id: int, reason: Optional[str] = None
     ) -> bool:
         """Ban user from chat."""
         try:
@@ -45,23 +41,30 @@ class ModerationService:
                 user_id=user_id,
                 admin_id=admin_id,
                 reason=reason,
-                chat_id=chat_id
+                chat_id=chat_id,
             )
 
-            logger.info(safe_format_message("User {user_id} banned by admin {admin_id}", user_id=sanitize_for_logging(user_id), admin_id=sanitize_for_logging(admin_id)))
+            logger.info(
+                safe_format_message(
+                    "User {user_id} banned by admin {admin_id}",
+                    user_id=sanitize_for_logging(user_id),
+                    admin_id=sanitize_for_logging(admin_id),
+                )
+            )
             return True
 
         except Exception as e:
-            logger.error(safe_format_message("Error banning user {user_id}: {error}", user_id=sanitize_for_logging(user_id), error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error banning user {user_id}: {error}",
+                    user_id=sanitize_for_logging(user_id),
+                    error=sanitize_for_logging(e),
+                )
+            )
             return False
 
     @require_admin
-    async def unban_user(
-        self,
-        user_id: int,
-        chat_id: int,
-        admin_id: int
-    ) -> bool:
+    async def unban_user(self, user_id: int, chat_id: int, admin_id: int) -> bool:
         """Unban user from chat."""
         try:
             # Unban user in Telegram
@@ -72,34 +75,37 @@ class ModerationService:
 
             # Log moderation action
             await self._log_moderation_action(
-                action=ModerationAction.UNBAN,
-                user_id=user_id,
-                admin_id=admin_id,
-                chat_id=chat_id
+                action=ModerationAction.UNBAN, user_id=user_id, admin_id=admin_id, chat_id=chat_id
             )
 
-            logger.info(safe_format_message("User {user_id} unbanned by admin {admin_id}", user_id=sanitize_for_logging(user_id), admin_id=sanitize_for_logging(admin_id)))
+            logger.info(
+                safe_format_message(
+                    "User {user_id} unbanned by admin {admin_id}",
+                    user_id=sanitize_for_logging(user_id),
+                    admin_id=sanitize_for_logging(admin_id),
+                )
+            )
             return True
 
         except Exception as e:
-            logger.error(safe_format_message("Error unbanning user {user_id}: {error}", user_id=sanitize_for_logging(user_id), error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error unbanning user {user_id}: {error}",
+                    user_id=sanitize_for_logging(user_id),
+                    error=sanitize_for_logging(e),
+                )
+            )
             return False
 
     @require_admin
     async def mute_user(
-        self,
-        user_id: int,
-        chat_id: int,
-        admin_id: int,
-        reason: Optional[str] = None
+        self, user_id: int, chat_id: int, admin_id: int, reason: Optional[str] = None
     ) -> bool:
         """Mute user in chat."""
         try:
             # Mute user in Telegram (restrict permissions)
             await self.bot.restrict_chat_member(
-                chat_id=chat_id,
-                user_id=user_id,
-                permissions=None  # No permissions = muted
+                chat_id=chat_id, user_id=user_id, permissions=None  # No permissions = muted
             )
 
             # Update user status in database
@@ -111,27 +117,35 @@ class ModerationService:
                 user_id=user_id,
                 admin_id=admin_id,
                 reason=reason,
-                chat_id=chat_id
+                chat_id=chat_id,
             )
 
-            logger.info(safe_format_message("User {user_id} muted by admin {admin_id}", user_id=sanitize_for_logging(user_id), admin_id=sanitize_for_logging(admin_id)))
+            logger.info(
+                safe_format_message(
+                    "User {user_id} muted by admin {admin_id}",
+                    user_id=sanitize_for_logging(user_id),
+                    admin_id=sanitize_for_logging(admin_id),
+                )
+            )
             return True
 
         except Exception as e:
-            logger.error(safe_format_message("Error muting user {user_id}: {error}", user_id=sanitize_for_logging(user_id), error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error muting user {user_id}: {error}",
+                    user_id=sanitize_for_logging(user_id),
+                    error=sanitize_for_logging(e),
+                )
+            )
             return False
 
     @require_admin
-    async def unmute_user(
-        self,
-        user_id: int,
-        chat_id: int,
-        admin_id: int
-    ) -> bool:
+    async def unmute_user(self, user_id: int, chat_id: int, admin_id: int) -> bool:
         """Unmute user in chat."""
         try:
             # Unmute user in Telegram (restore permissions)
             from aiogram.types import ChatPermissions
+
             await self.bot.restrict_chat_member(
                 chat_id=chat_id,
                 user_id=user_id,
@@ -143,8 +157,8 @@ class ModerationService:
                     can_add_web_page_previews=True,
                     can_change_info=True,
                     can_invite_users=True,
-                    can_pin_messages=True
-                )
+                    can_pin_messages=True,
+                ),
             )
 
             # Update user status in database
@@ -152,26 +166,30 @@ class ModerationService:
 
             # Log moderation action
             await self._log_moderation_action(
-                action=ModerationAction.UNMUTE,
-                user_id=user_id,
-                admin_id=admin_id,
-                chat_id=chat_id
+                action=ModerationAction.UNMUTE, user_id=user_id, admin_id=admin_id, chat_id=chat_id
             )
 
-            logger.info(safe_format_message("User {user_id} unmuted by admin {admin_id}", user_id=sanitize_for_logging(user_id), admin_id=sanitize_for_logging(admin_id)))
+            logger.info(
+                safe_format_message(
+                    "User {user_id} unmuted by admin {admin_id}",
+                    user_id=sanitize_for_logging(user_id),
+                    admin_id=sanitize_for_logging(admin_id),
+                )
+            )
             return True
 
         except Exception as e:
-            logger.error(safe_format_message("Error unmuting user {user_id}: {error}", user_id=sanitize_for_logging(user_id), error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error unmuting user {user_id}: {error}",
+                    user_id=sanitize_for_logging(user_id),
+                    error=sanitize_for_logging(e),
+                )
+            )
             return False
 
     @require_admin
-    async def delete_message(
-        self,
-        chat_id: int,
-        message_id: int,
-        admin_id: int
-    ) -> bool:
+    async def delete_message(self, chat_id: int, message_id: int, admin_id: int) -> bool:
         """Delete message."""
         try:
             # Delete message in Telegram
@@ -182,14 +200,26 @@ class ModerationService:
                 action=ModerationAction.DELETE_MESSAGE,
                 admin_id=admin_id,
                 message_id=message_id,
-                chat_id=chat_id
+                chat_id=chat_id,
             )
 
-            logger.info(safe_format_message("Message {message_id} deleted by admin {admin_id}", message_id=sanitize_for_logging(message_id), admin_id=sanitize_for_logging(admin_id)))
+            logger.info(
+                safe_format_message(
+                    "Message {message_id} deleted by admin {admin_id}",
+                    message_id=sanitize_for_logging(message_id),
+                    admin_id=sanitize_for_logging(admin_id),
+                )
+            )
             return True
 
         except Exception as e:
-            logger.error(safe_format_message("Error deleting message {message_id}: {error}", message_id=sanitize_for_logging(message_id), error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error deleting message {message_id}: {error}",
+                    message_id=sanitize_for_logging(message_id),
+                    error=sanitize_for_logging(e),
+                )
+            )
             return False
 
     @require_admin
@@ -216,7 +246,7 @@ class ModerationService:
         user_id: int,
         is_banned: Optional[bool] = None,
         is_muted: Optional[bool] = None,
-        ban_reason: Optional[str] = None
+        ban_reason: Optional[str] = None,
     ) -> None:
         """Update user status in database."""
         update_data = {}
@@ -230,9 +260,7 @@ class ModerationService:
 
         if update_data:
             await self.db.execute(
-                update(UserModel)
-                .where(UserModel.telegram_id == user_id)
-                .values(**update_data)
+                update(UserModel).where(UserModel.telegram_id == user_id).values(**update_data)
             )
             await self.db.commit()
 
@@ -244,7 +272,7 @@ class ModerationService:
         admin_id: int = 0,
         reason: Optional[str] = None,
         message_id: Optional[int] = None,
-        chat_id: Optional[int] = None
+        chat_id: Optional[int] = None,
     ) -> None:
         """Log moderation action to database."""
         log_entry = ModerationLog(
@@ -253,7 +281,7 @@ class ModerationService:
             admin_telegram_id=admin_id,
             reason=reason,
             message_id=message_id,
-            chat_id=chat_id
+            chat_id=chat_id,
         )
 
         self.db.add(log_entry)

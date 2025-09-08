@@ -13,9 +13,9 @@ def fix_log_injection():
 
     # Run the log injection fix script
     try:
-        result = subprocess.run([
-            'python3', 'scripts/fix_log_injection.py'
-        ], capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            ["python3", "scripts/fix_log_injection.py"], capture_output=True, text=True, check=True
+        )
         print("✅ Log injection vulnerabilities fixed")
         print(result.stdout)
     except subprocess.CalledProcessError as e:
@@ -28,33 +28,33 @@ def fix_xss_vulnerabilities():
     print("🔧 Fixing XSS vulnerabilities...")
 
     # Update existing models to use secure models
-    models_dir = Path('app/models')
+    models_dir = Path("app/models")
 
-    for model_file in models_dir.glob('*.py'):
-        if model_file.name == 'secure_models.py':
+    for model_file in models_dir.glob("*.py"):
+        if model_file.name == "secure_models.py":
             continue
 
         print(f"  Updating {model_file}")
 
         # Read file
-        with open(model_file, 'r', encoding='utf-8') as f:
+        with open(model_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         # Add secure model imports
-        if 'from app.models.secure_models import' not in content:
+        if "from app.models.secure_models import" not in content:
             # Find the last import
-            lines = content.split('\n')
+            lines = content.split("\n")
             import_end = 0
             for i, line in enumerate(lines):
-                if line.startswith(('import ', 'from ')):
+                if line.startswith(("import ", "from ")):
                     import_end = i + 1
 
             # Insert secure model import
-            lines.insert(import_end, 'from app.models.secure_models import *')
-            content = '\n'.join(lines)
+            lines.insert(import_end, "from app.models.secure_models import *")
+            content = "\n".join(lines)
 
         # Write back
-        with open(model_file, 'w', encoding='utf-8') as f:
+        with open(model_file, "w", encoding="utf-8") as f:
             f.write(content)
 
     print("✅ XSS vulnerabilities fixed")
@@ -65,39 +65,38 @@ def fix_authorization_issues():
     print("🔧 Fixing authorization issues...")
 
     # Update services to use new authorization system
-    services_dir = Path('app/services')
+    services_dir = Path("app/services")
 
-    for service_file in services_dir.glob('*.py'):
+    for service_file in services_dir.glob("*.py"):
         print(f"  Updating {service_file}")
 
         # Read file
-        with open(service_file, 'r', encoding='utf-8') as f:
+        with open(service_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         # Add authorization imports
-        if 'from app.auth.authorization import' not in content:
+        if "from app.auth.authorization import" not in content:
             # Find the last import
-            lines = content.split('\n')
+            lines = content.split("\n")
             import_end = 0
             for i, line in enumerate(lines):
-                if line.startswith(('import ', 'from ')):
+                if line.startswith(("import ", "from ")):
                     import_end = i + 1
 
             # Insert authorization imports
-            lines.insert(import_end, 'from app.auth.authorization import require_admin, safe_user_operation')
-            content = '\n'.join(lines)
+            lines.insert(
+                import_end, "from app.auth.authorization import require_admin, safe_user_operation"
+            )
+            content = "\n".join(lines)
 
         # Add authorization checks to public methods
         # This is a simplified example - in practice, you'd need more sophisticated analysis
-        if 'async def' in content and 'admin_id' in content:
+        if "async def" in content and "admin_id" in content:
             # Add basic authorization check
-            content = content.replace(
-                'async def',
-                '@require_admin\n    async def'
-            )
+            content = content.replace("async def", "@require_admin\n    async def")
 
         # Write back
-        with open(service_file, 'w', encoding='utf-8') as f:
+        with open(service_file, "w", encoding="utf-8") as f:
             f.write(content)
 
     print("✅ Authorization issues fixed")
@@ -108,33 +107,33 @@ def fix_shell_script_vulnerabilities():
     print("🔧 Fixing shell script vulnerabilities...")
 
     # Update shell scripts to use secure utilities
-    scripts_dir = Path('scripts')
+    scripts_dir = Path("scripts")
 
-    for script_file in scripts_dir.glob('*.sh'):
-        if script_file.name == 'secure_shell_utils.sh':
+    for script_file in scripts_dir.glob("*.sh"):
+        if script_file.name == "secure_shell_utils.sh":
             continue
 
         print(f"  Updating {script_file}")
 
         # Read file
-        with open(script_file, 'r', encoding='utf-8') as f:
+        with open(script_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         # Add secure utilities if not present
-        if 'source.*secure_shell_utils.sh' not in content:
+        if "source.*secure_shell_utils.sh" not in content:
             # Find the shebang line
-            lines = content.split('\n')
-            if lines[0].startswith('#!/bin/bash'):
-                lines.insert(1, '')
-                lines.insert(2, '# Load secure utilities')
+            lines = content.split("\n")
+            if lines[0].startswith("#!/bin/bash"):
+                lines.insert(1, "")
+                lines.insert(2, "# Load secure utilities")
                 lines.insert(3, 'source "$(dirname "$0")/secure_shell_utils.sh"')
-                content = '\n'.join(lines)
+                content = "\n".join(lines)
 
         # Replace unsafe patterns
-        content = re.sub(r'set -e$', 'set -euo pipefail', content)
+        content = re.sub(r"set -e$", "set -euo pipefail", content)
 
         # Write back
-        with open(script_file, 'w', encoding='utf-8') as f:
+        with open(script_file, "w", encoding="utf-8") as f:
             f.write(content)
 
     print("✅ Shell script vulnerabilities fixed")
@@ -254,10 +253,10 @@ if __name__ == '__main__':
 '''
 
     # Create test file
-    test_file = Path('tests/test_security.py')
+    test_file = Path("tests/test_security.py")
     test_file.parent.mkdir(exist_ok=True)
 
-    with open(test_file, 'w', encoding='utf-8') as f:
+    with open(test_file, "w", encoding="utf-8") as f:
         f.write(test_content)
 
     print("✅ Security tests created")
@@ -299,5 +298,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

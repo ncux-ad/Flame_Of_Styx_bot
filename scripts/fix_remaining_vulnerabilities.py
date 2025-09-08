@@ -13,31 +13,34 @@ def fix_remaining_log_injection():
 
     # Files that still need fixing
     files_to_fix = [
-        'app/services/bots.py',
-        'app/services/profiles.py',
-        'app/services/channels.py',
-        'app/services/moderation.py',
-        'app/handlers/channels.py'
+        "app/services/bots.py",
+        "app/services/profiles.py",
+        "app/services/channels.py",
+        "app/services/moderation.py",
+        "app/handlers/channels.py",
     ]
 
     for file_path in files_to_fix:
         if Path(file_path).exists():
             print(f"✅ Processing {file_path}")
             # Add security imports if not present
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            if 'from app.utils.security import' not in content and 'logger.' in content:
-                lines = content.split('\n')
+            if "from app.utils.security import" not in content and "logger." in content:
+                lines = content.split("\n")
                 import_end = 0
                 for i, line in enumerate(lines):
-                    if line.startswith(('import ', 'from ')):
+                    if line.startswith(("import ", "from ")):
                         import_end = i + 1
 
-                lines.insert(import_end, 'from app.utils.security import sanitize_for_logging, safe_format_message')
-                content = '\n'.join(lines)
+                lines.insert(
+                    import_end,
+                    "from app.utils.security import sanitize_for_logging, safe_format_message",
+                )
+                content = "\n".join(lines)
 
-                with open(file_path, 'w', encoding='utf-8') as f:
+                with open(file_path, "w", encoding="utf-8") as f:
                     f.write(content)
         else:
             print(f"❌ File not found: {file_path}")
@@ -122,7 +125,7 @@ def create_security_summary():
 Проект теперь полностью защищен от атак и готов к продакшену.
 """
 
-    with open('SECURITY_FIXES_COMPLETE.md', 'w', encoding='utf-8') as f:
+    with open("SECURITY_FIXES_COMPLETE.md", "w", encoding="utf-8") as f:
         f.write(summary)
 
     print("✅ Complete security summary created: SECURITY_FIXES_COMPLETE.md")
@@ -164,5 +167,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

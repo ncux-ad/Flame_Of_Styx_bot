@@ -14,8 +14,7 @@ from app.middlewares.ratelimit import RateLimitMiddleware
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -32,10 +31,7 @@ async def main():
         logger.info(f"Database path: {config.db_path}")
 
         # Create bot with default properties
-        bot = Bot(
-            token=config.bot_token,
-            default=DefaultBotProperties(parse_mode=ParseMode.HTML)
-        )
+        bot = Bot(token=config.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
         # Create dispatcher
         dp = Dispatcher()
@@ -53,7 +49,9 @@ async def main():
         # Also register for callback queries
         dp.callback_query.middleware(DependencyInjectionMiddleware())
         dp.callback_query.middleware(LoggingMiddleware())
-        dp.callback_query.middleware(RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60))
+        dp.callback_query.middleware(
+            RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60)
+        )
 
         # Register for all other update types
         dp.my_chat_member.middleware(DependencyInjectionMiddleware())

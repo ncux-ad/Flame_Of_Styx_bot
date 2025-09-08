@@ -27,11 +27,7 @@ class ChannelService:
         self.moderation_service = ModerationService(bot, db_session)
 
     @require_admin
-    async def handle_channel_message(
-        self,
-        message: Message,
-        admin_id: int
-    ) -> bool:
+    async def handle_channel_message(self, message: Message, admin_id: int) -> bool:
         """Handle message from channel (sender_chat)."""
         if not message.sender_chat:
             return False
@@ -49,14 +45,12 @@ class ChannelService:
                 channel_id=channel_id,
                 username=channel_username,
                 title=channel_title,
-                status=ChannelStatus.PENDING
+                status=ChannelStatus.PENDING,
             )
 
             # Notify admin about new channel
             await self._notify_admin_about_channel(
-                admin_id=admin_id,
-                channel=channel,
-                message=message
+                admin_id=admin_id, channel=channel, message=message
             )
 
             return True
@@ -65,12 +59,15 @@ class ChannelService:
         if channel.status.value == ChannelStatus.BLOCKED.value:
             # Channel is blocked - delete message and ban channel
             await self.moderation_service.delete_message(
-                chat_id=message.chat.id,
-                message_id=message.message_id,
-                admin_id=0  # System action
+                chat_id=message.chat.id, message_id=message.message_id, admin_id=0  # System action
             )
 
-            logger.info(safe_format_message("Deleted message from blocked channel {channel_id}", channel_id=sanitize_for_logging(channel_id)))
+            logger.info(
+                safe_format_message(
+                    "Deleted message from blocked channel {channel_id}",
+                    channel_id=sanitize_for_logging(channel_id),
+                )
+            )
             return True
 
         elif channel.status.value == ChannelStatus.ALLOWED.value:
@@ -80,76 +77,96 @@ class ChannelService:
         else:  # PENDING
             # Channel is pending - notify admin again
             await self._notify_admin_about_channel(
-                admin_id=admin_id,
-                channel=channel,
-                message=message
+                admin_id=admin_id, channel=channel, message=message
             )
             return True
 
     @require_admin
-    async def allow_channel(
-        self,
-        channel_id: int,
-        admin_id: int
-    ) -> bool:
+    async def allow_channel(self, channel_id: int, admin_id: int) -> bool:
         """Allow channel to post messages."""
         try:
             channel = await self._get_channel_by_id(channel_id)
             if not channel:
-                logger.warning(safe_format_message("Channel {channel_id} not found", channel_id=sanitize_for_logging(channel_id)))
+                logger.warning(
+                    safe_format_message(
+                        "Channel {channel_id} not found",
+                        channel_id=sanitize_for_logging(channel_id),
+                    )
+                )
                 return False
 
             # Update channel status
-            setattr(channel, 'status', ChannelStatus.ALLOWED)
+            setattr(channel, "status", ChannelStatus.ALLOWED)
             await self.db.commit()
 
             # Log moderation action
             await self._log_channel_action(
-                action=ModerationAction.ALLOW_CHANNEL,
-                channel_id=channel_id,
-                admin_id=admin_id
+                action=ModerationAction.ALLOW_CHANNEL, channel_id=channel_id, admin_id=admin_id
             )
 
-            logger.info(safe_format_message("Channel {channel_id} allowed by admin {admin_id}", channel_id=sanitize_for_logging(channel_id), admin_id=sanitize_for_logging(admin_id)))
+            logger.info(
+                safe_format_message(
+                    "Channel {channel_id} allowed by admin {admin_id}",
+                    channel_id=sanitize_for_logging(channel_id),
+                    admin_id=sanitize_for_logging(admin_id),
+                )
+            )
             return True
 
         except Exception as e:
-            logger.error(safe_format_message("Error allowing channel {channel_id}: {error}", channel_id=sanitize_for_logging(channel_id), error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error allowing channel {channel_id}: {error}",
+                    channel_id=sanitize_for_logging(channel_id),
+                    error=sanitize_for_logging(e),
+                )
+            )
             return False
 
     @require_admin
-    async def block_channel(
-        self,
-        channel_id: int,
-        reason: str,
-        admin_id: int
-    ) -> bool:
+    async def block_channel(self, channel_id: int, reason: str, admin_id: int) -> bool:
         """Block channel from posting messages."""
         try:
             channel = await self._get_channel_by_id(channel_id)
             if not channel:
-                logger.warning(safe_format_message("Channel {channel_id} not found", channel_id=sanitize_for_logging(channel_id)))
+                logger.warning(
+                    safe_format_message(
+                        "Channel {channel_id} not found",
+                        channel_id=sanitize_for_logging(channel_id),
+                    )
+                )
                 return False
 
             # Update channel status
-            setattr(channel, 'status', ChannelStatus.BLOCKED)
+            setattr(channel, "status", ChannelStatus.BLOCKED)
             # Add notes field if it exists in the model
-            if hasattr(channel, 'notes'):
+            if hasattr(channel, "notes"):
                 channel.notes = reason
             await self.db.commit()
 
             # Log moderation action
             await self._log_channel_action(
-                action=ModerationAction.BLOCK_CHANNEL,
-                channel_id=channel_id,
-                admin_id=admin_id
+                action=ModerationAction.BLOCK_CHANNEL, channel_id=channel_id, admin_id=admin_id
             )
 
-            logger.info(safe_format_message("Channel {channel_id} blocked by admin {admin_id}: {reason}", channel_id=sanitize_for_logging(channel_id), admin_id=sanitize_for_logging(admin_id), reason=sanitize_for_logging(reason)))
+            logger.info(
+                safe_format_message(
+                    "Channel {channel_id} blocked by admin {admin_id}: {reason}",
+                    channel_id=sanitize_for_logging(channel_id),
+                    admin_id=sanitize_for_logging(admin_id),
+                    reason=sanitize_for_logging(reason),
+                )
+            )
             return True
 
         except Exception as e:
-            logger.error(safe_format_message("Error blocking channel {channel_id}: {error}", channel_id=sanitize_for_logging(channel_id), error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error blocking channel {channel_id}: {error}",
+                    channel_id=sanitize_for_logging(channel_id),
+                    error=sanitize_for_logging(e),
+                )
+            )
             return False
 
     @require_admin
@@ -194,18 +211,11 @@ class ChannelService:
 
     @require_admin
     async def _create_channel(
-        self,
-        channel_id: int,
-        username: Optional[str],
-        title: str,
-        status: ChannelStatus
+        self, channel_id: int, username: Optional[str], title: str, status: ChannelStatus
     ) -> ChannelModel:
         """Create new channel entry."""
         channel = ChannelModel(
-            telegram_id=channel_id,
-            username=username,
-            title=title,
-            status=status
+            telegram_id=channel_id, username=username, title=title, status=status
         )
 
         self.db.add(channel)
@@ -216,10 +226,7 @@ class ChannelService:
 
     @require_admin
     async def _notify_admin_about_channel(
-        self,
-        admin_id: int,
-        channel: ChannelModel,
-        message: Message
+        self, admin_id: int, channel: ChannelModel, message: Message
     ) -> None:
         """Notify admin about new channel message."""
         try:
@@ -233,27 +240,22 @@ class ChannelService:
             channel_info += f"<b>Сообщение:</b> {message_text[:200]}..."
 
             await self.bot.send_message(
-                chat_id=admin_id,
-                text=channel_info,
-                reply_markup=None  # Will be set by handler
+                chat_id=admin_id, text=channel_info, reply_markup=None  # Will be set by handler
             )
 
         except Exception as e:
-            logger.error(safe_format_message("Error notifying admin about channel: {error}", error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error notifying admin about channel: {error}", error=sanitize_for_logging(e)
+                )
+            )
 
     @require_admin
     async def _log_channel_action(
-        self,
-        action: ModerationAction,
-        channel_id: int,
-        admin_id: int
+        self, action: ModerationAction, channel_id: int, admin_id: int
     ) -> None:
         """Log channel action to database."""
-        log_entry = ModerationLog(
-            action=action,
-            channel_id=channel_id,
-            admin_telegram_id=admin_id
-        )
+        log_entry = ModerationLog(action=action, channel_id=channel_id, admin_telegram_id=admin_id)
 
         self.db.add(log_entry)
         await self.db.commit()
@@ -267,16 +269,15 @@ class ChannelService:
             # or have a configurable list of native channels
             return False
         except Exception as e:
-            logger.error(safe_format_message("Error checking if channel is native: {error}", error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error checking if channel is native: {error}", error=sanitize_for_logging(e)
+                )
+            )
             return False
 
     @require_admin
-    async def mark_channel_as_suspicious(
-        self,
-        channel_id: int,
-        reason: str,
-        admin_id: int
-    ) -> None:
+    async def mark_channel_as_suspicious(self, channel_id: int, reason: str, admin_id: int) -> None:
         """Mark channel as suspicious."""
         try:
             # Update channel status to suspicious
@@ -286,23 +287,31 @@ class ChannelService:
             channel = result.scalar_one_or_none()
 
             if channel:
-                setattr(channel, 'status', ChannelStatus.SUSPICIOUS)
+                setattr(channel, "status", ChannelStatus.SUSPICIOUS)
                 # Add notes field if it exists in the model
-                if hasattr(channel, 'notes'):
+                if hasattr(channel, "notes"):
                     channel.notes = reason
                 await self.db.commit()
 
                 # Log the action
                 await self._log_channel_action(
-                    ModerationAction.MARK_SUSPICIOUS,
-                    channel_id,
-                    admin_id
+                    ModerationAction.MARK_SUSPICIOUS, channel_id, admin_id
                 )
 
-                logger.info(safe_format_message("Channel {channel_id} marked as suspicious: {reason}", channel_id=sanitize_for_logging(channel_id), reason=sanitize_for_logging(reason)))
+                logger.info(
+                    safe_format_message(
+                        "Channel {channel_id} marked as suspicious: {reason}",
+                        channel_id=sanitize_for_logging(channel_id),
+                        reason=sanitize_for_logging(reason),
+                    )
+                )
 
         except Exception as e:
-            logger.error(safe_format_message("Error marking channel as suspicious: {error}", error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error marking channel as suspicious: {error}", error=sanitize_for_logging(e)
+                )
+            )
 
     @require_admin
     async def check_channel_rate_limit(self, channel_id: int) -> bool:
@@ -311,8 +320,9 @@ class ChannelService:
             # Simple rate limiting: 10 messages per minute
             # In production, this should use Redis or similar
             import time
+
             now = time.time()
-            if not hasattr(self, '_channel_messages'):
+            if not hasattr(self, "_channel_messages"):
                 self._channel_messages = {}
 
             if channel_id not in self._channel_messages:
@@ -320,7 +330,8 @@ class ChannelService:
 
             # Clean old messages
             self._channel_messages[channel_id] = [
-                msg_time for msg_time in self._channel_messages[channel_id]
+                msg_time
+                for msg_time in self._channel_messages[channel_id]
                 if now - msg_time < 60  # 1 minute
             ]
 
@@ -331,5 +342,9 @@ class ChannelService:
             return len(self._channel_messages[channel_id]) > 10
 
         except Exception as e:
-            logger.error(safe_format_message("Error checking channel rate limit: {error}", error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error checking channel rate limit: {error}", error=sanitize_for_logging(e)
+                )
+            )
             return False

@@ -38,4 +38,5 @@ class User(Base):
 
     def __repr__(self) -> str:
         from app.models.secure_repr import secure_repr_user
+
         return secure_repr_user(self)

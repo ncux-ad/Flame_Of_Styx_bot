@@ -34,7 +34,7 @@ class IsAdminOrSilentFilter(BaseFilter):
             is_admin = user_id in self.admin_ids
 
             # Log admin filter results for debugging
-            logger = __import__('logging').getLogger(__name__)
+            logger = __import__("logging").getLogger(__name__)
             if isinstance(obj, Message):
                 logger.info(f"Admin filter: user {user_id}, is_admin: {is_admin}, text: {obj.text}")
 
@@ -46,6 +46,6 @@ class IsAdminOrSilentFilter(BaseFilter):
             return is_admin
         except Exception as e:
             # If there's an error, deny access for security
-            logger = __import__('logging').getLogger(__name__)
+            logger = __import__("logging").getLogger(__name__)
             logger.error(f"Error in admin filter: {e}")
             return False

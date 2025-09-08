@@ -95,20 +95,20 @@ bandit -r app/
 
 ```python
 async def ban_user(
-    self, 
-    user_id: int, 
-    chat_id: int, 
+    self,
+    user_id: int,
+    chat_id: int,
     admin_id: int,
     reason: Optional[str] = None
 ) -> bool:
     """Ban user from chat.
-    
+
     Args:
         user_id: Telegram user ID
         chat_id: Chat ID where to ban
         admin_id: Admin who performed the action
         reason: Optional ban reason
-        
+
     Returns:
         True if successful, False otherwise
     """
@@ -141,19 +141,19 @@ from unittest.mock import AsyncMock, MagicMock
 
 class TestModerationService:
     """Test moderation service."""
-    
+
     @pytest.mark.asyncio
     async def test_ban_user_success(self, mock_bot, mock_db):
         """Test successful user ban."""
         service = ModerationService(mock_bot, mock_db)
-        
+
         result = await service.ban_user(
             user_id=123456789,
             chat_id=-1001234567890,
             admin_id=987654321,
             reason="Spam"
         )
-        
+
         assert result is True
         mock_bot.ban_chat_member.assert_called_once()
 ```

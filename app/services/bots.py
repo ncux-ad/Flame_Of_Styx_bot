@@ -24,17 +24,12 @@ class BotService:
 
     @require_admin
     async def add_bot_to_whitelist(
-        self,
-        username: str,
-        admin_id: int,
-        telegram_id: Optional[int] = None
+        self, username: str, admin_id: int, telegram_id: Optional[int] = None
     ) -> bool:
         """Add bot to whitelist."""
         try:
             # Check if bot already exists
-            result = await self.db.execute(
-                select(Bot).where(Bot.username == username)
-            )
+            result = await self.db.execute(select(Bot).where(Bot.username == username))
             existing_bot = result.scalar_one_or_none()
 
             if existing_bot:
@@ -44,20 +39,14 @@ class BotService:
                     existing_bot.telegram_id = telegram_id
             else:
                 # Create new bot entry
-                new_bot = Bot(
-                    username=username,
-                    telegram_id=telegram_id or 0,
-                    is_whitelisted=True
-                )
+                new_bot = Bot(username=username, telegram_id=telegram_id or 0, is_whitelisted=True)
                 self.db.add(new_bot)
 
             await self.db.commit()
 
             # Log moderation action
             await self._log_bot_action(
-                action=ModerationAction.ALLOW_BOT,
-                bot_username=username,
-                admin_id=admin_id
+                action=ModerationAction.ALLOW_BOT, bot_username=username, admin_id=admin_id
             )
 
             logger.info(f"Bot {username} added to whitelist by admin {admin_id}")
@@ -68,16 +57,10 @@ class BotService:
             return False
 
     @require_admin
-    async def remove_bot_from_whitelist(
-        self,
-        username: str,
-        admin_id: int
-    ) -> bool:
+    async def remove_bot_from_whitelist(self, username: str, admin_id: int) -> bool:
         """Remove bot from whitelist."""
         try:
-            result = await self.db.execute(
-                select(Bot).where(Bot.username == username)
-            )
+            result = await self.db.execute(select(Bot).where(Bot.username == username))
             bot = result.scalar_one_or_none()
 
             if bot:
@@ -86,9 +69,7 @@ class BotService:
 
                 # Log moderation action
                 await self._log_bot_action(
-                    action=ModerationAction.BLOCK_BOT,
-                    bot_username=username,
-                    admin_id=admin_id
+                    action=ModerationAction.BLOCK_BOT, bot_username=username, admin_id=admin_id
                 )
 
                 logger.info(f"Bot {username} removed from whitelist by admin {admin_id}")
@@ -104,19 +85,14 @@ class BotService:
     @require_admin
     async def is_bot_whitelisted(self, username: str) -> bool:
         """Check if bot is whitelisted."""
-        result = await self.db.execute(
-            select(Bot.is_whitelisted)
-            .where(Bot.username == username)
-        )
+        result = await self.db.execute(select(Bot.is_whitelisted).where(Bot.username == username))
         is_whitelisted = result.scalar_one_or_none()
         return is_whitelisted is True
 
     @require_admin
     async def get_whitelisted_bots(self) -> List[Bot]:
         """Get list of whitelisted bots."""
-        result = await self.db.execute(
-            select(Bot).where(Bot.is_whitelisted == True)
-        )
+        result = await self.db.execute(select(Bot).where(Bot.is_whitelisted == True))
         return result.scalars().all()
 
     @require_admin
@@ -128,9 +104,7 @@ class BotService:
     @require_admin
     async def get_bot_by_username(self, username: str) -> Optional[Bot]:
         """Get bot by username."""
-        result = await self.db.execute(
-            select(Bot).where(Bot.username == username)
-        )
+        result = await self.db.execute(select(Bot).where(Bot.username == username))
         return result.scalar_one_or_none()
 
     @require_admin
@@ -139,13 +113,11 @@ class BotService:
         username: str,
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ) -> bool:
         """Update bot information."""
         try:
-            result = await self.db.execute(
-                select(Bot).where(Bot.username == username)
-            )
+            result = await self.db.execute(select(Bot).where(Bot.username == username))
             bot = result.scalar_one_or_none()
 
             if bot:
@@ -169,16 +141,11 @@ class BotService:
 
     @require_admin
     async def _log_bot_action(
-        self,
-        action: ModerationAction,
-        bot_username: str,
-        admin_id: int
+        self, action: ModerationAction, bot_username: str, admin_id: int
     ) -> None:
         """Log bot action to database."""
         log_entry = ModerationLog(
-            action=action,
-            admin_telegram_id=admin_id,
-            details=f"Bot: {bot_username}"
+            action=action, admin_telegram_id=admin_id, details=f"Bot: {bot_username}"
         )
 
         self.db.add(log_entry)
