@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Load secure utilities
+source "$(dirname "$0")/secure_shell_utils.sh"
+
 # Скрипт резервного копирования AntiSpam Bot
 # Использование: ./scripts/backup.sh
 

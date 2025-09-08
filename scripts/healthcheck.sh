@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Load secure utilities
+source "$(dirname "$0")/secure_shell_utils.sh"
+
 # Скрипт проверки здоровья AntiSpam Bot
 # Использование: ./scripts/healthcheck.sh
 
@@ -12,7 +15,10 @@ echo "🏥 Проверка здоровья $PROJECT_NAME"
 
 # Проверяем статус контейнеров
 echo "📦 Проверка контейнеров..."
-if ! docker-compose ps | grep -q "Up"; then
+if ! command -v docker-compose >/dev/null 2>&1; then
+    echo "❌ docker-compose не установлен"
+    HEALTH_STATUS=1
+elif ! docker-compose ps 2>/dev/null | grep -q "Up"; then
     echo "❌ Контейнеры не запущены"
     HEALTH_STATUS=1
 else

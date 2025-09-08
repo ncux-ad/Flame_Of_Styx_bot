@@ -1,14 +1,17 @@
 """Channel message handlers."""
 
 import logging
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
-from aiogram.filters import Command
+
+from aiogram import Router
+from aiogram.filters import KICKED, LEFT, MEMBER, ChatMemberUpdatedFilter
+from aiogram.types import Message
 
 from app.services.channels import ChannelService
-from app.services.moderation import ModerationService
-from app.keyboards.inline import get_channel_decision_keyboard
-from app.filters.is_admin import IsAdminFilter
+from app.services.links import LinkService
+from app.services.profiles import ProfileService
+from app.utils.security import safe_format_message, sanitize_for_logging
+
+# DI will inject services automatically
 
 logger = logging.getLogger(__name__)
 
@@ -16,114 +19,101 @@ logger = logging.getLogger(__name__)
 channel_router = Router()
 
 
-@channel_router.message(F.sender_chat)
-async def handle_channel_message(message: Message) -> None:
+@channel_router.message()
+async def handle_channel_message(
+    message: Message,
+    data: dict
+) -> None:
     """Handle messages from channels (sender_chat)."""
     try:
+        # Only handle messages from channels
         if not message.sender_chat:
             return
-        
-        # TODO: Implement channel message handling
-        # This will be implemented when services are properly integrated
-        logger.info(f"Channel message from {message.sender_chat.title}")
-        
-    except Exception as e:
-        logger.error(f"Error handling channel message: {e}")
 
+        # Skip if message is from bot
+        if message.from_user and message.from_user.is_bot:
+            return
 
-@channel_router.callback_query(F.data.startswith("allow_channel:"))
-async def handle_allow_channel_callback(callback: CallbackQuery) -> None:
-    """Handle allow channel callback."""
-    try:
-        if not callback.data:
-            return
-        
-        # Parse callback data
-        parts = callback.data.split(":")
-        if len(parts) != 3:
-            return
-        
-        channel_id = int(parts[1])
-        message_id = int(parts[2])
-        
-        # TODO: Implement channel allowing
-        await callback.answer("✅ Канал разрешен")
-        await callback.message.edit_text(
-            f"✅ Канал {channel_id} добавлен в whitelist"
-        )
-        
-    except Exception as e:
-        logger.error(f"Error handling allow channel callback: {e}")
-        await callback.answer("❌ Произошла ошибка")
+        # Get services from data
+        channel_service = data.get('channel_service')
+        link_service = data.get('link_service')
+        profile_service = data.get('profile_service')
 
+        if not channel_service or not link_service or not profile_service:
+            logger.error("Services not injected properly")
+            return
 
-@channel_router.callback_query(F.data.startswith("block_channel:"))
-async def handle_block_channel_callback(
-    callback: CallbackQuery,
-    channel_service: ChannelService
-) -> None:
-    """Handle block channel callback."""
-    try:
-        if not callback.data:
-            return
-        
-        # Parse callback data
-        parts = callback.data.split(":")
-        if len(parts) != 3:
-            return
-        
-        channel_id = int(parts[1])
-        message_id = int(parts[2])
-        
-        # Block channel
-        success = await channel_service.block_channel(
-            channel_id=channel_id,
-            admin_id=callback.from_user.id if callback.from_user else 0
-        )
-        
-        if success:
-            await callback.answer("🚫 Канал заблокирован")
-            await callback.message.edit_text(
-                f"🚫 Канал {channel_id} добавлен в blacklist"
+        # Get admin ID from config
+        from app.config import load_config
+        config = load_config()
+        admin_id = config.admin_ids_list[0] if config.admin_ids_list else 0
+
+        # Check if this is the native channel (where bot is connected)
+        is_native_channel = await channel_service.is_native_channel(message.sender_chat.id)
+
+        if is_native_channel:
+            # Native channel - full freedom, no spam checking
+            await channel_service.handle_channel_message(message, admin_id)
+        else:
+            # Foreign channel - check for spam and rate limiting
+            await _handle_foreign_channel_message(
+                message, channel_service, link_service, profile_service, admin_id
             )
-        else:
-            await callback.answer("❌ Ошибка при блокировке канала")
-        
+
     except Exception as e:
-        logger.error(f"Error handling block channel callback: {e}")
-        await callback.answer("❌ Произошла ошибка")
+        logger.error(safe_format_message("Error handling channel message: {error}", error=sanitize_for_logging(e)))
 
 
-@channel_router.callback_query(F.data.startswith("delete_message:"))
-async def handle_delete_message_callback(
-    callback: CallbackQuery,
-    moderation_service: ModerationService
+async def _handle_foreign_channel_message(
+    message: Message,
+    channel_service: ChannelService,
+    link_service: LinkService,
+    profile_service: ProfileService,
+    admin_id: int
 ) -> None:
-    """Handle delete message callback."""
+    """Handle messages from foreign channels with spam checking."""
     try:
-        if not callback.data:
+        # Check for bot links in message
+        bot_links = await link_service.check_message_for_bot_links(message)
+        if bot_links:
+            # Handle bot link detection
+            await link_service.handle_bot_link_detection(message, bot_links)
+
+            # Mark channel as suspicious
+            await channel_service.mark_channel_as_suspicious(
+                channel_id=message.sender_chat.id,
+                reason="Bot links detected in foreign channel",
+                admin_id=admin_id
+            )
             return
-        
-        # Parse callback data
-        parts = callback.data.split(":")
-        if len(parts) != 2:
-            return
-        
-        message_id = int(parts[1])
-        
-        # Delete message
-        success = await moderation_service.delete_message(
-            chat_id=callback.message.chat.id if callback.message else 0,
-            message_id=message_id,
-            admin_id=callback.from_user.id if callback.from_user else 0
+
+        # Check for rate limiting
+        is_rate_limited = await channel_service.check_channel_rate_limit(
+            channel_id=message.sender_chat.id
         )
-        
-        if success:
-            await callback.answer("🗑 Сообщение удалено")
-            await callback.message.edit_text("🗑 Сообщение удалено")
-        else:
-            await callback.answer("❌ Ошибка при удалении сообщения")
-        
+        if is_rate_limited:
+            # Block channel for too frequent messages
+            await channel_service.block_channel(
+                channel_id=message.sender_chat.id,
+                reason="Rate limit exceeded",
+                admin_id=admin_id
+            )
+            return
+
+        # If passed all checks, handle as normal channel
+        await channel_service.handle_channel_message(message, admin_id)
+
     except Exception as e:
-        logger.error(f"Error handling delete message callback: {e}")
-        await callback.answer("❌ Произошла ошибка")
+        logger.error(safe_format_message("Error handling foreign channel message: {error}", error=sanitize_for_logging(e)))
+
+
+@channel_router.my_chat_member()
+async def handle_channel_member_update(update) -> None:
+    """Handle channel member updates."""
+    try:
+        # This can be used to track when channels are added/removed
+        # For now, just log the event
+        logger.info(safe_format_message("Channel member update: {update}", update=sanitize_for_logging(update)))
+
+    except Exception as e:
+        logger.error(safe_format_message("Error handling channel member update: {error}", error=sanitize_for_logging(e)))

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Load secure utilities
+source "$(dirname "$0")/secure_shell_utils.sh"
+
 # Скрипт для инициализации Git репозитория
 # Использование: ./scripts/init-git.sh
 
@@ -32,7 +35,10 @@ git add .
 
 # Создаем первый коммит
 echo "💾 Создание первого коммита..."
-git commit -m "🎉 Initial commit: AntiSpam Bot project setup
+if git diff --cached --quiet; then
+    echo "ℹ️  Нет изменений для коммита"
+else
+    git commit -m "🎉 Initial commit: AntiSpam Bot project setup
 
 - ✅ Базовая архитектура aiogram 3.x
 - ✅ Модели базы данных (SQLAlchemy)
@@ -44,6 +50,8 @@ git commit -m "🎉 Initial commit: AntiSpam Bot project setup
 - ✅ Полная документация
 
 Готово для разработки! 🚀"
+    fi
+fi
 
 # Создаем ветку develop
 echo "🌿 Создание ветки develop..."

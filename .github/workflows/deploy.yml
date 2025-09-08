@@ -19,16 +19,16 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Setup SSH
       uses: webfactory/ssh-agent@v0.7.0
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-    
+
     - name: Deploy to server
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} '
@@ -36,13 +36,12 @@ jobs:
           git pull origin main &&
           sudo ./scripts/update.sh
         '
-    
-    - name: Notify deployment
-      if: always()
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}
-        channel: '#deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+    # - name: Notify deployment
+    #   if: always()
+    #   uses: 8398a7/action-slack@v3
+    #   with:
+    #     status: ${{ job.status }}
+    #     channel: '#deployments'
+    #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+    #     fields: repo,message,commit,author,action,eventName,ref,workflow
