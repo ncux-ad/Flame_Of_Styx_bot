@@ -1,4 +1,4 @@
-# GitHub Actions Configuration
+# GitHub Actions Configuration (немного почистил)
 
 ## Required Secrets
 
