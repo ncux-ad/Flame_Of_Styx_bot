@@ -1,0 +1,34 @@
+[Unit]
+Description=AntiSpam Bot for Telegram
+Documentation=https://github.com/your-org/antispam-bot
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/antispam-bot
+ExecStart=/opt/antispam-bot/venv/bin/python bot.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+TimeoutStartSec=30
+
+# Безопасность
+User=antispam
+Group=antispam
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/antispam-bot
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=antispam-bot
+
+# Переменные окружения
+Environment=PYTHONPATH=/opt/antispam-bot
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
