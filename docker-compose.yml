@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # Основной сервис бота (только для локальной разработки)
+  antispam-bot:
+    build: .
+    container_name: antispam-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - .:/app  # Для hot reload при разработке
+    ports:
+      - "8000:8000"  # Если будет веб-интерфейс
+    networks:
+      - antispam-network
+
+  # Redis для кеширования (опционально)
+  redis:
+    image: redis:7-alpine
+    container_name: antispam-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - antispam-network
+    profiles:
+      - redis
+
+volumes:
+  redis-data:
+
+networks:
+  antispam-network:
+    driver: bridge

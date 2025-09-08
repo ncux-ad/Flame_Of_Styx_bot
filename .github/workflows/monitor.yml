@@ -1,0 +1,55 @@
+name: Monitor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # Every 5 minutes
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install requests
+    
+    - name: Health check
+      run: |
+        python -c "
+        import requests
+        import sys
+        
+        try:
+            response = requests.get('https://your-bot-domain.com/health', timeout=10)
+            if response.status_code == 200:
+                print('✅ Bot is healthy')
+                sys.exit(0)
+            else:
+                print(f'❌ Bot returned status {response.status_code}')
+                sys.exit(1)
+        except Exception as e:
+            print(f'❌ Health check failed: {e}')
+            sys.exit(1)
+        "
+    
+    - name: Notify on failure
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#alerts'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
