@@ -9,13 +9,13 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     if: github.repository == 'your-username/antispam-bot'  # Change to your repo
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    
+
     - name: Create backup archive
       run: |
         tar -czf antispam-bot-backup-$(date +%Y%m%d).tar.gz \
@@ -26,7 +26,7 @@ jobs:
           --exclude='data/' \
           --exclude='logs/' \
           .
-    
+
     - name: Upload backup to GitHub Releases
       uses: actions/upload-release-asset@v1
       env:

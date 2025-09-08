@@ -16,7 +16,7 @@ class Settings(BaseSettings):
             raise ValueError("DB_PATH не может быть пустым")
 
         # Проверяем, что путь заканчивается на .sqlite3 или .db
-        if not (v.endswith('.sqlite3') or v.endswith('.db')):
+        if not (v.endswith(".sqlite3") or v.endswith(".db")):
             raise ValueError("DB_PATH должен заканчиваться на .sqlite3 или .db")
 
         return v
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
         if not v or len(v) < 20:
             raise ValueError("BOT_TOKEN некорректный или отсутствует")
         # Проверяем формат токена (должен быть в формате 123456789:ABC...)
-        if ':' not in v or len(v.split(':')[0]) < 8:
+        if ":" not in v or len(v.split(":")[0]) < 8:
             raise ValueError("BOT_TOKEN должен быть в формате 'bot_id:token'")
         return v
 
@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
 
+
 def load_config() -> Settings:
     """Load and validate configuration."""
     try:
@@ -84,4 +85,6 @@ def _validate_config(config: Settings) -> None:
 
     # Проверяем, что токен не является placeholder
     if config.bot_token == "your_telegram_bot_token_here":
-        raise ValueError("BOT_TOKEN не настроен. Замените 'your_telegram_bot_token_here' на реальный токен.")
+        raise ValueError(
+            "BOT_TOKEN не настроен. Замените 'your_telegram_bot_token_here' на реальный токен."
+        )

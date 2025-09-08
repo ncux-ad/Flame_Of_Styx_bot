@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class Permission(Enum):
     """Available permissions."""
+
     READ = "read"
     WRITE = "write"
     ADMIN = "admin"
@@ -29,14 +30,31 @@ class Permission(Enum):
 
 class Role(Enum):
     """User roles with permissions."""
+
     USER = [Permission.READ]
     MODERATOR = [Permission.READ, Permission.WRITE, Permission.MODERATE]
-    ADMIN = [Permission.READ, Permission.WRITE, Permission.ADMIN, Permission.MODERATE,
-             Permission.VIEW_LOGS, Permission.MANAGE_USERS, Permission.MANAGE_CHANNELS,
-             Permission.MANAGE_BOTS]
-    SUPER_ADMIN = [Permission.READ, Permission.WRITE, Permission.ADMIN, Permission.SUPER_ADMIN,
-                   Permission.MODERATE, Permission.VIEW_LOGS, Permission.MANAGE_USERS,
-                   Permission.MANAGE_CHANNELS, Permission.MANAGE_BOTS, Permission.CHANGE_LIMITS]
+    ADMIN = [
+        Permission.READ,
+        Permission.WRITE,
+        Permission.ADMIN,
+        Permission.MODERATE,
+        Permission.VIEW_LOGS,
+        Permission.MANAGE_USERS,
+        Permission.MANAGE_CHANNELS,
+        Permission.MANAGE_BOTS,
+    ]
+    SUPER_ADMIN = [
+        Permission.READ,
+        Permission.WRITE,
+        Permission.ADMIN,
+        Permission.SUPER_ADMIN,
+        Permission.MODERATE,
+        Permission.VIEW_LOGS,
+        Permission.MANAGE_USERS,
+        Permission.MANAGE_CHANNELS,
+        Permission.MANAGE_BOTS,
+        Permission.CHANGE_LIMITS,
+    ]
 
 
 class AuthorizationService:
@@ -62,10 +80,12 @@ class AuthorizationService:
     def has_permission(self, user_id: int, permission: Permission) -> bool:
         """Check if user has specific permission."""
         if not validate_user_id(user_id):
-            logger.warning(safe_format_message(
-                "Invalid user ID in permission check: {user_id}",
-                user_id=sanitize_for_logging(user_id)
-            ))
+            logger.warning(
+                safe_format_message(
+                    "Invalid user ID in permission check: {user_id}",
+                    user_id=sanitize_for_logging(user_id),
+                )
+            )
             return False
 
         role = self.get_user_role(user_id)
@@ -116,7 +136,7 @@ class AuthorizationService:
             return True
 
         # Regular users have limited permissions
-        if action in ['read', 'help']:
+        if action in ["read", "help"]:
             return True
 
         return False
@@ -124,6 +144,7 @@ class AuthorizationService:
 
 def require_permission(permission: Permission):
     """Decorator to require specific permission."""
+
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -140,11 +161,13 @@ def require_permission(permission: Permission):
 
             auth_service = AuthorizationService()
             if not auth_service.has_permission(user_id, permission):
-                logger.warning(safe_format_message(
-                    "User {user_id} attempted unauthorized action {action}",
-                    user_id=sanitize_for_logging(user_id),
-                    action=sanitize_for_logging(permission.value)
-                ))
+                logger.warning(
+                    safe_format_message(
+                        "User {user_id} attempted unauthorized action {action}",
+                        user_id=sanitize_for_logging(user_id),
+                        action=sanitize_for_logging(permission.value),
+                    )
+                )
 
                 # Send error message if possible
                 for arg in args:
@@ -157,7 +180,9 @@ def require_permission(permission: Permission):
                 return
 
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -182,18 +207,21 @@ def safe_user_operation(user_id: int, operation: str, target_id: Optional[int] =
         auth_service = AuthorizationService()
         return auth_service.validate_action(user_id, operation, target_id)
     except Exception as e:
-        logger.error(safe_format_message(
-            "Error in safe_user_operation: {error}",
-            error=sanitize_for_logging(e)
-        ))
+        logger.error(
+            safe_format_message(
+                "Error in safe_user_operation: {error}", error=sanitize_for_logging(e)
+            )
+        )
         return False
 
 
 def log_security_event(event_type: str, user_id: int, details: str = ""):
     """Log security-related events."""
-    logger.warning(safe_format_message(
-        "SECURITY_EVENT: {event_type} - User: {user_id} - Details: {details}",
-        event_type=sanitize_for_logging(event_type),
-        user_id=sanitize_for_logging(user_id),
-        details=sanitize_for_logging(details)
-    ))
+    logger.warning(
+        safe_format_message(
+            "SECURITY_EVENT: {event_type} - User: {user_id} - Details: {details}",
+            event_type=sanitize_for_logging(event_type),
+            user_id=sanitize_for_logging(user_id),
+            details=sanitize_for_logging(details),
+        )
+    )

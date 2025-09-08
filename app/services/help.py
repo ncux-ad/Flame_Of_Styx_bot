@@ -9,6 +9,7 @@ from app.auth.authorization import require_admin, safe_user_operation
 @dataclass
 class CommandInfo:
     """Information about a bot command."""
+
     command: str
     description: str
     usage: str = ""
@@ -30,57 +31,57 @@ class HelpService:
                 description="Главное меню и приветствие",
                 usage="/start",
                 examples=["/start"],
-                admin_only=False
+                admin_only=False,
             ),
             "help": CommandInfo(
                 command="/help",
                 description="Справка по всем командам",
                 usage="/help [категория]",
                 examples=["/help", "/help admin", "/help channels"],
-                admin_only=False
+                admin_only=False,
             ),
             "status": CommandInfo(
                 command="/status",
                 description="Статистика работы бота",
                 usage="/status",
                 examples=["/status"],
-                admin_only=True
+                admin_only=True,
             ),
             "channels": CommandInfo(
                 command="/channels",
                 description="Управление каналами",
                 usage="/channels",
                 examples=["/channels"],
-                admin_only=True
+                admin_only=True,
             ),
             "bots": CommandInfo(
                 command="/bots",
                 description="Управление ботами",
                 usage="/bots",
                 examples=["/bots"],
-                admin_only=True
+                admin_only=True,
             ),
             "suspicious": CommandInfo(
                 command="/suspicious",
                 description="Подозрительные профили",
                 usage="/suspicious",
                 examples=["/suspicious"],
-                admin_only=True
+                admin_only=True,
             ),
             "settings": CommandInfo(
                 command="/settings",
                 description="Настройки бота",
                 usage="/settings",
                 examples=["/settings"],
-                admin_only=True
+                admin_only=True,
             ),
             "logs": CommandInfo(
                 command="/logs",
                 description="Просмотр логов",
                 usage="/logs [уровень]",
                 examples=["/logs", "/logs error"],
-                admin_only=True
-            )
+                admin_only=True,
+            ),
         }
 
     def get_main_help(self, is_admin: bool = False) -> str:
@@ -179,31 +180,26 @@ class HelpService:
             "• Количество каналов (разрешены/заблокированы)\n"
             "• Количество ботов в whitelist\n"
             "• Общий статус системы\n\n"
-
             "<b>📺 /channels</b>\n"
             "Управление каналами:\n"
             "• Просмотр списка каналов\n"
             "• Добавление/удаление из whitelist\n"
             "• Просмотр статистики по каналам\n\n"
-
             "<b>🤖 /bots</b>\n"
             "Управление ботами:\n"
             "• Просмотр списка ботов\n"
             "• Управление whitelist ботов\n"
             "• Статистика по ботам\n\n"
-
             "<b>🔍 /suspicious</b>\n"
             "Подозрительные профили:\n"
             "• Просмотр подозрительных аккаунтов\n"
             "• Анализ поведения пользователей\n"
             "• Управление блокировками\n\n"
-
             "<b>⚙️ /settings</b>\n"
             "Настройки бота:\n"
             "• Конфигурация фильтров\n"
             "• Настройка уведомлений\n"
             "• Управление правами\n\n"
-
             "<b>📋 /logs</b>\n"
             "Просмотр логов:\n"
             "• /logs - все логи\n"
@@ -307,7 +303,7 @@ class HelpService:
 
     def get_command_info(self, command: str) -> CommandInfo:
         """Get information about specific command."""
-        return self.commands.get(command.lstrip('/'), None)
+        return self.commands.get(command.lstrip("/"), None)
 
     def get_all_commands(self, admin_only: bool = False) -> List[CommandInfo]:
         """Get all commands, optionally filtered by admin status."""

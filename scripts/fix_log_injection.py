@@ -9,7 +9,7 @@ from pathlib import Path
 def fix_log_injection_in_file(file_path: Path) -> bool:
     """Fix log injection vulnerabilities in a single file."""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         original_content = content
@@ -22,7 +22,7 @@ def fix_log_injection_in_file(file_path: Path) -> bool:
             message = match.group(2)
 
             # Extract variables from f-string
-            variables = re.findall(r'\{([^}]+)\}', message)
+            variables = re.findall(r"\{([^}]+)\}", message)
 
             if not variables:
                 # No variables, just escape the message
@@ -30,14 +30,14 @@ def fix_log_injection_in_file(file_path: Path) -> bool:
                 return f'logger.{level}("{safe_message}")'
 
             # Create safe format call
-            safe_message = message.replace('{', '{{').replace('}', '}}')
+            safe_message = message.replace("{", "{{").replace("}", "}}")
             for var in variables:
-                safe_message = safe_message.replace(f'{{{{{var}}}}}', f'{{{var}}}')
+                safe_message = safe_message.replace(f"{{{{{var}}}}}", f"{{{var}}}")
 
             # Create sanitized variable calls
             var_calls = []
             for var in variables:
-                var_calls.append(f'{var}=sanitize_for_logging({var})')
+                var_calls.append(f"{var}=sanitize_for_logging({var})")
 
             return f'logger.{level}(safe_format_message("{safe_message}", {", ".join(var_calls)}))'
 
@@ -45,14 +45,14 @@ def fix_log_injection_in_file(file_path: Path) -> bool:
         content = re.sub(pattern, replace_log_call, content)
 
         # Add import if needed
-        if 'from app.utils.security import' not in content and 'logger.' in content:
+        if "from app.utils.security import" not in content and "logger." in content:
             # Find the last import statement
             import_lines = []
             other_lines = []
             in_imports = True
 
-            for line in content.split('\n'):
-                if in_imports and (line.startswith('import ') or line.startswith('from ')):
+            for line in content.split("\n"):
+                if in_imports and (line.startswith("import ") or line.startswith("from ")):
                     import_lines.append(line)
                 else:
                     in_imports = False
@@ -60,12 +60,14 @@ def fix_log_injection_in_file(file_path: Path) -> bool:
 
             # Add security import
             if import_lines:
-                import_lines.append('from app.utils.security import sanitize_for_logging, safe_format_message')
-                content = '\n'.join(import_lines + other_lines)
+                import_lines.append(
+                    "from app.utils.security import sanitize_for_logging, safe_format_message"
+                )
+                content = "\n".join(import_lines + other_lines)
 
         # Write back if changed
         if content != original_content:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
             return True
 
@@ -77,11 +79,11 @@ def fix_log_injection_in_file(file_path: Path) -> bool:
 
 def main():
     """Main function to fix all log injection vulnerabilities."""
-    app_dir = Path('app')
+    app_dir = Path("app")
     fixed_files = []
 
     # Find all Python files
-    for py_file in app_dir.rglob('*.py'):
+    for py_file in app_dir.rglob("*.py"):
         if fix_log_injection_in_file(py_file):
             fixed_files.append(py_file)
             print(f"Fixed log injection in: {py_file}")
@@ -91,5 +93,5 @@ def main():
         print(f"  - {file_path}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

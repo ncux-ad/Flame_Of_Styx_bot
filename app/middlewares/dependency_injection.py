@@ -20,7 +20,7 @@ class DependencyInjectionMiddleware(BaseMiddleware):
         self,
         handler: Callable[..., Awaitable[Any]],
         event: Message | CallbackQuery,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
     ) -> Any:
         """Inject dependencies into handler."""
         # Get bot instance
@@ -30,12 +30,12 @@ class DependencyInjectionMiddleware(BaseMiddleware):
         async with SessionLocal() as db_session:
             # Create services
             services = {
-                'link_service': LinkService(bot, db_session),
-                'profile_service': ProfileService(bot, db_session),
-                'channel_service': ChannelService(bot, db_session),
-                'bot_service': BotService(bot, db_session),
-                'moderation_service': ModerationService(bot, db_session),
-                'db_session': db_session
+                "link_service": LinkService(bot, db_session),
+                "profile_service": ProfileService(bot, db_session),
+                "channel_service": ChannelService(bot, db_session),
+                "bot_service": BotService(bot, db_session),
+                "moderation_service": ModerationService(bot, db_session),
+                "db_session": db_session,
             }
 
             # Add services to data

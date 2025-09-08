@@ -34,8 +34,8 @@ receivers:
         text: |
           {{ range .Alerts }}
           🚨 *{{ .Annotations.summary }}*
-          
+
           {{ .Annotations.description }}
-          
+
           Severity: {{ .Labels.severity }}
           {{ end }}

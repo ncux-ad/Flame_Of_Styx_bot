@@ -1,15 +1,18 @@
 """Channel model."""
 
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Enum
-from sqlalchemy.orm import relationship
 import enum
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Enum, Integer, String, Text
+from sqlalchemy.orm import relationship
+
 from app.database import Base
 from app.models.secure_models import *
 
 
 class ChannelStatus(enum.Enum):
     """Channel status enum."""
+
     ALLOWED = "allowed"
     BLOCKED = "blocked"
     PENDING = "pending"

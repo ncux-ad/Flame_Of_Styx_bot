@@ -1,10 +1,11 @@
 """Pytest configuration and fixtures."""
 
 import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from aiogram import Bot, Dispatcher
-from aiogram.types import User, Chat, Message
+from aiogram.types import Chat, Message, User
 
 from app.config import Settings
 
@@ -20,11 +21,7 @@ def event_loop():
 @pytest.fixture
 def test_settings():
     """Test settings."""
-    return Settings(
-        bot_token="test_token",
-        admin_ids=[123456789],
-        db_path=":memory:"
-    )
+    return Settings(bot_token="test_token", admin_ids=[123456789], db_path=":memory:")
 
 
 @pytest.fixture
@@ -45,44 +42,27 @@ def mock_dispatcher():
 def mock_user():
     """Mock user instance."""
     return User(
-        id=123456789,
-        is_bot=False,
-        first_name="Test",
-        last_name="User",
-        username="testuser"
+        id=123456789, is_bot=False, first_name="Test", last_name="User", username="testuser"
     )
 
 
 @pytest.fixture
 def mock_bot_user():
     """Mock bot user instance."""
-    return User(
-        id=987654321,
-        is_bot=True,
-        first_name="Test Bot",
-        username="testbot"
-    )
+    return User(id=987654321, is_bot=True, first_name="Test Bot", username="testbot")
 
 
 @pytest.fixture
 def mock_chat():
     """Mock chat instance."""
-    return Chat(
-        id=-1001234567890,
-        type="supergroup",
-        title="Test Channel"
-    )
+    return Chat(id=-1001234567890, type="supergroup", title="Test Channel")
 
 
 @pytest.fixture
 def mock_message(mock_user, mock_chat):
     """Mock message instance."""
     return Message(
-        message_id=1,
-        from_user=mock_user,
-        chat=mock_chat,
-        date=1234567890,
-        text="Test message"
+        message_id=1, from_user=mock_user, chat=mock_chat, date=1234567890, text="Test message"
     )
 
 
@@ -95,5 +75,5 @@ def mock_channel_message(mock_chat):
         sender_chat=mock_chat,
         chat=mock_chat,
         date=1234567890,
-        text="Test channel message"
+        text="Test channel message",
     )

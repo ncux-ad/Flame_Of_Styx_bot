@@ -13,9 +13,12 @@ def fix_log_injection_critical():
 
     # Run the critical log injection fix script
     try:
-        result = subprocess.run([
-            'python', 'scripts/fix_critical_log_injection.py'
-        ], capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            ["python", "scripts/fix_critical_log_injection.py"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
         print("✅ Critical log injection vulnerabilities fixed")
         print(result.stdout)
     except subprocess.CalledProcessError as e:
@@ -29,9 +32,9 @@ def fix_xss_critical():
 
     # Files with XSS issues
     xss_files = [
-        'app/models/user.py',
-        'app/models/suspicious_profile.py',
-        'app/models/moderation_log.py'
+        "app/models/user.py",
+        "app/models/suspicious_profile.py",
+        "app/models/moderation_log.py",
     ]
 
     for file_path in xss_files:
@@ -46,7 +49,7 @@ def fix_authorization_critical():
     print("🚨 Fixing critical authorization vulnerabilities...")
 
     # The help.py file has been updated to use proper authorization
-    help_file = Path('app/services/help.py')
+    help_file = Path("app/services/help.py")
     if help_file.exists():
         print("✅ Authorization fixed in help.py")
     else:
@@ -58,10 +61,7 @@ def fix_shell_scripts_critical():
     print("🚨 Fixing critical shell script vulnerabilities...")
 
     # Files that have been updated
-    updated_files = [
-        'scripts/healthcheck.sh',
-        'scripts/deploy.sh'
-    ]
+    updated_files = ["scripts/healthcheck.sh", "scripts/deploy.sh"]
 
     for file_path in updated_files:
         if Path(file_path).exists():
@@ -143,7 +143,7 @@ fi
 Проект готов к безопасному развертыванию.
 """
 
-    with open('SECURITY_FIXES_SUMMARY.md', 'w', encoding='utf-8') as f:
+    with open("SECURITY_FIXES_SUMMARY.md", "w", encoding="utf-8") as f:
         f.write(summary)
 
     print("✅ Security fixes summary created: SECURITY_FIXES_SUMMARY.md")
@@ -185,5 +185,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

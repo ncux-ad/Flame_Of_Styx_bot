@@ -22,10 +22,10 @@ def sanitize_for_logging(data: Any) -> str:
 
     # Remove or escape dangerous characters
     # Remove newlines and carriage returns
-    data_str = data_str.replace('\n', '\\n').replace('\r', '\\r')
+    data_str = data_str.replace("\n", "\\n").replace("\r", "\\r")
 
     # Remove control characters (except tab)
-    data_str = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', data_str)
+    data_str = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", data_str)
 
     # HTML escape to prevent XSS in log viewers
     data_str = html.escape(data_str, quote=False)
@@ -53,7 +53,7 @@ def sanitize_user_input(data: str) -> str:
     data = html.escape(data, quote=False)
 
     # Remove potentially dangerous characters
-    data = re.sub(r'[<>"\']', '', data)
+    data = re.sub(r'[<>"\']', "", data)
 
     # Limit length
     if len(data) > 500:
@@ -94,7 +94,7 @@ def validate_username(username: str) -> bool:
         return False
 
     # Telegram username format: 5-32 characters, alphanumeric and underscores
-    return bool(re.match(r'^[a-zA-Z0-9_]{5,32}$', username))
+    return bool(re.match(r"^[a-zA-Z0-9_]{5,32}$", username))
 
 
 def safe_format_message(message: str, **kwargs: Any) -> str:

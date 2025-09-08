@@ -38,14 +38,15 @@ async def handle_start_command(message: Message, **kwargs) -> None:
         await message.answer(welcome_text)
 
     except Exception as e:
-        logger.error(safe_format_message("Error handling start command: {error}", error=sanitize_for_logging(e)))
+        logger.error(
+            safe_format_message(
+                "Error handling start command: {error}", error=sanitize_for_logging(e)
+            )
+        )
 
 
 @user_router.message()
-async def handle_user_message(
-    message: Message,
-    data: dict = None
-) -> None:
+async def handle_user_message(message: Message, data: dict = None) -> None:
     """Handle user messages with spam detection."""
     try:
         # Skip if message is from bot
@@ -61,8 +62,8 @@ async def handle_user_message(
             logger.error("Data not provided to handler")
             return
 
-        link_service = data.get('link_service')
-        profile_service = data.get('profile_service')
+        link_service = data.get("link_service")
+        profile_service = data.get("profile_service")
 
         if not link_service or not profile_service:
             logger.error("Services not injected properly")
@@ -80,12 +81,12 @@ async def handle_user_message(
         if message.from_user:
             # Get admin ID from config
             from app.config import load_config
+
             config = load_config()
             admin_id = config.admin_ids_list[0] if config.admin_ids_list else 0
 
             suspicious_profile = await profile_service.analyze_user_profile(
-                user=message.from_user,
-                admin_id=admin_id
+                user=message.from_user, admin_id=admin_id
             )
 
             if suspicious_profile:
@@ -93,7 +94,11 @@ async def handle_user_message(
                 await _notify_admin_about_suspicious_user(message)
 
     except Exception as e:
-        logger.error(safe_format_message("Error handling user message: {error}", error=sanitize_for_logging(e)))
+        logger.error(
+            safe_format_message(
+                "Error handling user message: {error}", error=sanitize_for_logging(e)
+            )
+        )
 
 
 async def _notify_admin_about_suspicious_user(message: Message) -> None:
@@ -117,15 +122,24 @@ async def _notify_admin_about_suspicious_user(message: Message) -> None:
             for admin_id in config.admin_ids_list:
                 try:
                     await message.bot.send_message(
-                        chat_id=admin_id,
-                        text=user_info,
-                        reply_to_message_id=message.message_id
+                        chat_id=admin_id, text=user_info, reply_to_message_id=message.message_id
                     )
                 except Exception as e:
-                    logger.error(safe_format_message("Error notifying admin {admin_id}: {error}", admin_id=sanitize_for_logging(admin_id), error=sanitize_for_logging(e)))
+                    logger.error(
+                        safe_format_message(
+                            "Error notifying admin {admin_id}: {error}",
+                            admin_id=sanitize_for_logging(admin_id),
+                            error=sanitize_for_logging(e),
+                        )
+                    )
 
     except Exception as e:
-        logger.error(safe_format_message("Error notifying admin about suspicious user: {error}", error=sanitize_for_logging(e)))
+        logger.error(
+            safe_format_message(
+                "Error notifying admin about suspicious user: {error}",
+                error=sanitize_for_logging(e),
+            )
+        )
 
 
 @user_router.my_chat_member()
@@ -140,10 +154,18 @@ async def handle_new_member(update: ChatMemberUpdated) -> None:
             if user.is_bot:
                 # TODO: Implement bot banning
                 # This will be implemented when services are properly integrated
-                logger.info(safe_format_message("Bot {username} joined chat {chat_id}", username=sanitize_for_logging(user.username), chat_id=sanitize_for_logging(update.chat.id)))
+                logger.info(
+                    safe_format_message(
+                        "Bot {username} joined chat {chat_id}",
+                        username=sanitize_for_logging(user.username),
+                        chat_id=sanitize_for_logging(update.chat.id),
+                    )
+                )
 
     except Exception as e:
-        logger.error(safe_format_message("Error handling new member: {error}", error=sanitize_for_logging(e)))
+        logger.error(
+            safe_format_message("Error handling new member: {error}", error=sanitize_for_logging(e))
+        )
 
 
 @user_router.chat_member()
@@ -155,12 +177,18 @@ async def handle_chat_member_update(update: ChatMemberUpdated) -> None:
             user = update.new_chat_member.user
 
             # Log the event
-            logger.info(safe_format_message(
-                "User {username} {status} from chat {chat_id}",
-                username=sanitize_for_logging(user.username),
-                status=sanitize_for_logging(update.new_chat_member.status),
-                chat_id=sanitize_for_logging(update.chat.id)
-            ))
+            logger.info(
+                safe_format_message(
+                    "User {username} {status} from chat {chat_id}",
+                    username=sanitize_for_logging(user.username),
+                    status=sanitize_for_logging(update.new_chat_member.status),
+                    chat_id=sanitize_for_logging(update.chat.id),
+                )
+            )
 
     except Exception as e:
-        logger.error(safe_format_message("Error handling chat member update: {error}", error=sanitize_for_logging(e)))
+        logger.error(
+            safe_format_message(
+                "Error handling chat member update: {error}", error=sanitize_for_logging(e)
+            )
+        )

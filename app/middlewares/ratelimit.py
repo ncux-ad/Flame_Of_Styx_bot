@@ -30,7 +30,7 @@ class RateLimitMiddleware(BaseMiddleware):
         self,
         handler: Callable[..., Awaitable[Any]],
         event: Message | CallbackQuery,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
     ) -> Any:
         """Check rate limit before processing."""
         # Get user ID
@@ -54,7 +54,8 @@ class RateLimitMiddleware(BaseMiddleware):
         # Clean old requests
         if user_id in self.requests:
             self.requests[user_id] = [
-                req_time for req_time in self.requests[user_id]
+                req_time
+                for req_time in self.requests[user_id]
                 if current_time - req_time < self.interval
             ]
         else:
@@ -71,7 +72,7 @@ class RateLimitMiddleware(BaseMiddleware):
                     f"👤 Тип: {user_type}\n"
                     f"📊 Лимит: {limit} запросов в {self.interval} секунд\n"
                     f"⏳ Попробуйте через {int(remaining_time)} секунд",
-                    reply_to_message_id=event.message_id
+                    reply_to_message_id=event.message_id,
                 )
             return
 

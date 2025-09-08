@@ -4,7 +4,7 @@
 
 ### 1. Log Injection (CWE-117,93) - HIGH
 - ✅ app/handlers/user.py - исправлено
-- ✅ app/services/links.py - исправлено  
+- ✅ app/services/links.py - исправлено
 - ✅ app/services/bots.py - исправлено
 - ✅ app/services/profiles.py - исправлено
 - ✅ app/services/channels.py - исправлено

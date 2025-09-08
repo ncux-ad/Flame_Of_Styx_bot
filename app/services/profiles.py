@@ -26,11 +26,7 @@ class ProfileService:
         self.moderation_service = ModerationService(bot, db_session)
 
     @require_admin
-    async def analyze_user_profile(
-        self,
-        user: User,
-        admin_id: int
-    ) -> Optional[SuspiciousProfile]:
+    async def analyze_user_profile(self, user: User, admin_id: int) -> Optional[SuspiciousProfile]:
         """Analyze user profile for suspicious patterns."""
         try:
             # Check if user already has suspicious profile
@@ -44,15 +40,12 @@ class ProfileService:
             if analysis_result["is_suspicious"]:
                 # Create or update suspicious profile
                 profile = await self._create_suspicious_profile(
-                    user_id=user.id,
-                    analysis_result=analysis_result
+                    user_id=user.id, analysis_result=analysis_result
                 )
 
                 # Notify admin
                 await self._notify_admin_about_suspicious_profile(
-                    admin_id=admin_id,
-                    user=user,
-                    profile=profile
+                    admin_id=admin_id, user=user, profile=profile
                 )
 
                 return profile
@@ -60,7 +53,13 @@ class ProfileService:
             return None
 
         except Exception as e:
-            logger.error(safe_format_message("Error analyzing profile for user {user_id}: {error}", user_id=sanitize_for_logging(user.id), error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error analyzing profile for user {user_id}: {error}",
+                    user_id=sanitize_for_logging(user.id),
+                    error=sanitize_for_logging(e),
+                )
+            )
             return None
 
     @require_admin
@@ -72,17 +71,17 @@ class ProfileService:
             "patterns": [],
             "linked_chat": None,
             "post_count": 0,
-            "has_bait_channel": False
+            "has_bait_channel": False,
         }
 
         try:
             # Check if user has linked chat
-            if hasattr(user, 'linked_chat') and user.linked_chat:
+            if hasattr(user, "linked_chat") and user.linked_chat:
                 linked_chat = user.linked_chat
                 analysis["linked_chat"] = {
                     "id": linked_chat.id,
                     "username": linked_chat.username,
-                    "title": linked_chat.title
+                    "title": linked_chat.title,
                 }
 
                 # Analyze linked chat
@@ -98,18 +97,18 @@ class ProfileService:
             analysis["is_suspicious"] = analysis["suspicion_score"] > 0.5
 
         except Exception as e:
-            logger.error(safe_format_message("Error in profile analysis: {error}", error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error in profile analysis: {error}", error=sanitize_for_logging(e)
+                )
+            )
 
         return analysis
 
     @require_admin
     async def _analyze_linked_chat(self, chat: Chat) -> Dict[str, Any]:
         """Analyze linked chat for suspicious patterns."""
-        analysis = {
-            "post_count": 0,
-            "has_bait_channel": False,
-            "is_public": True
-        }
+        analysis = {"post_count": 0, "has_bait_channel": False, "is_public": True}
 
         try:
             # Try to get chat info
@@ -129,7 +128,13 @@ class ProfileService:
                 analysis["post_count"] = 0  # We can't easily get post count
 
         except Exception as e:
-            logger.error(safe_format_message("Error analyzing linked chat {chat_id}: {error}", chat_id=sanitize_for_logging(chat.id), error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error analyzing linked chat {chat_id}: {error}",
+                    chat_id=sanitize_for_logging(chat.id),
+                    error=sanitize_for_logging(e),
+                )
+            )
 
         return analysis
 
@@ -175,7 +180,7 @@ class ProfileService:
             "short_first_name": 0.1,
             "short_last_name": 0.1,
             "no_identifying_info": 0.3,
-            "bot_like_username": 0.2
+            "bot_like_username": 0.2,
         }
 
         for pattern in analysis["patterns"]:
@@ -193,21 +198,25 @@ class ProfileService:
 
     @require_admin
     async def _create_suspicious_profile(
-        self,
-        user_id: int,
-        analysis_result: Dict[str, Any]
+        self, user_id: int, analysis_result: Dict[str, Any]
     ) -> SuspiciousProfile:
         """Create suspicious profile entry."""
         profile = SuspiciousProfile(
             user_id=user_id,
-            linked_chat_id=analysis_result["linked_chat"]["id"] if analysis_result["linked_chat"] else None,
-            linked_chat_username=analysis_result["linked_chat"]["username"] if analysis_result["linked_chat"] else None,
-            linked_chat_title=analysis_result["linked_chat"]["title"] if analysis_result["linked_chat"] else None,
+            linked_chat_id=analysis_result["linked_chat"]["id"]
+            if analysis_result["linked_chat"]
+            else None,
+            linked_chat_username=analysis_result["linked_chat"]["username"]
+            if analysis_result["linked_chat"]
+            else None,
+            linked_chat_title=analysis_result["linked_chat"]["title"]
+            if analysis_result["linked_chat"]
+            else None,
             post_count=analysis_result["post_count"],
             has_bait_channel=analysis_result["has_bait_channel"],
             suspicion_score=analysis_result["suspicion_score"],
             detected_patterns=",".join(analysis_result["patterns"]),
-            analysis_reason=f"Suspicion score: {analysis_result['suspicion_score']:.2f}"
+            analysis_reason=f"Suspicion score: {analysis_result['suspicion_score']:.2f}",
         )
 
         self.db.add(profile)
@@ -218,10 +227,7 @@ class ProfileService:
 
     @require_admin
     async def _notify_admin_about_suspicious_profile(
-        self,
-        admin_id: int,
-        user: User,
-        profile: SuspiciousProfile
+        self, admin_id: int, user: User, profile: SuspiciousProfile
     ) -> None:
         """Notify admin about suspicious profile."""
         try:
@@ -241,21 +247,20 @@ class ProfileService:
                 message += f"<b>Обнаруженные паттерны:</b> {profile.detected_patterns}\n"
 
             await self.bot.send_message(
-                chat_id=admin_id,
-                text=message,
-                reply_markup=None  # Will be set by handler
+                chat_id=admin_id, text=message, reply_markup=None  # Will be set by handler
             )
 
         except Exception as e:
-            logger.error(safe_format_message("Error notifying admin about suspicious profile: {error}", error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error notifying admin about suspicious profile: {error}",
+                    error=sanitize_for_logging(e),
+                )
+            )
 
     @require_admin
     async def mark_profile_as_reviewed(
-        self,
-        user_id: int,
-        admin_id: int,
-        is_confirmed: bool,
-        notes: Optional[str] = None
+        self, user_id: int, admin_id: int, is_confirmed: bool, notes: Optional[str] = None
     ) -> bool:
         """Mark suspicious profile as reviewed."""
         try:
@@ -270,11 +275,21 @@ class ProfileService:
 
             await self.db.commit()
 
-            logger.info(safe_format_message("Profile {user_id} marked as reviewed by admin {admin_id}", user_id=sanitize_for_logging(user_id), admin_id=sanitize_for_logging(admin_id)))
+            logger.info(
+                safe_format_message(
+                    "Profile {user_id} marked as reviewed by admin {admin_id}",
+                    user_id=sanitize_for_logging(user_id),
+                    admin_id=sanitize_for_logging(admin_id),
+                )
+            )
             return True
 
         except Exception as e:
-            logger.error(safe_format_message("Error marking profile as reviewed: {error}", error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error marking profile as reviewed: {error}", error=sanitize_for_logging(e)
+                )
+            )
             return False
 
     @require_admin
@@ -282,11 +297,13 @@ class ProfileService:
         """Get list of suspicious profiles."""
         try:
             result = await self.db.execute(
-                select(SuspiciousProfile)
-                .order_by(SuspiciousProfile.created_at.desc())
-                .limit(limit)
+                select(SuspiciousProfile).order_by(SuspiciousProfile.created_at.desc()).limit(limit)
             )
             return result.scalars().all()
         except Exception as e:
-            logger.error(safe_format_message("Error getting suspicious profiles: {error}", error=sanitize_for_logging(e)))
+            logger.error(
+                safe_format_message(
+                    "Error getting suspicious profiles: {error}", error=sanitize_for_logging(e)
+                )
+            )
             return []

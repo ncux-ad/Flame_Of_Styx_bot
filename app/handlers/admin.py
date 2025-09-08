@@ -25,7 +25,12 @@ admin_router = Router()
 async def handle_start_command(message: Message, **kwargs) -> None:
     """Handle /start command for admins."""
     try:
-        logger.info(safe_format_message("Start command received from {user_id}", user_id=message.from_user.id if message.from_user else 0))
+        logger.info(
+            safe_format_message(
+                "Start command received from {user_id}",
+                user_id=message.from_user.id if message.from_user else 0,
+            )
+        )
 
         welcome_text = (
             "🤖 <b>AntiSpam Bot</b>\n\n"
@@ -39,10 +44,19 @@ async def handle_start_command(message: Message, **kwargs) -> None:
         )
 
         await message.answer(welcome_text)
-        logger.info(safe_format_message("Start command response sent to {user_id}", user_id=message.from_user.id if message.from_user else 0))
+        logger.info(
+            safe_format_message(
+                "Start command response sent to {user_id}",
+                user_id=message.from_user.id if message.from_user else 0,
+            )
+        )
 
     except Exception as e:
-        logger.error(safe_format_message("Error handling start command: {error}", error=sanitize_for_logging(e)))
+        logger.error(
+            safe_format_message(
+                "Error handling start command: {error}", error=sanitize_for_logging(e)
+            )
+        )
 
 
 @admin_router.message(Command("status"), IsAdminOrSilentFilter())
@@ -69,14 +83,11 @@ async def handle_status_command(message: Message, data: dict = None) -> None:
 
 
 @admin_router.message(Command("channels"), IsAdminOrSilentFilter())
-async def handle_channels_command(
-    message: Message,
-    data: dict = None
-) -> None:
+async def handle_channels_command(message: Message, data: dict = None) -> None:
     """Handle /channels command."""
     try:
         # Get services from data
-        channel_service = data.get('channel_service') if data else None
+        channel_service = data.get("channel_service") if data else None
 
         if not channel_service:
             logger.error("Channel service not injected properly")
@@ -124,14 +135,11 @@ async def handle_channels_command(
 
 
 @admin_router.message(Command("bots"), IsAdminOrSilentFilter())
-async def handle_bots_command(
-    message: Message,
-    data: dict = None
-) -> None:
+async def handle_bots_command(message: Message, data: dict = None) -> None:
     """Handle /bots command."""
     try:
         # Get services from data
-        bot_service = data.get('bot_service') if data else None
+        bot_service = data.get("bot_service") if data else None
 
         if not bot_service:
             logger.error("Bot service not injected properly")
@@ -164,14 +172,11 @@ async def handle_bots_command(
 
 
 @admin_router.message(Command("suspicious"), IsAdminOrSilentFilter())
-async def handle_suspicious_command(
-    message: Message,
-    data: dict = None
-) -> None:
+async def handle_suspicious_command(message: Message, data: dict = None) -> None:
     """Handle /suspicious command."""
     try:
         # Get services from data
-        profile_service = data.get('profile_service') if data else None
+        profile_service = data.get("profile_service") if data else None
 
         if not profile_service:
             logger.error("Profile service not injected properly")
@@ -220,10 +225,14 @@ async def handle_help_command(message: Message, **kwargs) -> None:
         if args:
             # Help for specific category
             category = args[0]
-            help_text = help_service.get_category_help(category, user_id=message.from_user.id if message.from_user else None)
+            help_text = help_service.get_category_help(
+                category, user_id=message.from_user.id if message.from_user else None
+            )
         else:
             # Main help
-            help_text = help_service.get_main_help(user_id=message.from_user.id if message.from_user else None)
+            help_text = help_service.get_main_help(
+                user_id=message.from_user.id if message.from_user else None
+            )
 
         await message.answer(help_text)
 
@@ -331,7 +340,7 @@ async def handle_logs_command(message: Message, data: dict = None) -> None:
             return
 
         # Get list of log files
-        log_files = [f for f in os.listdir(logs_dir) if f.endswith('.log')]
+        log_files = [f for f in os.listdir(logs_dir) if f.endswith(".log")]
 
         if not log_files:
             await message.answer("📝 Логи не найдены. Нет файлов .log в директории logs.")
@@ -348,12 +357,12 @@ async def handle_logs_command(message: Message, data: dict = None) -> None:
         file_size = os.path.getsize(log_path)
 
         # Read last 50 lines of the log file
-        with open(log_path, 'r', encoding='utf-8') as f:
+        with open(log_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
             last_lines = lines[-50:] if len(lines) > 50 else lines
 
         # Format log content
-        log_content = ''.join(last_lines)
+        log_content = "".join(last_lines)
 
         # Truncate if too long for Telegram (4096 chars limit)
         if len(log_content) > 4000:
@@ -368,7 +377,7 @@ async def handle_logs_command(message: Message, data: dict = None) -> None:
             f"<pre>{log_content}</pre>"
         )
 
-        await message.answer(response_text, parse_mode='HTML')
+        await message.answer(response_text, parse_mode="HTML")
 
     except Exception as e:
         logger.error(f"Error handling logs command: {e}")
@@ -376,15 +385,12 @@ async def handle_logs_command(message: Message, data: dict = None) -> None:
 
 
 @admin_router.callback_query(F.data == "admin_stats")
-async def handle_admin_stats_callback(
-    callback: CallbackQuery,
-    data: dict = None
-) -> None:
+async def handle_admin_stats_callback(callback: CallbackQuery, data: dict = None) -> None:
     """Handle admin stats callback."""
     try:
         # Get services from data
-        channel_service = data.get('channel_service') if data else None
-        bot_service = data.get('bot_service') if data else None
+        channel_service = data.get("channel_service") if data else None
+        bot_service = data.get("bot_service") if data else None
 
         if not channel_service or not bot_service:
             logger.error("Services not injected properly")
