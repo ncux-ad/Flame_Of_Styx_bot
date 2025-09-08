@@ -6,8 +6,10 @@ services:
     build: .
     container_name: antispam-bot
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN:-your_telegram_bot_token_here}
+      - ADMIN_IDS=${ADMIN_IDS:-366490333,439304619}
+      - DB_PATH=${DB_PATH:-db.sqlite3}
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -16,6 +18,8 @@ services:
       - "8000:8000"  # Если будет веб-интерфейс
     networks:
       - antispam-network
+    # Для быстрой разработки
+    command: python bot.py
 
   # Redis для кеширования (опционально)
   redis:

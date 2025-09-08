@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Load secure utilities
+source "$(dirname "$0")/secure_shell_utils.sh"
+
 # Скрипт установки Python 3.11+ на Ubuntu 20.04
 # Использование: sudo ./scripts/install-python.sh
 

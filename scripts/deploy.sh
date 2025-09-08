@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Load secure utilities
+source "$(dirname "$0")/secure_shell_utils.sh"
+
 # Скрипт развертывания AntiSpam Bot
 # Использование: ./scripts/deploy.sh [environment]
 
@@ -62,9 +65,14 @@ fi
 
 # Устанавливаем systemd сервис
 echo "🔧 Установка systemd сервиса"
-cp systemd/antispam-bot.service /etc/systemd/system/
-chmod 644 /etc/systemd/system/antispam-bot.service
-systemctl daemon-reload
+if [ -f "systemd/antispam-bot.service" ]; then
+    cp systemd/antispam-bot.service /etc/systemd/system/
+    chmod 644 /etc/systemd/system/antispam-bot.service
+    systemctl daemon-reload
+else
+    echo "❌ Файл systemd/antispam-bot.service не найден!"
+    exit 1
+fi
 
 # Включаем автозапуск
 echo "🚀 Включение автозапуска"

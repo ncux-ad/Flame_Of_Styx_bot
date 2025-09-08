@@ -1,0 +1,29 @@
+# Dockerfile for Certbot with Let's Encrypt
+# Dockerfile для Certbot с Let's Encrypt
+
+FROM certbot/certbot:latest
+
+# Установка дополнительных пакетов
+RUN apk add --no-cache \
+    bash \
+    curl \
+    jq \
+    openssl
+
+# Создание директорий
+RUN mkdir -p /var/www/certbot \
+    && mkdir -p /etc/letsencrypt/live \
+    && mkdir -p /etc/letsencrypt/archive
+
+# Копирование скриптов
+COPY certbot-scripts/ /scripts/
+RUN chmod +x /scripts/*.sh
+
+# Создание пользователя
+RUN adduser -D -s /bin/bash certbot
+
+# Установка рабочей директории
+WORKDIR /scripts
+
+# Команда по умолчанию
+CMD ["/scripts/certbot-renew.sh"]

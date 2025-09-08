@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Load secure utilities
+source "$(dirname "$0")/secure_shell_utils.sh"
+
 # Скрипт для настройки среды разработки
 # Использование: ./scripts/setup-dev.sh
 
