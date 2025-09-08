@@ -28,10 +28,4 @@ jobs:
       run: black .
 
     - name: Run isort
-      run: isort .
-
-    - name: Run autopep8
-      run: autopep8 --in-place --recursive app/ tests/
-
-    - name: Run yapf
-      run: yapf -i -r app/ tests/
+      run: isort --profile black .
