@@ -60,7 +60,7 @@ async def handle_start_command(message: Message, **kwargs) -> None:
 
 
 @admin_router.message(Command("status"), IsAdminOrSilentFilter())
-async def handle_status_command(message: Message, data: dict = None) -> None:
+async def handle_status_command(message: Message, **kwargs) -> None:
     """Handle /status command."""
     try:
         # TODO: Get real statistics from database
@@ -83,11 +83,12 @@ async def handle_status_command(message: Message, data: dict = None) -> None:
 
 
 @admin_router.message(Command("channels"), IsAdminOrSilentFilter())
-async def handle_channels_command(message: Message, data: dict = None) -> None:
+async def handle_channels_command(message: Message, **kwargs) -> None:
     """Handle /channels command."""
     try:
         # Get services from data
-        channel_service = data.get("channel_service") if data else None
+        data = kwargs.get("data", {})
+        channel_service = data.get("channel_service")
 
         if not channel_service:
             logger.error("Channel service not injected properly")
@@ -135,11 +136,12 @@ async def handle_channels_command(message: Message, data: dict = None) -> None:
 
 
 @admin_router.message(Command("bots"), IsAdminOrSilentFilter())
-async def handle_bots_command(message: Message, data: dict = None) -> None:
+async def handle_bots_command(message: Message, **kwargs) -> None:
     """Handle /bots command."""
     try:
         # Get services from data
-        bot_service = data.get("bot_service") if data else None
+        data = kwargs.get("data", {})
+        bot_service = data.get("bot_service")
 
         if not bot_service:
             logger.error("Bot service not injected properly")
@@ -172,11 +174,12 @@ async def handle_bots_command(message: Message, data: dict = None) -> None:
 
 
 @admin_router.message(Command("suspicious"), IsAdminOrSilentFilter())
-async def handle_suspicious_command(message: Message, data: dict = None) -> None:
+async def handle_suspicious_command(message: Message, **kwargs) -> None:
     """Handle /suspicious command."""
     try:
         # Get services from data
-        profile_service = data.get("profile_service") if data else None
+        data = kwargs.get("data", {})
+        profile_service = data.get("profile_service")
 
         if not profile_service:
             logger.error("Profile service not injected properly")
@@ -242,7 +245,7 @@ async def handle_help_command(message: Message, **kwargs) -> None:
 
 
 @admin_router.message(Command("limits"), IsAdminOrSilentFilter())
-async def handle_limits_command(message: Message, data: dict = None) -> None:
+async def handle_limits_command(message: Message, **kwargs) -> None:
     """Handle /limits command to show current rate limits."""
     try:
         from app.config import load_config
@@ -270,7 +273,7 @@ async def handle_limits_command(message: Message, data: dict = None) -> None:
 
 
 @admin_router.message(Command("setlimits"), IsAdminOrSilentFilter())
-async def handle_setlimits_command(message: Message, data: dict = None) -> None:
+async def handle_setlimits_command(message: Message, **kwargs) -> None:
     """Handle /setlimits command to change rate limits (super admin only)."""
     try:
         from app.config import load_config
@@ -327,7 +330,7 @@ async def handle_setlimits_command(message: Message, data: dict = None) -> None:
 
 
 @admin_router.message(Command("logs"), IsAdminOrSilentFilter())
-async def handle_logs_command(message: Message, data: dict = None) -> None:
+async def handle_logs_command(message: Message, **kwargs) -> None:
     """Handle /logs command."""
     try:
         import os
@@ -385,12 +388,13 @@ async def handle_logs_command(message: Message, data: dict = None) -> None:
 
 
 @admin_router.callback_query(F.data == "admin_stats")
-async def handle_admin_stats_callback(callback: CallbackQuery, data: dict = None) -> None:
+async def handle_admin_stats_callback(callback: CallbackQuery, **kwargs) -> None:
     """Handle admin stats callback."""
     try:
         # Get services from data
-        channel_service = data.get("channel_service") if data else None
-        bot_service = data.get("bot_service") if data else None
+        data = kwargs.get("data", {})
+        channel_service = data.get("channel_service")
+        bot_service = data.get("bot_service")
 
         if not channel_service or not bot_service:
             logger.error("Services not injected properly")

@@ -46,7 +46,7 @@ async def handle_start_command(message: Message, **kwargs) -> None:
 
 
 @user_router.message()
-async def handle_user_message(message: Message, data: dict = None) -> None:
+async def handle_user_message(message: Message, **kwargs) -> None:
     """Handle user messages with spam detection."""
     try:
         # Skip if message is from bot
@@ -58,6 +58,7 @@ async def handle_user_message(message: Message, data: dict = None) -> None:
             return
 
         # Get services from data
+        data = kwargs.get("data", {})
         if not data:
             logger.error("Data not provided to handler")
             return
