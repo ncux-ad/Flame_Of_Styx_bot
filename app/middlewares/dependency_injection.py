@@ -43,4 +43,4 @@ class DependencyInjectionMiddleware(BaseMiddleware):
 
             # Call handler with event and data (aiogram 3.x style)
             # According to aiogram 3 docs, middleware should pass data dict
-            return await handler(event, data)
+            return await handler(event, data=data)

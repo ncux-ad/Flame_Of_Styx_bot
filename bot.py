@@ -67,6 +67,8 @@ async def main():
         dp.business_message.middleware(DependencyInjectionMiddleware())
         dp.edited_message.middleware(DependencyInjectionMiddleware())
         dp.channel_post.middleware(DependencyInjectionMiddleware())
+        dp.channel_post.middleware(LoggingMiddleware())
+        dp.channel_post.middleware(RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60))
         dp.edited_channel_post.middleware(DependencyInjectionMiddleware())
 
         logger.info("Middlewares registered successfully")

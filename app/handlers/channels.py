@@ -20,7 +20,7 @@ channel_router = Router()
 
 
 @channel_router.message()
-async def handle_channel_message(message: Message, data: dict) -> None:
+async def handle_channel_message(message: Message, **kwargs) -> None:
     """Handle messages from channels (sender_chat)."""
     try:
         # Only handle messages from channels
@@ -32,6 +32,7 @@ async def handle_channel_message(message: Message, data: dict) -> None:
             return
 
         # Get services from data
+        data = kwargs.get("data", {})
         channel_service = data.get("channel_service")
         link_service = data.get("link_service")
         profile_service = data.get("profile_service")
