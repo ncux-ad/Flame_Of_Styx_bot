@@ -3,14 +3,15 @@
 import logging
 from typing import List, Optional
 
-from aiogram import Bot
+from aiogram import Bot as AiogramBot
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.authorization import require_admin, safe_user_operation
+# from app.auth.authorization import require_admin, safe_user_operation
 from app.models.bot import Bot
 from app.models.moderation_log import ModerationAction, ModerationLog
-from app.utils.security import safe_format_message, sanitize_for_logging
+
+# from app.utils.security import safe_format_message, sanitize_for_logging
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ class BotService:
 
     async def get_whitelisted_bots(self) -> List[Bot]:
         """Get list of whitelisted bots."""
-        result = await self.db.execute(select(Bot).where(Bot.is_whitelisted == True))
+        result = await self.db.execute(select(Bot).where(Bot.is_whitelisted))
         return result.scalars().all()
 
     async def get_all_bots(self) -> List[Bot]:
@@ -131,15 +132,6 @@ class BotService:
         except Exception as e:
             logger.error(f"Error updating bot {username} info: {e}")
             return False
-
-    async def get_all_bots(self) -> List[Bot]:
-        """Get all bots from database."""
-        try:
-            result = await self.db.execute(select(Bot))
-            return result.scalars().all()
-        except Exception as e:
-            logger.error(f"Error getting all bots: {e}")
-            return []
 
     async def get_total_bots_count(self) -> int:
         """Get total number of bots."""

@@ -3,12 +3,12 @@
 import logging
 from enum import Enum
 from functools import wraps
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-from aiogram.types import CallbackQuery, Message, User
+from aiogram.types import CallbackQuery, Message
 
 from app.config import load_config
-from app.utils.security import sanitize_for_logging, validate_user_id
+from app.utils.security import safe_format_message, sanitize_for_logging, validate_user_id
 
 logger = logging.getLogger(__name__)
 

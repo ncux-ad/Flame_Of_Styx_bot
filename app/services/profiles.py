@@ -8,8 +8,8 @@ from aiogram.types import Chat, User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.authorization import require_admin, safe_user_operation
-from app.models.moderation_log import ModerationAction, ModerationLog
+# from app.auth.authorization import require_admin, safe_user_operation
+# from app.models.moderation_log import ModerationAction, ModerationLog
 from app.models.suspicious_profile import SuspiciousProfile
 from app.services.moderation import ModerationService
 from app.utils.security import safe_format_message, sanitize_for_logging
@@ -256,7 +256,7 @@ class ProfileService:
     ) -> None:
         """Notify admin about suspicious profile."""
         try:
-            message = f"⚠️ <b>Подозрительный профиль обнаружен</b>\n\n"
+            message = "⚠️ <b>Подозрительный профиль обнаружен</b>\n\n"
             message += f"<b>Пользователь:</b> {user.first_name or 'Unknown'}\n"
             if user.username:
                 message += f"<b>Username:</b> @{user.username}\n"

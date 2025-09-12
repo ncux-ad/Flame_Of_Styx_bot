@@ -100,18 +100,18 @@ async def handle_status_command(
             for chat in known_chats:
                 channel_info.append(f"• {chat['title']} <code>({chat['chat_id']})</code>")
                 channel_info.append(f"  └ Тип: {chat['type']}")
-                channel_info.append(f"  └ Статус: ✅ Антиспам активен")
+                channel_info.append("  └ Статус: ✅ Антиспам активен")
 
         # Информация о боте (упрощённо)
         bot_username = "FlameOfStyx_bot"  # Из конфига
         bot_id = "7977609078"  # Из логов
 
         status_text = (
-            f"📊 <b>Подробная статистика бота</b>\n\n"
-            f"🤖 <b>Информация о боте:</b>\n"
+            "📊 <b>Подробная статистика бота</b>\n\n"
+            "🤖 <b>Информация о боте:</b>\n"
             f"• Username: @{bot_username}\n"
             f"• ID: <code>{bot_id}</code>\n"
-            f"• Статус: ✅ Работает\n\n"
+            "• Статус: ✅ Работает\n\n"
             f"📢 <b>Подключённые чаты ({total_channels}):</b>\n"
         )
 
@@ -127,7 +127,7 @@ async def handle_status_command(
             status_text += "3. Включите комментарии к постам\n"
             status_text += "4. Используйте /channels для проверки"
 
-        status_text += f"\n\n🚫 <b>Модерация:</b>\n"
+        status_text += "\n\n🚫 <b>Модерация:</b>\n"
         status_text += f"• Активных банов: {active_bans}\n"
         status_text += f"• Всего записей: {len(banned_users)}\n\n"
         status_text += f"👑 <b>Администратор:</b> <code>{admin_id}</code>"

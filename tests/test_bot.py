@@ -1,6 +1,6 @@
 """Basic bot tests."""
 
-from unittest.mock import AsyncMock, MagicMock
+# from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 

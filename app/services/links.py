@@ -9,7 +9,7 @@ from aiogram.types import Message
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.authorization import require_admin, safe_user_operation
+# from app.auth.authorization import require_admin, safe_user_operation
 from app.models.bot import Bot as BotModel
 from app.services.moderation import ModerationService
 from app.utils.security import safe_format_message, sanitize_for_logging
@@ -305,5 +305,5 @@ class LinkService:
 
     async def get_whitelisted_bots(self) -> List[BotModel]:
         """Get list of whitelisted bots."""
-        result = await self.db.execute(select(BotModel).where(BotModel.is_whitelisted == True))
+        result = await self.db.execute(select(BotModel).where(BotModel.is_whitelisted))
         return result.scalars().all()

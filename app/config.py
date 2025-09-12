@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import Field, validator
+from pydantic import validator
 from pydantic_settings import BaseSettings
 
 

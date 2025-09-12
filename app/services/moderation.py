@@ -4,11 +4,12 @@ import logging
 from typing import Optional
 
 from aiogram import Bot
-from aiogram.types import ChatMemberUpdated, User
+
+# from aiogram.types import ChatMemberUpdated, User
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.authorization import require_admin, safe_user_operation
+# from app.auth.authorization import require_admin, safe_user_operation
 from app.models.moderation_log import ModerationAction, ModerationLog
 from app.models.user import User as UserModel
 from app.utils.security import safe_format_message, sanitize_for_logging
@@ -240,7 +241,7 @@ class ModerationService:
         """Get list of currently active banned users from ModerationLog."""
         result = await self.db.execute(
             select(ModerationLog)
-            .where(ModerationLog.action == ModerationAction.BAN, ModerationLog.is_active == True)
+            .where(ModerationLog.action == ModerationAction.BAN, ModerationLog.is_active)
             .order_by(ModerationLog.created_at.desc())
             .limit(limit)
         )
@@ -276,7 +277,7 @@ class ModerationService:
                     ModerationLog.user_id == user_id,
                     ModerationLog.chat_id == chat_id,
                     ModerationLog.action == ModerationAction.BAN,
-                    ModerationLog.is_active == True,
+                    ModerationLog.is_active,
                 )
                 .order_by(ModerationLog.created_at.desc())
                 .limit(1)

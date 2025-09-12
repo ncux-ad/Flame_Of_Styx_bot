@@ -4,11 +4,11 @@ import logging
 from typing import List, Optional
 
 from aiogram import Bot
-from aiogram.types import Chat, Message
+from aiogram.types import Message
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.authorization import require_admin, safe_user_operation
+# from app.auth.authorization import require_admin, safe_user_operation
 from app.models.channel import Channel as ChannelModel
 from app.models.channel import ChannelStatus
 from app.models.moderation_log import ModerationAction, ModerationLog
@@ -220,7 +220,7 @@ class ChannelService:
     ) -> None:
         """Notify admin about new channel message."""
         try:
-            channel_info = f"📢 <b>Новое сообщение от канала</b>\n\n"
+            channel_info = "📢 <b>Новое сообщение от канала</b>\n\n"
             channel_info += f"<b>Канал:</b> {channel.title}\n"
             if channel.username is not None and channel.username.strip():
                 channel_info += f"<b>Username:</b> @{channel.username}\n"
