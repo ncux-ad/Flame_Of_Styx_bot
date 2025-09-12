@@ -39,5 +39,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Открытие портов
 EXPOSE 8000
 
-# Запуск приложения
-CMD ["python", "bot.py"]
+# Запуск приложения (упрощенная версия)
+CMD ["python", "bot_simple.py"]

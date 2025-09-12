@@ -1,0 +1,104 @@
+"""
+Упрощенный антиспам роутер - перехватывает ВСЕ сообщения
+"""
+
+import logging
+
+from aiogram import Router
+from aiogram.filters import Command
+from aiogram.types import Message
+
+from app.services.bots import BotService
+from app.services.channels import ChannelService
+from app.services.links import LinkService
+from app.services.moderation import ModerationService
+from app.services.profiles import ProfileService
+
+logger = logging.getLogger(__name__)
+
+# Create router
+antispam_router = Router()
+
+
+@antispam_router.message()
+async def handle_all_messages(
+    message: Message,
+    moderation_service: ModerationService,
+    link_service: LinkService,
+    profile_service: ProfileService,
+    channel_service: ChannelService,
+    bot_service: BotService,
+    admin_id: int,
+) -> None:
+    """
+    Обрабатывает ВСЕ сообщения - основной антиспам фильтр.
+
+    Args:
+        message: Сообщение от пользователя
+        moderation_service: Сервис модерации
+        link_service: Сервис проверки ссылок
+        profile_service: Сервис профилей
+        channel_service: Сервис каналов
+        bot_service: Сервис ботов
+        admin_id: ID администратора
+    """
+    try:
+        logger.info(
+            f"Anti-spam processing: user_id={message.from_user.id if message.from_user else 'unknown'}, "
+            f"chat_id={message.chat.id}, text='{message.text[:50] if message.text else 'None'}'"
+        )
+
+        # Определяем тип чата
+        chat_type = message.chat.type
+        is_channel_message = chat_type in ["channel", "supergroup"]
+
+        # Для каналов и супергрупп - проверяем антиспам
+        if is_channel_message:
+            await handle_channel_antispam(
+                message, moderation_service, link_service, channel_service, admin_id
+            )
+        else:
+            # Для личных сообщений - только rate limiting (уже обработан в middleware)
+            logger.info(f"Private message from {message.from_user.id}: {message.text}")
+
+    except Exception as e:
+        logger.error(f"Error in anti-spam handler: {e}")
+
+
+async def handle_channel_antispam(
+    message: Message,
+    moderation_service: ModerationService,
+    link_service: LinkService,
+    channel_service: ChannelService,
+    admin_id: int,
+) -> None:
+    """Обрабатывает антиспам для сообщений в каналах/группах."""
+    try:
+        # Определяем ID канала
+        channel_id = message.sender_chat.id if message.sender_chat else message.chat.id
+
+        # Проверяем, является ли это нативным каналом (где бот админ)
+        is_native_channel = await channel_service.is_native_channel(channel_id)
+
+        logger.info(f"Channel antispam: channel_id={channel_id}, is_native={is_native_channel}")
+
+        # Проверяем на бот-ссылки и подозрительный контент
+        bot_links = await link_service.check_message_for_bot_links(message)
+
+        if bot_links:
+            logger.warning(f"Bot links detected: {bot_links}")
+
+            # Обрабатываем обнаружение бот-ссылок
+            await link_service.handle_bot_link_detection(message, bot_links)
+
+            # Помечаем канал как подозрительный
+            await channel_service.mark_channel_as_suspicious(
+                channel_id=channel_id, reason="Bot links detected in channel", admin_id=admin_id
+            )
+
+            logger.info(f"Message deleted and user banned due to bot links: {bot_links}")
+        else:
+            logger.info("No bot links detected, message allowed")
+
+    except Exception as e:
+        logger.error(f"Error in channel antispam: {e}")

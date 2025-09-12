@@ -141,9 +141,18 @@ async def _handle_foreign_channel_message(
         # Determine channel ID
         channel_id = message.sender_chat.id if message.sender_chat else message.chat.id
 
-        # Check for bot links in message
+        # Check for bot links and suspicious content in message
         bot_links = await link_service.check_message_for_bot_links(message)
         logger.info(f"Bot links found in foreign channel: {bot_links}")
+
+        # Check for suspicious media content
+        suspicious_media = [
+            link
+            for link in bot_links
+            if link[0] in ["suspicious_media", "forwarded_media", "media_without_caption"]
+        ]
+        if suspicious_media:
+            logger.warning(f"Suspicious media content detected: {suspicious_media}")
 
         if bot_links:
             # Handle bot link detection

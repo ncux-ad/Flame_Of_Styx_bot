@@ -27,21 +27,110 @@ class LinkService:
 
     async def check_message_for_bot_links(self, message: Message) -> List[Tuple[str, bool]]:
         """Check message for bot links and return list of (username, is_bot) tuples."""
-        if not message.text:
+        results = []
+
+        # Check text content
+        if message.text:
+            text_matches = await self._extract_bot_links_from_text(message.text)
+            results.extend(text_matches)
+
+        # Check caption for photos, videos, documents, etc.
+        if message.caption:
+            caption_matches = await self._extract_bot_links_from_text(message.caption)
+            results.extend(caption_matches)
+
+        # Check forwarded message content
+        if message.forward_from_chat or message.forward_from:
+            # Check if forwarded message contains bot links
+            if hasattr(message, "text") and message.text:
+                forwarded_matches = await self._extract_bot_links_from_text(message.text)
+                results.extend(forwarded_matches)
+
+        # Check reply to message content
+        if message.reply_to_message:
+            reply_matches = await self.check_message_for_bot_links(message.reply_to_message)
+            results.extend(reply_matches)
+
+        # Check for media with potential QR codes or embedded links
+        if message.photo or message.video or message.document:
+            media_matches = await self._check_media_for_suspicious_content(message)
+            results.extend(media_matches)
+
+        return results
+
+    async def _check_media_for_suspicious_content(self, message: Message) -> List[Tuple[str, bool]]:
+        """Check media messages for suspicious content like QR codes."""
+        results = []
+
+        # Check if media has suspicious captions
+        if message.caption:
+            caption_lower = message.caption.lower()
+            suspicious_keywords = [
+                "bot",
+                "бот",
+                "telegram",
+                "телеграм",
+                "канал",
+                "channel",
+                "подписка",
+                "subscribe",
+                "ссылка",
+                "link",
+                "qr",
+                "код",
+            ]
+
+            if any(keyword in caption_lower for keyword in suspicious_keywords):
+                logger.warning(f"Suspicious media caption detected: {message.caption}")
+                # Flag as potentially containing bot links
+                results.append(("suspicious_media", True))
+
+        # Check for forwarded media from suspicious sources
+        if message.forward_from_chat:
+            if message.forward_from_chat.type in ["channel", "supergroup"]:
+                logger.info(
+                    f"Media forwarded from {message.forward_from_chat.type}: {message.forward_from_chat.title}"
+                )
+                # Flag forwarded media as potentially suspicious
+                results.append(("forwarded_media", True))
+
+        # Check for media without text but with potential QR codes
+        if (
+            (message.photo or message.video or message.document)
+            and not message.caption
+            and not message.text
+        ):
+            logger.info("Media message without caption detected - potential QR code")
+            # Flag media without description as potentially suspicious
+            results.append(("media_without_caption", True))
+
+        return results
+
+    async def _extract_bot_links_from_text(self, text: str) -> List[Tuple[str, bool]]:
+        """Extract bot links from text content."""
+        if not text:
             return []
 
         results = []
 
         # Find all t.me/username patterns
         t_me_pattern = r"t\.me/([a-zA-Z0-9_]+)"
-        t_me_matches = re.findall(t_me_pattern, message.text, re.IGNORECASE)
+        t_me_matches = re.findall(t_me_pattern, text, re.IGNORECASE)
 
         # Find all @username mentions
         mention_pattern = r"@([a-zA-Z0-9_]+)"
-        mention_matches = re.findall(mention_pattern, message.text, re.IGNORECASE)
+        mention_matches = re.findall(mention_pattern, text, re.IGNORECASE)
+
+        # Find telegram.me links (alternative format)
+        telegram_me_pattern = r"telegram\.me/([a-zA-Z0-9_]+)"
+        telegram_me_matches = re.findall(telegram_me_pattern, text, re.IGNORECASE)
+
+        # Find t.me links without username (just t.me)
+        t_me_direct_pattern = r"t\.me/([a-zA-Z0-9_]+)"
+        t_me_direct_matches = re.findall(t_me_direct_pattern, text, re.IGNORECASE)
 
         # Combine all matches
-        all_matches = t_me_matches + mention_matches
+        all_matches = t_me_matches + mention_matches + telegram_me_matches + t_me_direct_matches
 
         for username in all_matches:
             is_bot = await self._check_if_username_is_bot(username)
@@ -105,24 +194,43 @@ class LinkService:
         # Check if any of the links are to non-whitelisted bots
         non_whitelisted_bots = [username for username, is_bot in bot_links if is_bot]
 
-        if non_whitelisted_bots:
+        # Check for suspicious media content
+        suspicious_media = [
+            link_type
+            for link_type, is_suspicious in bot_links
+            if link_type in ["suspicious_media", "forwarded_media", "media_without_caption"]
+            and is_suspicious
+        ]
+
+        # Take action if there are bot links or suspicious media
+        if non_whitelisted_bots or suspicious_media:
             # Delete message and ban user
             await self.moderation_service.delete_message(
                 chat_id=message.chat.id, message_id=message.message_id, admin_id=0  # System action
             )
 
             if message.from_user:
+                # Create detailed reason
+                reason_parts = []
+                if non_whitelisted_bots:
+                    reason_parts.append(f"Posted bot links: {', '.join(non_whitelisted_bots)}")
+                if suspicious_media:
+                    reason_parts.append(f"Suspicious media: {', '.join(suspicious_media)}")
+
+                reason = "; ".join(reason_parts)
+
                 await self.moderation_service.ban_user(
                     user_id=message.from_user.id,
                     chat_id=message.chat.id,
                     admin_id=0,  # System action
-                    reason=f"Posted bot links: {', '.join(non_whitelisted_bots)}",
+                    reason=reason,
                 )
 
             logger.info(
                 safe_format_message(
-                    "Deleted message with bot links: {bots}",
+                    "Deleted message with bot links: {bots}, suspicious media: {media}",
                     bots=sanitize_for_logging(non_whitelisted_bots),
+                    media=sanitize_for_logging(suspicious_media),
                 )
             )
             return True
