@@ -13,7 +13,8 @@ from app.services.bots import BotService
 from app.services.channels import ChannelService
 from app.services.moderation import ModerationService
 from app.services.profiles import ProfileService
-from app.utils.security import safe_format_message, sanitize_for_logging
+
+# from app.utils.security import safe_format_message, sanitize_for_logging
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ async def handle_status_command(
         logger.info(f"Status command from {message.from_user.id}")
 
         # Получаем статистику
-        total_bots = await bot_service.get_total_bots_count()
+        # total_bots = await bot_service.get_total_bots_count()
         total_channels = await channel_service.get_total_channels_count()
         banned_users = await moderation_service.get_banned_users(limit=100)
         active_bans = len([ban for ban in banned_users if ban.is_active])
@@ -81,7 +82,7 @@ async def handle_status_command(
             channel_info = []
             for channel in channels[:5]:  # Показываем первые 5 каналов
                 channel_info.append(f"• {channel.title} <code>({channel.chat_id})</code>")
-        except:
+        except Exception:
             channels = []
             channel_info = []
 
