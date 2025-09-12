@@ -22,7 +22,6 @@ class BotService:
         self.bot = bot
         self.db = db_session
 
-    @require_admin
     async def add_bot_to_whitelist(
         self, username: str, admin_id: int, telegram_id: Optional[int] = None
     ) -> bool:
@@ -56,7 +55,6 @@ class BotService:
             logger.error(f"Error adding bot {username} to whitelist: {e}")
             return False
 
-    @require_admin
     async def remove_bot_from_whitelist(self, username: str, admin_id: int) -> bool:
         """Remove bot from whitelist."""
         try:
@@ -82,32 +80,27 @@ class BotService:
             logger.error(f"Error removing bot {username} from whitelist: {e}")
             return False
 
-    @require_admin
     async def is_bot_whitelisted(self, username: str) -> bool:
         """Check if bot is whitelisted."""
         result = await self.db.execute(select(Bot.is_whitelisted).where(Bot.username == username))
         is_whitelisted = result.scalar_one_or_none()
         return is_whitelisted is True
 
-    @require_admin
     async def get_whitelisted_bots(self) -> List[Bot]:
         """Get list of whitelisted bots."""
         result = await self.db.execute(select(Bot).where(Bot.is_whitelisted == True))
         return result.scalars().all()
 
-    @require_admin
     async def get_all_bots(self) -> List[Bot]:
         """Get list of all bots."""
         result = await self.db.execute(select(Bot))
         return result.scalars().all()
 
-    @require_admin
     async def get_bot_by_username(self, username: str) -> Optional[Bot]:
         """Get bot by username."""
         result = await self.db.execute(select(Bot).where(Bot.username == username))
         return result.scalar_one_or_none()
 
-    @require_admin
     async def update_bot_info(
         self,
         username: str,
@@ -139,7 +132,6 @@ class BotService:
             logger.error(f"Error updating bot {username} info: {e}")
             return False
 
-    @require_admin
     async def _log_bot_action(
         self, action: ModerationAction, bot_username: str, admin_id: int
     ) -> None:

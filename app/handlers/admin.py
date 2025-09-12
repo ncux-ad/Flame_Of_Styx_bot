@@ -22,7 +22,7 @@ admin_router = Router()
 
 
 @admin_router.message(Command("start"))
-async def handle_start_command(message: Message, data: dict = None, **kwargs) -> None:
+async def handle_start_command(message: Message, data: dict = None) -> None:
     """Handle /start command for admins."""
     try:
         logger.info(
@@ -40,6 +40,7 @@ async def handle_start_command(message: Message, data: dict = None, **kwargs) ->
             "/channels - управление каналами\n"
             "/bots - управление ботами\n"
             "/suspicious - подозрительные профили\n"
+            "/unban - разблокировать пользователя\n"
             "/help - помощь"
         )
 
@@ -60,7 +61,7 @@ async def handle_start_command(message: Message, data: dict = None, **kwargs) ->
 
 
 @admin_router.message(Command("status"), IsAdminOrSilentFilter())
-async def handle_status_command(message: Message, data: dict = None, **kwargs) -> None:
+async def handle_status_command(message: Message, data: dict = None) -> None:
     """Handle /status command."""
     try:
         # TODO: Get real statistics from database
@@ -86,8 +87,25 @@ async def handle_status_command(message: Message, data: dict = None, **kwargs) -
 async def handle_channels_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /channels command."""
     try:
-        # Get services from kwargs (aiogram 3.x style)
-        channel_service = kwargs.get("channel_service")
+        # Get services from data or kwargs
+        if not data:
+            # Try to get data from kwargs
+            data = kwargs.get("data", {})
+            if not data:
+                # Try to get services directly from kwargs
+                data = {
+                    "channel_service": kwargs.get("channel_service"),
+                    "bot_service": kwargs.get("bot_service"),
+                    "profile_service": kwargs.get("profile_service"),
+                    "moderation_service": kwargs.get("moderation_service"),
+                    "link_service": kwargs.get("link_service"),
+                    "db_session": kwargs.get("db_session"),
+                }
+                if not any(data.values()):
+                    logger.error("Data not provided to handler")
+                    return
+
+        channel_service = data.get("channel_service")
 
         if not channel_service:
             logger.error("Channel service not injected properly")
@@ -138,8 +156,25 @@ async def handle_channels_command(message: Message, data: dict = None, **kwargs)
 async def handle_bots_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /bots command."""
     try:
-        # Get services from kwargs (aiogram 3.x style)
-        bot_service = kwargs.get("bot_service")
+        # Get services from data or kwargs
+        if not data:
+            # Try to get data from kwargs
+            data = kwargs.get("data", {})
+            if not data:
+                # Try to get services directly from kwargs
+                data = {
+                    "channel_service": kwargs.get("channel_service"),
+                    "bot_service": kwargs.get("bot_service"),
+                    "profile_service": kwargs.get("profile_service"),
+                    "moderation_service": kwargs.get("moderation_service"),
+                    "link_service": kwargs.get("link_service"),
+                    "db_session": kwargs.get("db_session"),
+                }
+                if not any(data.values()):
+                    logger.error("Data not provided to handler")
+                    return
+
+        bot_service = data.get("bot_service")
 
         if not bot_service:
             logger.error("Bot service not injected properly")
@@ -149,6 +184,12 @@ async def handle_bots_command(message: Message, data: dict = None, **kwargs) -> 
         # Get bot lists
         whitelisted_bots = await bot_service.get_whitelisted_bots()
         all_bots = await bot_service.get_all_bots()
+
+        # Handle None values
+        if whitelisted_bots is None:
+            whitelisted_bots = []
+        if all_bots is None:
+            all_bots = []
 
         bots_text = "🤖 <b>Управление ботами</b>\n\n"
 
@@ -175,8 +216,25 @@ async def handle_bots_command(message: Message, data: dict = None, **kwargs) -> 
 async def handle_suspicious_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /suspicious command."""
     try:
-        # Get services from kwargs (aiogram 3.x style)
-        profile_service = kwargs.get("profile_service")
+        # Get services from data or kwargs
+        if not data:
+            # Try to get data from kwargs
+            data = kwargs.get("data", {})
+            if not data:
+                # Try to get services directly from kwargs
+                data = {
+                    "channel_service": kwargs.get("channel_service"),
+                    "bot_service": kwargs.get("bot_service"),
+                    "profile_service": kwargs.get("profile_service"),
+                    "moderation_service": kwargs.get("moderation_service"),
+                    "link_service": kwargs.get("link_service"),
+                    "db_session": kwargs.get("db_session"),
+                }
+                if not any(data.values()):
+                    logger.error("Data not provided to handler")
+                    return
+
+        profile_service = data.get("profile_service")
 
         if not profile_service:
             logger.error("Profile service not injected properly")
@@ -212,7 +270,7 @@ async def handle_suspicious_command(message: Message, data: dict = None, **kwarg
 
 
 @admin_router.message(Command("help"))
-async def handle_help_command(message: Message, data: dict = None, **kwargs) -> None:
+async def handle_help_command(message: Message, data: dict = None) -> None:
     """Handle /help command."""
     try:
         from app.services.help import HelpService
@@ -248,7 +306,7 @@ async def handle_help_command(message: Message, data: dict = None, **kwargs) -> 
 
 
 @admin_router.message(Command("limits"), IsAdminOrSilentFilter())
-async def handle_limits_command(message: Message, data: dict = None, **kwargs) -> None:
+async def handle_limits_command(message: Message, data: dict = None) -> None:
     """Handle /limits command to show current rate limits."""
     try:
         from app.config import load_config
@@ -276,7 +334,7 @@ async def handle_limits_command(message: Message, data: dict = None, **kwargs) -
 
 
 @admin_router.message(Command("setlimits"), IsAdminOrSilentFilter())
-async def handle_setlimits_command(message: Message, data: dict = None, **kwargs) -> None:
+async def handle_setlimits_command(message: Message, data: dict = None) -> None:
     """Handle /setlimits command to change rate limits (super admin only)."""
     try:
         from app.config import load_config
@@ -333,7 +391,7 @@ async def handle_setlimits_command(message: Message, data: dict = None, **kwargs
 
 
 @admin_router.message(Command("logs"), IsAdminOrSilentFilter())
-async def handle_logs_command(message: Message, data: dict = None, **kwargs) -> None:
+async def handle_logs_command(message: Message, data: dict = None) -> None:
     """Handle /logs command."""
     try:
         import os
@@ -391,11 +449,11 @@ async def handle_logs_command(message: Message, data: dict = None, **kwargs) -> 
 
 
 @admin_router.callback_query(F.data == "admin_stats")
-async def handle_admin_stats_callback(callback: CallbackQuery, **kwargs) -> None:
+async def handle_admin_stats_callback(callback: CallbackQuery, data: dict = None) -> None:
     """Handle admin stats callback."""
     try:
         # Get services from data
-        data = kwargs.get("data", {})
+        # data is already passed as parameter
         channel_service = data.get("channel_service")
         bot_service = data.get("bot_service")
 
@@ -429,7 +487,7 @@ async def handle_admin_stats_callback(callback: CallbackQuery, **kwargs) -> None
 
 
 @admin_router.message(Command("settings"), IsAdminOrSilentFilter())
-async def handle_settings_command(message: Message, data: dict = None, **kwargs) -> None:
+async def handle_settings_command(message: Message, data: dict = None) -> None:
     """Handle /settings command."""
     try:
         settings_text = (
@@ -446,3 +504,72 @@ async def handle_settings_command(message: Message, data: dict = None, **kwargs)
     except Exception as e:
         logger.error(f"Error handling settings command: {e}")
         await message.answer("❌ Ошибка при получении настроек")
+
+
+@admin_router.message(Command("unban"), IsAdminOrSilentFilter())
+async def handle_unban_command(message: Message, data: dict = None, **kwargs) -> None:
+    """Handle /unban command to unban a user."""
+    try:
+        # Get services from data or kwargs
+        if not data:
+            data = kwargs.get("data", {})
+            if not data:
+                data = {
+                    "moderation_service": kwargs.get("moderation_service"),
+                    "admin_id": kwargs.get("admin_id"),
+                }
+                if not any(data.values()):
+                    logger.error("Data not provided to handler")
+                    return
+
+        moderation_service = data.get("moderation_service")
+        admin_id = data.get("admin_id")
+
+        if not moderation_service:
+            logger.error("Moderation service not injected properly")
+            await message.answer("❌ Ошибка: сервис модерации недоступен")
+            return
+
+        # Parse command arguments
+        command_parts = message.text.split()
+        if len(command_parts) < 2:
+            await message.answer(
+                "❌ Неверный формат команды.\n"
+                "Использование: /unban <user_id> [chat_id]\n"
+                "Пример: /unban 5172648128 -1003094131978"
+            )
+            return
+
+        try:
+            user_id = int(command_parts[1])
+        except ValueError:
+            await message.answer("❌ Неверный user_id. Должен быть числом.")
+            return
+
+        # Get chat_id from command or use current chat
+        if len(command_parts) >= 3:
+            try:
+                chat_id = int(command_parts[2])
+            except ValueError:
+                await message.answer("❌ Неверный chat_id. Должен быть числом.")
+                return
+        else:
+            chat_id = message.chat.id
+
+        # Unban user
+        success = await moderation_service.unban_user(
+            user_id=user_id, chat_id=chat_id, admin_id=admin_id
+        )
+
+        if success:
+            await message.answer(f"✅ Пользователь {user_id} разблокирован в чате {chat_id}")
+        else:
+            await message.answer(f"❌ Не удалось разблокировать пользователя {user_id}")
+
+    except Exception as e:
+        logger.error(
+            safe_format_message(
+                "Error handling unban command: {error}", error=sanitize_for_logging(e)
+            )
+        )
+        await message.answer("❌ Ошибка при выполнении команды разблокировки")

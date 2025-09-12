@@ -26,7 +26,6 @@ class ChannelService:
         self.db = db_session
         self.moderation_service = ModerationService(bot, db_session)
 
-    @require_admin
     async def handle_channel_message(self, message: Message, admin_id: int) -> bool:
         """Handle message from channel (sender_chat)."""
         if not message.sender_chat:
@@ -81,7 +80,6 @@ class ChannelService:
             )
             return True
 
-    @require_admin
     async def allow_channel(self, channel_id: int, admin_id: int) -> bool:
         """Allow channel to post messages."""
         try:
@@ -123,7 +121,6 @@ class ChannelService:
             )
             return False
 
-    @require_admin
     async def block_channel(self, channel_id: int, reason: str, admin_id: int) -> bool:
         """Block channel from posting messages."""
         try:
@@ -169,7 +166,6 @@ class ChannelService:
             )
             return False
 
-    @require_admin
     async def get_channel_status(self, channel_id: int) -> Optional[ChannelStatus]:
         """Get channel status."""
         channel = await self._get_channel_by_id(channel_id)
@@ -177,7 +173,6 @@ class ChannelService:
             return ChannelStatus(channel.status)
         return None
 
-    @require_admin
     async def get_allowed_channels(self) -> List[ChannelModel]:
         """Get list of allowed channels."""
         result = await self.db.execute(
@@ -185,7 +180,6 @@ class ChannelService:
         )
         return list(result.scalars().all())
 
-    @require_admin
     async def get_blocked_channels(self) -> List[ChannelModel]:
         """Get list of blocked channels."""
         result = await self.db.execute(
@@ -193,7 +187,6 @@ class ChannelService:
         )
         return list(result.scalars().all())
 
-    @require_admin
     async def get_pending_channels(self) -> List[ChannelModel]:
         """Get list of pending channels."""
         result = await self.db.execute(
@@ -201,7 +194,6 @@ class ChannelService:
         )
         return list(result.scalars().all())
 
-    @require_admin
     async def _get_channel_by_id(self, channel_id: int) -> Optional[ChannelModel]:
         """Get channel by ID."""
         result = await self.db.execute(
@@ -209,7 +201,6 @@ class ChannelService:
         )
         return result.scalar_one_or_none()
 
-    @require_admin
     async def _create_channel(
         self, channel_id: int, username: Optional[str], title: str, status: ChannelStatus
     ) -> ChannelModel:
@@ -224,7 +215,6 @@ class ChannelService:
 
         return channel
 
-    @require_admin
     async def _notify_admin_about_channel(
         self, admin_id: int, channel: ChannelModel, message: Message
     ) -> None:
@@ -250,7 +240,6 @@ class ChannelService:
                 )
             )
 
-    @require_admin
     async def _log_channel_action(
         self, action: ModerationAction, channel_id: int, admin_id: int
     ) -> None:
@@ -260,7 +249,6 @@ class ChannelService:
         self.db.add(log_entry)
         await self.db.commit()
 
-    @require_admin
     async def is_native_channel(self, channel_id: int) -> bool:
         """Check if channel is native (where bot is connected)."""
         try:
@@ -276,7 +264,6 @@ class ChannelService:
             )
             return False
 
-    @require_admin
     async def mark_channel_as_suspicious(self, channel_id: int, reason: str, admin_id: int) -> None:
         """Mark channel as suspicious."""
         try:
@@ -313,7 +300,6 @@ class ChannelService:
                 )
             )
 
-    @require_admin
     async def check_channel_rate_limit(self, channel_id: int) -> bool:
         """Check if channel exceeded rate limit."""
         try:

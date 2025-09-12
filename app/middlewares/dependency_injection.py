@@ -21,7 +21,6 @@ class DependencyInjectionMiddleware(BaseMiddleware):
         handler: Callable[..., Awaitable[Any]],
         event: Message | CallbackQuery,
         data: Dict[str, Any],
-        **kwargs,
     ) -> Any:
         """Inject dependencies into handler."""
         import logging
@@ -33,6 +32,12 @@ class DependencyInjectionMiddleware(BaseMiddleware):
 
         # Get database session
         async with SessionLocal() as db_session:
+            # Get admin ID from config
+            from app.config import load_config
+
+            config = load_config()
+            admin_id = config.admin_ids_list[0] if config.admin_ids_list else 0
+
             # Create services
             services = {
                 "link_service": LinkService(bot, db_session),
@@ -40,6 +45,7 @@ class DependencyInjectionMiddleware(BaseMiddleware):
                 "channel_service": ChannelService(bot, db_session),
                 "bot_service": BotService(bot, db_session),
                 "moderation_service": ModerationService(bot, db_session),
+                "admin_id": admin_id,
                 "db_session": db_session,
             }
 
@@ -51,5 +57,5 @@ class DependencyInjectionMiddleware(BaseMiddleware):
             logger.info(f"DI Middleware: Services keys: {list(services.keys())}")
 
             # Call handler with event and data (aiogram 3.x style)
-            # In aiogram 3.x, data is passed as keyword arguments
+            # In aiogram 3.x, data is passed as positional argument
             return await handler(event, data)

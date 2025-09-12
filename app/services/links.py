@@ -25,24 +25,30 @@ class LinkService:
         self.db = db_session
         self.moderation_service = ModerationService(bot, db_session)
 
-    @require_admin
     async def check_message_for_bot_links(self, message: Message) -> List[Tuple[str, bool]]:
         """Check message for bot links and return list of (username, is_bot) tuples."""
         if not message.text:
             return []
 
+        results = []
+
         # Find all t.me/username patterns
         t_me_pattern = r"t\.me/([a-zA-Z0-9_]+)"
-        matches = re.findall(t_me_pattern, message.text, re.IGNORECASE)
+        t_me_matches = re.findall(t_me_pattern, message.text, re.IGNORECASE)
 
-        results = []
-        for username in matches:
+        # Find all @username mentions
+        mention_pattern = r"@([a-zA-Z0-9_]+)"
+        mention_matches = re.findall(mention_pattern, message.text, re.IGNORECASE)
+
+        # Combine all matches
+        all_matches = t_me_matches + mention_matches
+
+        for username in all_matches:
             is_bot = await self._check_if_username_is_bot(username)
             results.append((username, is_bot))
 
         return results
 
-    @require_admin
     async def _check_if_username_is_bot(self, username: str) -> bool:
         """Check if username belongs to a bot."""
         try:
@@ -50,18 +56,25 @@ class LinkService:
             if await self._is_bot_whitelisted(username):
                 return False  # Whitelisted bots are allowed
 
-            # Try to get chat member info
+            # Try to get bot info directly
             try:
-                chat_member = await self.bot.get_chat_member(
-                    chat_id=f"@{username}", user_id=self.bot.id
-                )
+                bot_info = await self.bot.get_chat(f"@{username}")
 
-                # If we can get chat member info, it's likely a bot
-                return True
+                # Check if it's a bot by looking at the type
+                if hasattr(bot_info, "type") and bot_info.type == "bot":
+                    return True
+
+                # Also check if username ends with '_bot' (common pattern)
+                if username.lower().endswith("_bot"):
+                    return True
+
+                return False
 
             except Exception:
-                # If we can't get chat member info, it might not be a bot
-                # or it might be a private channel
+                # If we can't get bot info, assume it's not a bot
+                # But check for common bot patterns
+                if username.lower().endswith("_bot"):
+                    return True
                 return False
 
         except Exception as e:
@@ -74,7 +87,6 @@ class LinkService:
             )
             return False
 
-    @require_admin
     async def _is_bot_whitelisted(self, username: str) -> bool:
         """Check if bot is in whitelist."""
         result = await self.db.execute(
@@ -83,7 +95,6 @@ class LinkService:
         is_whitelisted = result.scalar_one_or_none()
         return is_whitelisted is True
 
-    @require_admin
     async def handle_bot_link_detection(
         self, message: Message, bot_links: List[Tuple[str, bool]]
     ) -> bool:
@@ -118,7 +129,6 @@ class LinkService:
 
         return False
 
-    @require_admin
     async def add_bot_to_whitelist(
         self, username: str, admin_id: int, telegram_id: Optional[int] = None
     ) -> bool:
@@ -159,7 +169,6 @@ class LinkService:
             )
             return False
 
-    @require_admin
     async def remove_bot_from_whitelist(self, username: str, admin_id: int) -> bool:
         """Remove bot from whitelist."""
         try:
@@ -196,7 +205,6 @@ class LinkService:
             )
             return False
 
-    @require_admin
     async def get_whitelisted_bots(self) -> List[BotModel]:
         """Get list of whitelisted bots."""
         result = await self.db.execute(select(BotModel).where(BotModel.is_whitelisted == True))

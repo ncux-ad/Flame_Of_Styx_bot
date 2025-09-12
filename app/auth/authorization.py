@@ -150,10 +150,19 @@ def require_permission(permission: Permission):
         async def wrapper(*args, **kwargs):
             # Extract user_id from arguments
             user_id = None
+
+            # Try to get user_id from args (aiogram 3.x style)
             for arg in args:
                 if isinstance(arg, (Message, CallbackQuery)):
                     user_id = arg.from_user.id if arg.from_user else None
                     break
+
+            # Try to get user_id from kwargs (fallback)
+            if not user_id:
+                for key, value in kwargs.items():
+                    if isinstance(value, (Message, CallbackQuery)):
+                        user_id = value.from_user.id if value.from_user else None
+                        break
 
             if not user_id:
                 logger.error("Could not extract user_id from function arguments")

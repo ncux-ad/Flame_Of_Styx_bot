@@ -23,7 +23,6 @@ class ModerationService:
         self.bot = bot
         self.db = db_session
 
-    @require_admin
     async def ban_user(
         self, user_id: int, chat_id: int, admin_id: int, reason: Optional[str] = None
     ) -> bool:
@@ -63,7 +62,6 @@ class ModerationService:
             )
             return False
 
-    @require_admin
     async def unban_user(self, user_id: int, chat_id: int, admin_id: int) -> bool:
         """Unban user from chat."""
         try:
@@ -97,7 +95,6 @@ class ModerationService:
             )
             return False
 
-    @require_admin
     async def mute_user(
         self, user_id: int, chat_id: int, admin_id: int, reason: Optional[str] = None
     ) -> bool:
@@ -139,7 +136,6 @@ class ModerationService:
             )
             return False
 
-    @require_admin
     async def unmute_user(self, user_id: int, chat_id: int, admin_id: int) -> bool:
         """Unmute user in chat."""
         try:
@@ -188,7 +184,6 @@ class ModerationService:
             )
             return False
 
-    @require_admin
     async def delete_message(self, chat_id: int, message_id: int, admin_id: int) -> bool:
         """Delete message."""
         try:
@@ -222,7 +217,6 @@ class ModerationService:
             )
             return False
 
-    @require_admin
     async def is_user_banned(self, user_id: int) -> bool:
         """Check if user is banned."""
         result = await self.db.execute(
@@ -231,7 +225,6 @@ class ModerationService:
         user = result.scalar_one_or_none()
         return user is True if user is not None else False
 
-    @require_admin
     async def is_user_muted(self, user_id: int) -> bool:
         """Check if user is muted."""
         result = await self.db.execute(
@@ -240,7 +233,6 @@ class ModerationService:
         user = result.scalar_one_or_none()
         return user is True if user is not None else False
 
-    @require_admin
     async def _update_user_status(
         self,
         user_id: int,
@@ -264,7 +256,6 @@ class ModerationService:
             )
             await self.db.commit()
 
-    @require_admin
     async def _log_moderation_action(
         self,
         action: ModerationAction,

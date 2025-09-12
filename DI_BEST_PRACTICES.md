@@ -1,8 +1,8 @@
 # Руководство по лучшим практикам Dependency Injection в aiogram 3
 
-## ✅ Что исправлено в проекте
+## ✅ ПРАВИЛЬНЫЙ ПРИНЦИП AIOGRAM 3.X
 
-### 1. Правильная сигнатура middleware
+### 1. Middleware кладёт данные в `data` словарь
 ```python
 class DependencyInjectionMiddleware(BaseMiddleware):
     async def __call__(
@@ -11,27 +11,33 @@ class DependencyInjectionMiddleware(BaseMiddleware):
         event: Message | CallbackQuery,
         data: Dict[str, Any]
     ) -> Any:
-        # middleware logic
+        # Инжектируем сервисы в data
+        data["my_service"] = MyService()
+        data["admin_id"] = 12345
         return await handler(event, data)  # ✅ Правильно
 ```
 
-### 2. Правильная сигнатура обработчиков
+### 2. Обработчики принимают зависимости как аргументы функции
 ```python
 @router.message(Command("start"))
-async def handle_start_command(message: Message, data: dict = None) -> None:
-    # Получаем сервисы из data
-    if data:
-        service = data.get('service_name')
+async def handle_start_command(
+    message: Message,
+    my_service: MyService,
+    admin_id: int
+) -> None:
+    # Aiogram 3.x автоматически инжектирует зависимости по имени аргумента
+    await my_service.do_something()
 ```
 
 ## 📚 Основные принципы DI в aiogram 3
 
-### 1. Middleware должен передавать данные через `data` словарь
+### 1. Middleware кладёт зависимости в `data` словарь
+- ✅ `data["service_name"] = Service()`
 - ✅ `return await handler(event, data)`
-- ❌ `return await handler(event, **data)`
 
-### 2. Обработчики должны принимать `data: dict = None`
-- ✅ `async def handler(message: Message, data: dict = None)`
+### 2. Обработчики принимают зависимости как аргументы функции
+- ✅ `async def handler(message: Message, service: Service)`
+- ❌ `async def handler(message: Message, data: dict = None)`
 - ❌ `async def handler(message: Message, **kwargs)`
 
 ### 3. Регистрация middleware для всех типов обновлений

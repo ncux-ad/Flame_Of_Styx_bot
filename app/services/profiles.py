@@ -25,7 +25,6 @@ class ProfileService:
         self.db = db_session
         self.moderation_service = ModerationService(bot, db_session)
 
-    @require_admin
     async def analyze_user_profile(self, user: User, admin_id: int) -> Optional[SuspiciousProfile]:
         """Analyze user profile for suspicious patterns."""
         try:
@@ -62,7 +61,6 @@ class ProfileService:
             )
             return None
 
-    @require_admin
     async def _perform_profile_analysis(self, user: User) -> Dict[str, Any]:
         """Perform detailed profile analysis."""
         analysis = {
@@ -105,7 +103,6 @@ class ProfileService:
 
         return analysis
 
-    @require_admin
     async def _analyze_linked_chat(self, chat: Chat) -> Dict[str, Any]:
         """Analyze linked chat for suspicious patterns."""
         analysis = {"post_count": 0, "has_bait_channel": False, "is_public": True}
@@ -138,7 +135,6 @@ class ProfileService:
 
         return analysis
 
-    @require_admin
     async def _detect_suspicious_patterns(self, user: User) -> list:
         """Detect suspicious patterns in user profile."""
         patterns = []
@@ -188,7 +184,6 @@ class ProfileService:
 
         return min(score, 1.0)
 
-    @require_admin
     async def _get_suspicious_profile(self, user_id: int) -> Optional[SuspiciousProfile]:
         """Get existing suspicious profile for user."""
         result = await self.db.execute(
@@ -196,7 +191,6 @@ class ProfileService:
         )
         return result.scalar_one_or_none()
 
-    @require_admin
     async def _create_suspicious_profile(
         self, user_id: int, analysis_result: Dict[str, Any]
     ) -> SuspiciousProfile:
@@ -225,7 +219,6 @@ class ProfileService:
 
         return profile
 
-    @require_admin
     async def _notify_admin_about_suspicious_profile(
         self, admin_id: int, user: User, profile: SuspiciousProfile
     ) -> None:
@@ -258,7 +251,6 @@ class ProfileService:
                 )
             )
 
-    @require_admin
     async def mark_profile_as_reviewed(
         self, user_id: int, admin_id: int, is_confirmed: bool, notes: Optional[str] = None
     ) -> bool:
@@ -292,7 +284,6 @@ class ProfileService:
             )
             return False
 
-    @require_admin
     async def get_suspicious_profiles(self, limit: int = 50) -> List[SuspiciousProfile]:
         """Get list of suspicious profiles."""
         try:

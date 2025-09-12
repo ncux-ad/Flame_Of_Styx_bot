@@ -41,24 +41,34 @@ async def main():
         logger.info("Database tables created successfully")
 
         # Register middlewares (order matters!)
-        # DependencyInjectionMiddleware must be first to provide services
+        # LoggingMiddleware first, then RateLimitMiddleware, then DependencyInjectionMiddleware last
 
         # Register middlewares on dispatcher level (aiogram 3.x style)
-        dp.message.middleware(DependencyInjectionMiddleware())
+        # Message type handles both private messages and channel messages
         dp.message.middleware(LoggingMiddleware())
         dp.message.middleware(RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60))
+        dp.message.middleware(DependencyInjectionMiddleware())
 
-        dp.callback_query.middleware(DependencyInjectionMiddleware())
         dp.callback_query.middleware(LoggingMiddleware())
         dp.callback_query.middleware(
             RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60)
         )
+        dp.callback_query.middleware(DependencyInjectionMiddleware())
 
         # Register for other update types
+        dp.my_chat_member.middleware(LoggingMiddleware())
         dp.my_chat_member.middleware(DependencyInjectionMiddleware())
+
+        dp.chat_member.middleware(LoggingMiddleware())
         dp.chat_member.middleware(DependencyInjectionMiddleware())
+
+        dp.channel_post.middleware(LoggingMiddleware())
         dp.channel_post.middleware(DependencyInjectionMiddleware())
+
+        dp.edited_message.middleware(LoggingMiddleware())
         dp.edited_message.middleware(DependencyInjectionMiddleware())
+
+        dp.edited_channel_post.middleware(LoggingMiddleware())
         dp.edited_channel_post.middleware(DependencyInjectionMiddleware())
 
         logger.info("Middlewares registered successfully")
