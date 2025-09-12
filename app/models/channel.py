@@ -33,6 +33,7 @@ class Channel(Base):
     # Status
     status = Column(Enum(ChannelStatus), default=ChannelStatus.PENDING, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
+    is_native = Column(Boolean, default=False, nullable=False)
 
     # Metadata
     member_count = Column(Integer, nullable=True)

@@ -8,6 +8,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
+from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 from app.services.bots import BotService
 from app.services.channels import ChannelService
 from app.services.moderation import ModerationService
@@ -18,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 # Create router
 admin_router = Router()
+
+# Apply admin filter to all handlers in this router
+admin_router.message.filter(IsAdminOrSilentFilter())
 
 
 @admin_router.message(Command("start"))
@@ -102,10 +106,15 @@ async def handle_channels_command(
         channels_text = "📢 <b>Управление каналами</b>\n\n"
         for channel in channels[:10]:  # Показываем первые 10
             status = "✅ Нативный" if channel.is_native else "🔍 Иностранный"
-            channels_text += f"{status} {channel.title or 'Без названия'}\n"
+            username = f"@{channel.username}" if channel.username else "Без username"
+            channels_text += f"{status} <b>{channel.title or 'Без названия'}</b>\n"
+            channels_text += f"   ID: <code>{channel.telegram_id}</code> | {username}\n"
+            if channel.member_count:
+                channels_text += f"   👥 Участников: {channel.member_count}\n"
+            channels_text += "\n"
 
         if len(channels) > 10:
-            channels_text += f"\n... и еще {len(channels) - 10} каналов"
+            channels_text += f"... и еще {len(channels) - 10} каналов"
 
         await message.answer(channels_text)
         logger.info(f"Channels response sent to {message.from_user.id}")
@@ -193,7 +202,7 @@ async def handle_unban_command(
 
         if len(args) < 1:
             await message.answer(
-                "❌ Использование: /unban <user_id> [chat_id]\n"
+                "❌ Использование: /unban &lt;user_id&gt; [chat_id]\n"
                 "Пример: /unban 123456789 -1001234567890"
             )
             return
@@ -203,14 +212,16 @@ async def handle_unban_command(
 
         # Разблокируем пользователя
         success = await moderation_service.unban_user(
-            user_id=user_id, chat_id=chat_id, admin_id=admin_id, reason="Unbanned by admin command"
+            user_id=user_id, chat_id=chat_id, admin_id=admin_id
         )
 
         if success:
-            await message.answer(f"✅ Пользователь {user_id} разблокирован в чате {chat_id}")
+            await message.answer(
+                f"✅ Пользователь <code>{user_id}</code> разблокирован в чате <code>{chat_id}</code>"
+            )
             logger.info(f"User {user_id} unbanned by admin {admin_id}")
         else:
-            await message.answer(f"❌ Не удалось разблокировать пользователя {user_id}")
+            await message.answer(f"❌ Не удалось разблокировать пользователя <code>{user_id}</code>")
 
     except ValueError:
         await message.answer("❌ Неверный формат ID пользователя")

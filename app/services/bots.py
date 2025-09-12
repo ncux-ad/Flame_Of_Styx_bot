@@ -132,6 +132,24 @@ class BotService:
             logger.error(f"Error updating bot {username} info: {e}")
             return False
 
+    async def get_all_bots(self) -> List[Bot]:
+        """Get all bots from database."""
+        try:
+            result = await self.db.execute(select(Bot))
+            return result.scalars().all()
+        except Exception as e:
+            logger.error(f"Error getting all bots: {e}")
+            return []
+
+    async def get_total_bots_count(self) -> int:
+        """Get total number of bots."""
+        try:
+            result = await self.db.execute(select(Bot))
+            return len(result.scalars().all())
+        except Exception as e:
+            logger.error(f"Error getting bots count: {e}")
+            return 0
+
     async def _log_bot_action(
         self, action: ModerationAction, bot_username: str, admin_id: int
     ) -> None:

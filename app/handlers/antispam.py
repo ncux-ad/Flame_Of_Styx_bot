@@ -43,6 +43,11 @@ async def handle_all_messages(
         admin_id: ID администратора
     """
     try:
+        # Пропускаем команды - они обрабатываются админ-роутером
+        if message.text and message.text.startswith("/"):
+            logger.info(f"Command message skipped by antispam: {message.text}")
+            return
+
         logger.info(
             f"Anti-spam processing: user_id={message.from_user.id if message.from_user else 'unknown'}, "
             f"chat_id={message.chat.id}, text='{message.text[:50] if message.text else 'None'}'"

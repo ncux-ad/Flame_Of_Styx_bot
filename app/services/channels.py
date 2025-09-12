@@ -334,3 +334,44 @@ class ChannelService:
                 )
             )
             return False
+
+    async def get_all_channels(self) -> List[ChannelModel]:
+        """Get all channels from database."""
+        try:
+            result = await self.db.execute(select(ChannelModel))
+            return result.scalars().all()
+        except Exception as e:
+            logger.error(f"Error getting all channels: {e}")
+            return []
+
+    async def get_total_channels_count(self) -> int:
+        """Get total number of channels."""
+        try:
+            result = await self.db.execute(select(ChannelModel))
+            return len(result.scalars().all())
+        except Exception as e:
+            logger.error(f"Error getting channels count: {e}")
+            return 0
+
+    async def get_channel_info(self, chat_id: int) -> dict:
+        """Get channel information from Telegram API."""
+        try:
+            chat = await self.bot.get_chat(chat_id)
+            return {
+                "id": chat.id,
+                "title": chat.title,
+                "username": chat.username,
+                "type": chat.type,
+                "description": getattr(chat, "description", None),
+                "member_count": getattr(chat, "member_count", None),
+            }
+        except Exception as e:
+            logger.error(f"Error getting channel info for {chat_id}: {e}")
+            return {
+                "id": chat_id,
+                "title": f"Unknown Channel ({chat_id})",
+                "username": None,
+                "type": "unknown",
+                "description": None,
+                "member_count": None,
+            }

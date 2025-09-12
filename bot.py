@@ -68,11 +68,11 @@ async def main():
         # 6. Register routers in correct order
         from app.handlers import admin, antispam
 
-        # Anti-spam router first (catches everything)
-        dp.include_router(antispam.antispam_router)
-
-        # Admin router second (only admin commands)
+        # Admin router first (handles admin commands)
         dp.include_router(admin.admin_router)
+
+        # Anti-spam router second (catches everything else)
+        dp.include_router(antispam.antispam_router)
 
         logger.info("Routers registered successfully")
         logger.info("Starting bot...")

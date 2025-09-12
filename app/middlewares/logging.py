@@ -30,11 +30,25 @@ class LoggingMiddleware(BaseMiddleware):
         )
         sender_chat = getattr(event, "sender_chat", None) if hasattr(event, "sender_chat") else None
 
+        # Получаем название чата для лучшего понимания
+        chat_title = "Unknown"
+        if hasattr(event, "chat") and event.chat:
+            chat_title = getattr(event.chat, "title", "Unknown")
+            if not chat_title and hasattr(event.chat, "username"):
+                chat_title = f"@{event.chat.username}"
+
+        # Получаем название канала-отправителя
+        sender_title = "None"
+        if sender_chat:
+            sender_title = getattr(sender_chat, "title", "Unknown Channel")
+            if not sender_title and hasattr(sender_chat, "username"):
+                sender_title = f"@{sender_chat.username}"
+
         logger.info(
-            f"[LOG] user_id:{user_id} chat_id:{chat_id} chat_type:{chat_type} sender_chat:{sender_chat is not None} text:{text}"
+            f"[LOG] user_id:{user_id} chat_id:{chat_id} chat_type:{chat_type} chat_title:'{chat_title}' sender_chat:{sender_chat is not None} sender_title:'{sender_title}' text:{text}"
         )
         print(
-            f"[LOG] user_id:{user_id} chat_id:{chat_id} chat_type:{chat_type} sender_chat:{sender_chat is not None} text:{text}"
+            f"[LOG] user_id:{user_id} chat_id:{chat_id} chat_type:{chat_type} chat_title:'{chat_title}' sender_chat:{sender_chat is not None} sender_title:'{sender_title}' text:{text}"
         )
 
         return await handler(event, data)

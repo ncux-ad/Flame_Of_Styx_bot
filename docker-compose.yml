@@ -6,6 +6,8 @@ services:
     build: .
     container_name: antispam-bot
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - BOT_TOKEN=${BOT_TOKEN:-your_telegram_bot_token_here}
       - ADMIN_IDS=${ADMIN_IDS:-366490333,439304619}

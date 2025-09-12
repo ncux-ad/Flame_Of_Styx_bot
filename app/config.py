@@ -59,6 +59,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"  # Игнорировать дополнительные поля
 
 
 def load_config() -> Settings:
