@@ -36,7 +36,11 @@ class RateLimitMiddleware(BaseMiddleware):
         """Check rate limit before processing."""
         # Get user ID
         if isinstance(event, Message):
-            user_id = event.from_user.id if event.from_user else None
+            # Для канальных сообщений используем sender_chat.id, иначе from_user.id
+            if event.sender_chat:
+                user_id = event.sender_chat.id
+            else:
+                user_id = event.from_user.id if event.from_user else None
         elif isinstance(event, CallbackQuery):
             user_id = event.from_user.id if event.from_user else None
         else:

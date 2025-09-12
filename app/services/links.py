@@ -125,46 +125,36 @@ class LinkService:
         telegram_me_pattern = r"telegram\.me/([a-zA-Z0-9_]+)"
         telegram_me_matches = re.findall(telegram_me_pattern, text, re.IGNORECASE)
 
-        # Find t.me links without username (just t.me)
-        t_me_direct_pattern = r"t\.me/([a-zA-Z0-9_]+)"
-        t_me_direct_matches = re.findall(t_me_direct_pattern, text, re.IGNORECASE)
-
-        # Combine all matches
-        all_matches = t_me_matches + mention_matches + telegram_me_matches + t_me_direct_matches
-
-        for username in all_matches:
+        # Process t.me links
+        for username in t_me_matches:
             is_bot = await self._check_if_username_is_bot(username)
-            results.append((username, is_bot))
+            results.append(("bot_link", is_bot))
+
+        # Process @username mentions
+        for username in mention_matches:
+            is_bot = await self._check_if_username_is_bot(username)
+            results.append(("username_mention", is_bot))
+
+        # Process telegram.me links
+        for username in telegram_me_matches:
+            is_bot = await self._check_if_username_is_bot(username)
+            results.append(("bot_link", is_bot))
 
         return results
 
     async def _check_if_username_is_bot(self, username: str) -> bool:
-        """Check if username belongs to a bot."""
+        """Check if username belongs to a bot - simple pattern matching."""
         try:
             # First check if it's in our whitelist
             if await self._is_bot_whitelisted(username):
                 return False  # Whitelisted bots are allowed
 
-            # Try to get bot info directly
-            try:
-                bot_info = await self.bot.get_chat(f"@{username}")
+            # Simple pattern: if username contains 'bot' anywhere, it's a bot
+            if "bot" in username.lower():
+                logger.info(f"Bot detected by pattern: @{username}")
+                return True
 
-                # Check if it's a bot by looking at the type
-                if hasattr(bot_info, "type") and bot_info.type == "bot":
-                    return True
-
-                # Also check if username ends with '_bot' (common pattern)
-                if username.lower().endswith("_bot"):
-                    return True
-
-                return False
-
-            except Exception:
-                # If we can't get bot info, assume it's not a bot
-                # But check for common bot patterns
-                if username.lower().endswith("_bot"):
-                    return True
-                return False
+            return False
 
         except Exception as e:
             logger.error(

@@ -1,8 +1,27 @@
 """Security utilities for safe logging and data handling."""
 
+import hashlib
 import html
 import re
 from typing import Any, Union
+
+
+def hash_user_id(user_id: Union[int, str, None]) -> str:
+    """Hash user ID for safe logging.
+
+    Args:
+        user_id: User ID to hash
+
+    Returns:
+        Hashed user ID (first 10 characters of SHA256)
+    """
+    if user_id is None:
+        return "None"
+
+    # Convert to string and hash
+    user_str = str(user_id)
+    hashed = hashlib.sha256(user_str.encode()).hexdigest()
+    return hashed[:10]
 
 
 def sanitize_for_logging(data: Any) -> str:

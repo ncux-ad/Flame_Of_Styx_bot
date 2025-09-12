@@ -4,6 +4,8 @@ from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware
 from aiogram.types import Message
 
+from app.utils.security import hash_user_id
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,6 +19,9 @@ class LoggingMiddleware(BaseMiddleware):
             if hasattr(event, "from_user") and event.from_user
             else "unknown"
         )
+
+        # Hash user_id for security
+        hashed_user_id = hash_user_id(user_id) if user_id != "unknown" else "unknown"
         text = getattr(event, "text", "None") if hasattr(event, "text") else "None"
         chat_id = (
             getattr(event.chat, "id", "unknown")
@@ -45,10 +50,10 @@ class LoggingMiddleware(BaseMiddleware):
                 sender_title = f"@{sender_chat.username}"
 
         logger.info(
-            f"[LOG] user_id:{user_id} chat_id:{chat_id} chat_type:{chat_type} chat_title:'{chat_title}' sender_chat:{sender_chat is not None} sender_title:'{sender_title}' text:{text}"
+            f"[LOG] user_id:{hashed_user_id} chat_id:{chat_id} chat_type:{chat_type} chat_title:'{chat_title}' sender_chat:{sender_chat is not None} sender_title:'{sender_title}' text:{text}"
         )
         print(
-            f"[LOG] user_id:{user_id} chat_id:{chat_id} chat_type:{chat_type} chat_title:'{chat_title}' sender_chat:{sender_chat is not None} sender_title:'{sender_title}' text:{text}"
+            f"[LOG] user_id:{hashed_user_id} chat_id:{chat_id} chat_type:{chat_type} chat_title:'{chat_title}' sender_chat:{sender_chat is not None} sender_title:'{sender_title}' text:{text}"
         )
 
         return await handler(event, data)

@@ -25,6 +25,38 @@ class ProfileService:
         self.db = db_session
         self.moderation_service = ModerationService(bot, db_session)
 
+    async def get_user_info(self, user_id: int) -> dict:
+        """Get user information from Telegram API."""
+        try:
+            # Пробуем получить информацию о пользователе через get_chat
+            try:
+                user = await self.bot.get_chat(user_id)
+                return {
+                    "id": user.id,
+                    "username": getattr(user, "username", None),
+                    "first_name": getattr(user, "first_name", None),
+                    "last_name": getattr(user, "last_name", None),
+                    "is_bot": getattr(user, "is_bot", False),
+                }
+            except Exception:
+                # Если get_chat не работает, возвращаем базовую информацию
+                return {
+                    "id": user_id,
+                    "username": None,
+                    "first_name": f"User {user_id}",
+                    "last_name": None,
+                    "is_bot": False,
+                }
+        except Exception as e:
+            logger.error(f"Error getting user info for {user_id}: {e}")
+            return {
+                "id": user_id,
+                "username": None,
+                "first_name": f"User {user_id}",
+                "last_name": None,
+                "is_bot": False,
+            }
+
     async def analyze_user_profile(self, user: User, admin_id: int) -> Optional[SuspiciousProfile]:
         """Analyze user profile for suspicious patterns."""
         try:

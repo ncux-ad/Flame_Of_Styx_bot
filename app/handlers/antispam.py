@@ -20,6 +20,72 @@ logger = logging.getLogger(__name__)
 antispam_router = Router()
 
 
+@antispam_router.edited_message()
+async def handle_edited_messages(
+    message: Message,
+    moderation_service: ModerationService,
+    link_service: LinkService,
+    profile_service: ProfileService,
+    channel_service: ChannelService,
+    bot_service: BotService,
+    admin_id: int,
+) -> None:
+    """
+    Обрабатывает ОТРЕДАКТИРОВАННЫЕ сообщения - критично для антиспама!
+    Спамер может отредактировать сообщение и добавить ссылку после постинга.
+    """
+    try:
+        logger.info(f"Edited message processing: {message.text[:50]}...")
+
+        # НЕ пропускаем отредактированные сообщения с командами!
+        # Спамеры могут отредактировать команду и добавить бот-ссылку
+
+        # Проверяем на бот-ссылки и подозрительный контент
+        results = await link_service.check_message_for_bot_links(message)
+
+        if results:
+            logger.warning(f"EDITED MESSAGE SPAM DETECTED: {results}")
+
+            # Обрабатываем как спам (как в channels.py)
+            await link_service.handle_bot_link_detection(message, results)
+        else:
+            logger.info("Edited message passed antispam checks")
+
+    except Exception as e:
+        logger.error(f"Error processing edited message: {e}")
+
+
+@antispam_router.channel_post()
+async def handle_channel_posts(
+    message: Message,
+    moderation_service: ModerationService,
+    link_service: LinkService,
+    profile_service: ProfileService,
+    channel_service: ChannelService,
+    bot_service: BotService,
+    admin_id: int,
+) -> None:
+    """
+    Обрабатывает посты в каналах (нативные посты канала).
+    """
+    try:
+        logger.info(f"Channel post processing: {message.text[:50] if message.text else 'Media'}...")
+
+        # Проверяем на бот-ссылки и подозрительный контент
+        results = await link_service.check_message_for_bot_links(message)
+
+        if results:
+            logger.warning(f"CHANNEL POST SPAM DETECTED: {results}")
+
+            # Обрабатываем как спам (как в channels.py)
+            await link_service.handle_bot_link_detection(message, results)
+        else:
+            logger.info("Channel post passed antispam checks")
+
+    except Exception as e:
+        logger.error(f"Error processing channel post: {e}")
+
+
 @antispam_router.message()
 async def handle_all_messages(
     message: Message,

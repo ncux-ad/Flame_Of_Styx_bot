@@ -66,12 +66,15 @@ async def main():
         logger.info("Middlewares registered successfully")
 
         # 6. Register routers in correct order
-        from app.handlers import admin, antispam
+        from app.handlers import admin, antispam, channels
 
         # Admin router first (handles admin commands)
         dp.include_router(admin.admin_router)
 
-        # Anti-spam router second (catches everything else)
+        # Channel router second (handles channel events like my_chat_member)
+        dp.include_router(channels.channel_router)
+
+        # Anti-spam router third (catches everything else)
         dp.include_router(antispam.antispam_router)
 
         logger.info("Routers registered successfully")

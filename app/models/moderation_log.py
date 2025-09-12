@@ -3,7 +3,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -50,6 +50,9 @@ class ModerationLog(Base):
     # Message details
     message_id = Column(Integer, nullable=True)
     chat_id = Column(Integer, nullable=True)
+
+    # Status
+    is_active = Column(Boolean, default=True, nullable=False)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

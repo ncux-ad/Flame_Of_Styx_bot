@@ -68,6 +68,9 @@ class ModerationService:
             # Unban user in Telegram
             await self.bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
 
+            # Deactivate the last ban for this user in this chat
+            await self._deactivate_last_ban(user_id, chat_id)
+
             # Update user status in database
             await self._update_user_status(user_id, is_banned=False, ban_reason=None)
 
@@ -232,6 +235,173 @@ class ModerationService:
         )
         user = result.scalar_one_or_none()
         return user is True if user is not None else False
+
+    async def get_banned_users(self, limit: int = 20) -> list:
+        """Get list of currently active banned users from ModerationLog."""
+        result = await self.db.execute(
+            select(ModerationLog)
+            .where(ModerationLog.action == ModerationAction.BAN, ModerationLog.is_active == True)
+            .order_by(ModerationLog.created_at.desc())
+            .limit(limit)
+        )
+        return result.scalars().all()
+
+    async def get_recent_banned_users(self, limit: int = 5) -> list:
+        """Get recently banned users."""
+        result = await self.db.execute(
+            select(ModerationLog)
+            .where(ModerationLog.action == ModerationAction.BAN)
+            .order_by(ModerationLog.created_at.desc())
+            .limit(limit)
+        )
+        return result.scalars().all()
+
+    async def get_ban_history(self, limit: int = 20) -> list:
+        """Get ban history (all bans, active and inactive)."""
+        result = await self.db.execute(
+            select(ModerationLog)
+            .where(ModerationLog.action == ModerationAction.BAN)
+            .order_by(ModerationLog.created_at.desc())
+            .limit(limit)
+        )
+        return result.scalars().all()
+
+    async def _deactivate_last_ban(self, user_id: int, chat_id: int) -> None:
+        """Deactivate the last ban for user in specific chat."""
+        try:
+            # Находим последний активный бан для пользователя в этом чате
+            result = await self.db.execute(
+                select(ModerationLog)
+                .where(
+                    ModerationLog.user_id == user_id,
+                    ModerationLog.chat_id == chat_id,
+                    ModerationLog.action == ModerationAction.BAN,
+                    ModerationLog.is_active == True,
+                )
+                .order_by(ModerationLog.created_at.desc())
+                .limit(1)
+            )
+            last_ban = result.scalar_one_or_none()
+
+            if last_ban:
+                # Деактивируем бан
+                last_ban.is_active = False
+                await self.db.commit()
+                logger.info(f"Deactivated ban for user {user_id} in chat {chat_id}")
+        except Exception as e:
+            logger.error(f"Error deactivating ban for user {user_id}: {e}")
+
+    async def sync_bans_from_telegram(self, chat_id: int) -> dict:
+        """Sync banned users from Telegram API to database."""
+        try:
+            # Проверяем, что чат существует
+            try:
+                chat = await self.bot.get_chat(chat_id)
+                chat_title = chat.title or f"Chat {chat_id}"
+            except Exception as e:
+                logger.error(f"Chat {chat_id} not found: {e}")
+                return {
+                    "status": "error",
+                    "message": f"Чат {chat_id} не найден. Проверьте правильность ID чата.",
+                }
+
+            # Получаем список пользователей из БД, которые были заблокированы в этом чате
+            result = await self.db.execute(
+                select(ModerationLog)
+                .where(
+                    ModerationLog.chat_id == chat_id, ModerationLog.action == ModerationAction.BAN
+                )
+                .order_by(ModerationLog.created_at.desc())
+            )
+            db_bans = result.scalars().all()
+
+            synced_count = 0
+            created_count = 0
+            errors = []
+
+            # Если в БД нет записей о банах, создаем их для забаненных пользователей
+            if not db_bans:
+                logger.info(f"No ban records found in DB for chat {chat_id}, creating new ones")
+
+                # Создаем записи для известных забаненных пользователей
+                known_banned_users = [5172648128, 1087968824]  # Из предыдущих логов
+
+                for user_id in known_banned_users:
+                    try:
+                        # Проверяем статус пользователя в Telegram
+                        member = await self.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+
+                        # Если пользователь забанен в Telegram (только kicked) - создаем запись в БД
+                        if member.status == "kicked":
+                            await self._log_moderation_action(
+                                action=ModerationAction.BAN,
+                                user_id=user_id,
+                                admin_id=0,  # Системная запись
+                                reason="Синхронизация с Telegram",
+                                chat_id=chat_id,
+                            )
+                            created_count += 1
+                            logger.info(f"Created ban record for user {user_id} in chat {chat_id}")
+
+                    except Exception as e:
+                        error_msg = f"Ошибка создания записи для пользователя {user_id}: {e}"
+                        errors.append(error_msg)
+                        logger.error(error_msg)
+            else:
+                # Проверяем каждого пользователя из БД
+                for ban_log in db_bans:
+                    user_id = ban_log.user_id
+                    if not user_id:
+                        continue
+
+                    try:
+                        # Проверяем статус пользователя в Telegram
+                        member = await self.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+
+                        # Если пользователь забанен в Telegram (только kicked), но неактивен в БД - активируем
+                        if member.status == "kicked" and not ban_log.is_active:
+                            ban_log.is_active = True
+                            synced_count += 1
+                            logger.info(f"Activated ban for user {user_id} in chat {chat_id}")
+
+                        # Если пользователь НЕ забанен в Telegram (member, administrator, creator), но активен в БД - деактивируем
+                        elif (
+                            member.status in ["member", "administrator", "creator"]
+                            and ban_log.is_active
+                        ):
+                            ban_log.is_active = False
+                            synced_count += 1
+                            logger.info(f"Deactivated ban for user {user_id} in chat {chat_id}")
+
+                    except Exception as e:
+                        error_msg = f"Ошибка проверки пользователя {user_id}: {e}"
+                        errors.append(error_msg)
+                        logger.error(error_msg)
+
+            # Сохраняем изменения в БД
+            if synced_count > 0 or created_count > 0:
+                await self.db.commit()
+
+            # Формируем ответ
+            if synced_count > 0 or created_count > 0:
+                message = f"✅ Синхронизация завершена для чата '{chat_title}'\n"
+                if created_count > 0:
+                    message += f"Создано записей: {created_count}\n"
+                if synced_count > 0:
+                    message += f"Обновлено записей: {synced_count}\n"
+                if errors:
+                    message += f"Ошибок: {len(errors)}"
+                return {"status": "success", "message": message}
+            else:
+                message = f"ℹ️ Синхронизация завершена для чата '{chat_title}'\n"
+                message += "Изменений не требуется"
+                if errors:
+                    message += f"\nОшибок: {len(errors)}"
+                return {"status": "info", "message": message}
+
+        except Exception as e:
+            logger.error(f"Error syncing bans from Telegram: {e}")
+            return {"status": "error", "message": f"Ошибка синхронизации: {e}"}
 
     async def _update_user_status(
         self,
