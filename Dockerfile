@@ -40,4 +40,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 8000
 
 # Запуск приложения (упрощенная версия)
-CMD ["python", "bot_simple.py"]
+CMD ["python", "bot.py"]
