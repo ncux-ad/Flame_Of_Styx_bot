@@ -36,6 +36,8 @@ async def handle_start_command(
 ) -> None:
     """Главное меню администратора."""
     try:
+        if not message.from_user:
+            return
         logger.info(f"Admin start command from {message.from_user.id}")
 
         welcome_text = (
@@ -68,6 +70,8 @@ async def handle_status_command(
 ) -> None:
     """Подробная статистика бота."""
     try:
+        if not message.from_user:
+            return
         logger.info(f"Status command from {message.from_user.id}")
 
         # Получаем статистику
@@ -148,6 +152,8 @@ async def handle_channels_command(
 ) -> None:
     """Управление каналами."""
     try:
+        if not message.from_user:
+            return
         logger.info(f"Channels command from {message.from_user.id}")
 
         channels = await channel_service.get_all_channels()
@@ -185,6 +191,8 @@ async def handle_bots_command(
 ) -> None:
     """Управление ботами."""
     try:
+        if not message.from_user:
+            return
         logger.info(f"Bots command from {message.from_user.id}")
 
         bots = await bot_service.get_all_bots()
@@ -217,6 +225,8 @@ async def handle_suspicious_command(
 ) -> None:
     """Подозрительные профили."""
     try:
+        if not message.from_user:
+            return
         logger.info(f"Suspicious command from {message.from_user.id}")
 
         profiles = await profile_service.get_suspicious_profiles()
@@ -250,9 +260,14 @@ async def handle_unban_command(
 ) -> None:
     """Разблокировать пользователя с подсказками."""
     try:
+        if not message.from_user:
+            return
         logger.info(f"Unban command from {message.from_user.id}")
 
         # Парсим аргументы команды
+        if not message.text:
+            await message.answer("❌ Ошибка: пустое сообщение")
+            return
         args = message.text.split()[1:] if len(message.text.split()) > 1 else []
 
         if not args:
@@ -370,6 +385,8 @@ async def handle_banned_command(
 ) -> None:
     """Показать список заблокированных пользователей с подробной информацией."""
     try:
+        if not message.from_user:
+            return
         logger.info(f"Banned command from {message.from_user.id}")
 
         # Получаем список заблокированных пользователей
@@ -438,6 +455,8 @@ async def handle_ban_history_command(
 ) -> None:
     """Показать историю банов с chat_id для удобства."""
     try:
+        if not message.from_user:
+            return
         logger.info(f"Ban history command from {message.from_user.id}")
 
         # Получаем последние 10 записей из истории банов
@@ -498,9 +517,14 @@ async def handle_sync_bans_command(
 ) -> None:
     """Синхронизировать баны с Telegram API."""
     try:
+        if not message.from_user:
+            return
         logger.info(f"Sync bans command from {message.from_user.id}")
 
         # Парсим аргументы команды
+        if not message.text:
+            await message.answer("❌ Ошибка: пустое сообщение")
+            return
         args = message.text.split()[1:] if len(message.text.split()) > 1 else []
 
         if not args:
@@ -597,6 +621,8 @@ async def handle_help_command(
 ) -> None:
     """Справка по командам."""
     try:
+        if not message.from_user:
+            return
         logger.info(f"Help command from {message.from_user.id}")
 
         help_text = (
@@ -619,7 +645,8 @@ async def handle_help_command(
         )
 
         await message.answer(help_text)
-        logger.info(f"Help response sent to {message.from_user.id}")
+        if message.from_user:
+            logger.info(f"Help response sent to {message.from_user.id}")
 
     except Exception as e:
         logger.error(f"Error in help command: {e}")

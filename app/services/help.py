@@ -1,7 +1,7 @@
 """Help service for bot commands and features."""
 
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 # from app.auth.authorization import require_admin, safe_user_operation
 
@@ -13,7 +13,7 @@ class CommandInfo:
     command: str
     description: str
     usage: str = ""
-    examples: List[str] = None
+    examples: Optional[List[str]] = None
     admin_only: bool = False
 
 
@@ -109,7 +109,7 @@ class HelpService:
 
         return help_text
 
-    def get_category_help(self, category: str, user_id: int = None) -> str:
+    def get_category_help(self, category: str, user_id: Optional[int] = None) -> str:
         """Get help for specific category."""
         from app.auth.authorization import AuthorizationService
 
@@ -301,7 +301,7 @@ class HelpService:
             "• Для получения прав администратора обратитесь к разработчику"
         )
 
-    def get_command_info(self, command: str) -> CommandInfo:
+    def get_command_info(self, command: str) -> Optional[CommandInfo]:
         """Get information about specific command."""
         return self.commands.get(command.lstrip("/"), None)
 

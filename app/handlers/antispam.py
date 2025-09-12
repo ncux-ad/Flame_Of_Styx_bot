@@ -36,6 +36,8 @@ async def handle_edited_messages(
     Спамер может отредактировать сообщение и добавить ссылку после постинга.
     """
     try:
+        if not message.text:
+            return
         logger.info(f"Edited message processing: {message.text[:50]}...")
 
         # НЕ пропускаем отредактированные сообщения с командами!
@@ -131,7 +133,8 @@ async def handle_all_messages(
             )
         else:
             # Для личных сообщений - только rate limiting (уже обработан в middleware)
-            logger.info(f"Private message from {message.from_user.id}: {message.text}")
+            if message.from_user:
+                logger.info(f"Private message from {message.from_user.id}: {message.text}")
 
     except Exception as e:
         logger.error(f"Error in anti-spam handler: {e}")
