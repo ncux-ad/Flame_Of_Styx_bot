@@ -1,11 +1,14 @@
-"""Dependency Injection middleware for aiogram."""
+"""
+Упрощенный Dependency Injection middleware для двухслойной архитектуры.
+Инжектирует только необходимые сервисы.
+"""
 
 from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
 from aiogram.types import CallbackQuery, Message
 
-from app.database import SessionLocal, get_db
+from app.database import SessionLocal
 from app.services.bots import BotService
 from app.services.channels import ChannelService
 from app.services.links import LinkService
@@ -14,7 +17,7 @@ from app.services.profiles import ProfileService
 
 
 class DependencyInjectionMiddleware(BaseMiddleware):
-    """Middleware for dependency injection."""
+    """Упрощенный DI middleware для двухслойной архитектуры."""
 
     async def __call__(
         self,
@@ -22,40 +25,42 @@ class DependencyInjectionMiddleware(BaseMiddleware):
         event: Message | CallbackQuery,
         data: Dict[str, Any],
     ) -> Any:
-        """Inject dependencies into handler."""
+        """Инжектирует зависимости в хендлеры."""
         import logging
 
         logger = logging.getLogger(__name__)
 
-        # Get bot instance
+        # Получаем bot instance
         bot = event.bot
 
-        # Get database session
+        # Получаем database session
         async with SessionLocal() as db_session:
-            # Get admin ID from config
+            # Получаем admin ID из конфига
             from app.config import load_config
 
             config = load_config()
             admin_id = config.admin_ids_list[0] if config.admin_ids_list else 0
 
-            # Create services
+            # Создаем только необходимые сервисы
             services = {
+                # Основные сервисы для антиспама
+                "moderation_service": ModerationService(bot, db_session),
                 "link_service": LinkService(bot, db_session),
+                # Дополнительные сервисы для админки
                 "profile_service": ProfileService(bot, db_session),
                 "channel_service": ChannelService(bot, db_session),
                 "bot_service": BotService(bot, db_session),
-                "moderation_service": ModerationService(bot, db_session),
+                # Метаданные
                 "admin_id": admin_id,
                 "db_session": db_session,
             }
 
-            # Add services to data
+            # Добавляем сервисы в data
             data.update(services)
 
-            # Debug logging
-            logger.info(f"DI Middleware: Injected {len(services)} services into data")
-            logger.info(f"DI Middleware: Services keys: {list(services.keys())}")
+            # Логирование
+            logger.info(f"DI Middleware: Injected {len(services)} services")
+            logger.info(f"DI Middleware: Services: {list(services.keys())}")
 
-            # Call handler with event and data (aiogram 3.x style)
-            # In aiogram 3.x, data is passed as positional argument
+            # Вызываем хендлер с event и data (aiogram 3.x стиль)
             return await handler(event, data)

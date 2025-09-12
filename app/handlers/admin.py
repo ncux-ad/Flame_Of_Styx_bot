@@ -1,14 +1,13 @@
-"""Admin command handlers."""
+"""
+Упрощенный админский роутер - только админские команды
+"""
 
 import logging
 
-from aiogram import F, Router
+from aiogram import Router
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import Message
 
-from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
-from app.keyboards.inline import get_main_menu_keyboard
-from app.keyboards.reply import get_admin_menu_keyboard
 from app.services.bots import BotService
 from app.services.channels import ChannelService
 from app.services.moderation import ModerationService
@@ -22,21 +21,22 @@ admin_router = Router()
 
 
 @admin_router.message(Command("start"))
-async def handle_start_command(message: Message, data: dict = None) -> None:
-    """Handle /start command for admins."""
+async def handle_start_command(
+    message: Message,
+    moderation_service: ModerationService,
+    bot_service: BotService,
+    channel_service: ChannelService,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Главное меню администратора."""
     try:
-        logger.info(
-            safe_format_message(
-                "Start command received from {user_id}",
-                user_id=message.from_user.id if message.from_user else 0,
-            )
-        )
+        logger.info(f"Admin start command from {message.from_user.id}")
 
         welcome_text = (
-            "🤖 <b>AntiSpam Bot</b>\n\n"
-            "Добро пожаловать в панель администратора!\n\n"
+            "🤖 <b>AntiSpam Bot - Упрощенная версия</b>\n\n"
             "Доступные команды:\n"
-            "/status - статистика\n"
+            "/status - статистика бота\n"
             "/channels - управление каналами\n"
             "/bots - управление ботами\n"
             "/suspicious - подозрительные профили\n"
@@ -45,531 +45,208 @@ async def handle_start_command(message: Message, data: dict = None) -> None:
         )
 
         await message.answer(welcome_text)
-        logger.info(
-            safe_format_message(
-                "Start command response sent to {user_id}",
-                user_id=message.from_user.id if message.from_user else 0,
-            )
-        )
+        logger.info(f"Start command response sent to {message.from_user.id}")
 
     except Exception as e:
-        logger.error(
-            safe_format_message(
-                "Error handling start command: {error}", error=sanitize_for_logging(e)
-            )
-        )
+        logger.error(f"Error in start command: {e}")
 
 
-@admin_router.message(Command("status"), IsAdminOrSilentFilter())
-async def handle_status_command(message: Message, data: dict = None) -> None:
-    """Handle /status command."""
+@admin_router.message(Command("status"))
+async def handle_status_command(
+    message: Message,
+    moderation_service: ModerationService,
+    bot_service: BotService,
+    channel_service: ChannelService,
+    admin_id: int,
+) -> None:
+    """Статистика бота."""
     try:
-        # TODO: Get real statistics from database
+        logger.info(f"Status command from {message.from_user.id}")
+
+        # Получаем статистику
+        total_bots = await bot_service.get_total_bots_count()
+        total_channels = await channel_service.get_total_channels_count()
+
         status_text = (
-            "📊 <b>Статистика AntiSpam Bot</b>\n\n"
-            f"<b>Каналы:</b>\n"
-            f"✅ Разрешены: 0\n"
-            f"🚫 Заблокированы: 0\n"
-            f"⏳ Ожидают: 0\n\n"
-            f"<b>Боты:</b>\n"
-            f"✅ В whitelist: 0\n\n"
-            f"<b>Статус:</b> 🟢 Работает"
+            f"📊 <b>Статистика бота</b>\n\n"
+            f"🤖 Всего ботов: {total_bots}\n"
+            f"📢 Всего каналов: {total_channels}\n"
+            f"👑 Админ ID: {admin_id}\n"
+            f"✅ Статус: Работает"
         )
 
         await message.answer(status_text)
+        logger.info(f"Status response sent to {message.from_user.id}")
 
     except Exception as e:
-        logger.error(f"Error handling status command: {e}")
-        await message.answer("❌ Ошибка при получении статистики")
+        logger.error(f"Error in status command: {e}")
+        await message.answer("❌ Ошибка получения статистики")
 
 
-@admin_router.message(Command("channels"), IsAdminOrSilentFilter())
-async def handle_channels_command(message: Message, data: dict = None, **kwargs) -> None:
-    """Handle /channels command."""
+@admin_router.message(Command("channels"))
+async def handle_channels_command(
+    message: Message,
+    channel_service: ChannelService,
+    admin_id: int,
+) -> None:
+    """Управление каналами."""
     try:
-        # Get services from data or kwargs
-        if not data:
-            # Try to get data from kwargs
-            data = kwargs.get("data", {})
-            if not data:
-                # Try to get services directly from kwargs
-                data = {
-                    "channel_service": kwargs.get("channel_service"),
-                    "bot_service": kwargs.get("bot_service"),
-                    "profile_service": kwargs.get("profile_service"),
-                    "moderation_service": kwargs.get("moderation_service"),
-                    "link_service": kwargs.get("link_service"),
-                    "db_session": kwargs.get("db_session"),
-                }
-                if not any(data.values()):
-                    logger.error("Data not provided to handler")
-                    return
+        logger.info(f"Channels command from {message.from_user.id}")
 
-        channel_service = data.get("channel_service")
+        channels = await channel_service.get_all_channels()
 
-        if not channel_service:
-            logger.error("Channel service not injected properly")
-            await message.answer("❌ Ошибка: сервис каналов недоступен")
+        if not channels:
+            await message.answer("📢 Каналы не найдены")
             return
 
-        # Get channel lists
-        allowed_channels = await channel_service.get_allowed_channels()
-        blocked_channels = await channel_service.get_blocked_channels()
-        pending_channels = await channel_service.get_pending_channels()
+        channels_text = "📢 <b>Управление каналами</b>\n\n"
+        for channel in channels[:10]:  # Показываем первые 10
+            status = "✅ Нативный" if channel.is_native else "🔍 Иностранный"
+            channels_text += f"{status} {channel.title or 'Без названия'}\n"
 
-        channels_text = "📋 <b>Управление каналами</b>\n\n"
-
-        if allowed_channels:
-            channels_text += "<b>✅ Разрешенные каналы:</b>\n"
-            for channel in allowed_channels[:10]:  # Show first 10
-                channels_text += f"• {channel.title} (@{channel.username})\n"
-            if len(allowed_channels) > 10:
-                channels_text += f"... и еще {len(allowed_channels) - 10}\n"
-            channels_text += "\n"
-
-        if blocked_channels:
-            channels_text += "<b>🚫 Заблокированные каналы:</b>\n"
-            for channel in blocked_channels[:10]:  # Show first 10
-                channels_text += f"• {channel.title} (@{channel.username})\n"
-            if len(blocked_channels) > 10:
-                channels_text += f"... и еще {len(blocked_channels) - 10}\n"
-            channels_text += "\n"
-
-        if pending_channels:
-            channels_text += "<b>⏳ Ожидающие решения:</b>\n"
-            for channel in pending_channels[:10]:  # Show first 10
-                channels_text += f"• {channel.title} (@{channel.username})\n"
-            if len(pending_channels) > 10:
-                channels_text += f"... и еще {len(pending_channels) - 10}\n"
-
-        if not any([allowed_channels, blocked_channels, pending_channels]):
-            channels_text += "Нет каналов в базе данных"
+        if len(channels) > 10:
+            channels_text += f"\n... и еще {len(channels) - 10} каналов"
 
         await message.answer(channels_text)
+        logger.info(f"Channels response sent to {message.from_user.id}")
 
     except Exception as e:
-        logger.error(f"Error handling channels command: {e}")
-        await message.answer("❌ Ошибка при получении списка каналов")
+        logger.error(f"Error in channels command: {e}")
+        await message.answer("❌ Ошибка получения списка каналов")
 
 
-@admin_router.message(Command("bots"), IsAdminOrSilentFilter())
-async def handle_bots_command(message: Message, data: dict = None, **kwargs) -> None:
-    """Handle /bots command."""
+@admin_router.message(Command("bots"))
+async def handle_bots_command(
+    message: Message,
+    bot_service: BotService,
+    admin_id: int,
+) -> None:
+    """Управление ботами."""
     try:
-        # Get services from data or kwargs
-        if not data:
-            # Try to get data from kwargs
-            data = kwargs.get("data", {})
-            if not data:
-                # Try to get services directly from kwargs
-                data = {
-                    "channel_service": kwargs.get("channel_service"),
-                    "bot_service": kwargs.get("bot_service"),
-                    "profile_service": kwargs.get("profile_service"),
-                    "moderation_service": kwargs.get("moderation_service"),
-                    "link_service": kwargs.get("link_service"),
-                    "db_session": kwargs.get("db_session"),
-                }
-                if not any(data.values()):
-                    logger.error("Data not provided to handler")
-                    return
+        logger.info(f"Bots command from {message.from_user.id}")
 
-        bot_service = data.get("bot_service")
+        bots = await bot_service.get_all_bots()
 
-        if not bot_service:
-            logger.error("Bot service not injected properly")
-            await message.answer("❌ Ошибка: сервис ботов недоступен")
+        if not bots:
+            await message.answer("🤖 Боты не найдены")
             return
-
-        # Get bot lists
-        whitelisted_bots = await bot_service.get_whitelisted_bots()
-        all_bots = await bot_service.get_all_bots()
-
-        # Handle None values
-        if whitelisted_bots is None:
-            whitelisted_bots = []
-        if all_bots is None:
-            all_bots = []
 
         bots_text = "🤖 <b>Управление ботами</b>\n\n"
+        for bot in bots[:10]:  # Показываем первые 10
+            status = "✅ Вайтлист" if bot.is_whitelisted else "❌ Блэклист"
+            bots_text += f"{status} @{bot.username or 'Без username'}\n"
 
-        if whitelisted_bots:
-            bots_text += "<b>✅ Боты в whitelist:</b>\n"
-            for bot in whitelisted_bots[:10]:  # Show first 10
-                bots_text += f"• @{bot.username}\n"
-            if len(whitelisted_bots) > 10:
-                bots_text += f"... и еще {len(whitelisted_bots) - 10}\n"
-            bots_text += "\n"
-
-        bots_text += f"<b>Всего ботов в базе:</b> {len(all_bots)}\n"
-        bots_text += f"<b>В whitelist:</b> {len(whitelisted_bots)}\n"
-        bots_text += f"<b>Заблокированы:</b> {len(all_bots) - len(whitelisted_bots)}"
+        if len(bots) > 10:
+            bots_text += f"\n... и еще {len(bots) - 10} ботов"
 
         await message.answer(bots_text)
+        logger.info(f"Bots response sent to {message.from_user.id}")
 
     except Exception as e:
-        logger.error(f"Error handling bots command: {e}")
-        await message.answer("❌ Ошибка при получении списка ботов")
+        logger.error(f"Error in bots command: {e}")
+        await message.answer("❌ Ошибка получения списка ботов")
 
 
-@admin_router.message(Command("suspicious"), IsAdminOrSilentFilter())
-async def handle_suspicious_command(message: Message, data: dict = None, **kwargs) -> None:
-    """Handle /suspicious command."""
+@admin_router.message(Command("suspicious"))
+async def handle_suspicious_command(
+    message: Message,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Подозрительные профили."""
     try:
-        # Get services from data or kwargs
-        if not data:
-            # Try to get data from kwargs
-            data = kwargs.get("data", {})
-            if not data:
-                # Try to get services directly from kwargs
-                data = {
-                    "channel_service": kwargs.get("channel_service"),
-                    "bot_service": kwargs.get("bot_service"),
-                    "profile_service": kwargs.get("profile_service"),
-                    "moderation_service": kwargs.get("moderation_service"),
-                    "link_service": kwargs.get("link_service"),
-                    "db_session": kwargs.get("db_session"),
-                }
-                if not any(data.values()):
-                    logger.error("Data not provided to handler")
-                    return
+        logger.info(f"Suspicious command from {message.from_user.id}")
 
-        profile_service = data.get("profile_service")
+        profiles = await profile_service.get_suspicious_profiles()
 
-        if not profile_service:
-            logger.error("Profile service not injected properly")
-            logger.error(f"Available keys in kwargs: {list(kwargs.keys())}")
-            await message.answer("❌ Ошибка: сервис профилей недоступен")
+        if not profiles:
+            await message.answer("👤 Подозрительные профили не найдены")
             return
 
-        # Get suspicious profiles
-        suspicious_profiles = await profile_service.get_suspicious_profiles()
+        profiles_text = "👤 <b>Подозрительные профили</b>\n\n"
+        for profile in profiles[:10]:  # Показываем первые 10
+            profiles_text += f"ID: {profile.user_id}\n"
 
-        if not suspicious_profiles:
-            await message.answer("✅ Подозрительных профилей не найдено")
-            return
+        if len(profiles) > 10:
+            profiles_text += f"\n... и еще {len(profiles) - 10} профилей"
 
-        response_text = f"⚠️ <b>Подозрительные профили</b>\n\n"
-        response_text += f"Найдено: {len(suspicious_profiles)}\n\n"
-
-        for profile in suspicious_profiles[:10]:  # Show first 10
-            response_text += f"• ID: {profile.user_id}\n"
-            if profile.username:
-                response_text += f"  Username: @{profile.username}\n"
-            response_text += f"  Причина: {profile.reason}\n"
-            response_text += f"  Дата: {profile.created_at.strftime('%Y-%m-%d %H:%M')}\n\n"
-
-        if len(suspicious_profiles) > 10:
-            response_text += f"... и еще {len(suspicious_profiles) - 10}\n"
-
-        await message.answer(response_text)
+        await message.answer(profiles_text)
+        logger.info(f"Suspicious response sent to {message.from_user.id}")
 
     except Exception as e:
-        logger.error(f"Error handling suspicious command: {e}")
-        await message.answer("❌ Ошибка при получении подозрительных профилей")
+        logger.error(f"Error in suspicious command: {e}")
+        await message.answer("❌ Ошибка получения подозрительных профилей")
 
 
-@admin_router.message(Command("help"))
-async def handle_help_command(message: Message, data: dict = None) -> None:
-    """Handle /help command."""
+@admin_router.message(Command("unban"))
+async def handle_unban_command(
+    message: Message,
+    moderation_service: ModerationService,
+    admin_id: int,
+) -> None:
+    """Разблокировать пользователя."""
     try:
-        from app.services.help import HelpService
+        logger.info(f"Unban command from {message.from_user.id}")
 
-        help_service = HelpService()
+        # Парсим аргументы команды
+        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
 
-        # Parse command arguments
-        command_text = message.text or ""
-        args = command_text.split()[1:] if len(command_text.split()) > 1 else []
-
-        if args:
-            # Help for specific category
-            category = args[0]
-            help_text = help_service.get_category_help(
-                category, user_id=message.from_user.id if message.from_user else None
-            )
-        else:
-            # Main help
-            # Check if user is admin
-            from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
-
-            filter_instance = IsAdminOrSilentFilter()
-            is_admin = (
-                message.from_user.id in filter_instance.admin_ids if message.from_user else False
-            )
-            help_text = help_service.get_main_help(is_admin=is_admin)
-
-        await message.answer(help_text)
-
-    except Exception as e:
-        logger.error(f"Error handling help command: {e}")
-        await message.answer("❌ Ошибка при получении справки")
-
-
-@admin_router.message(Command("limits"), IsAdminOrSilentFilter())
-async def handle_limits_command(message: Message, data: dict = None) -> None:
-    """Handle /limits command to show current rate limits."""
-    try:
-        from app.config import load_config
-
-        config = load_config()
-        admin_ids = config.admin_ids_list
-
-        limits_text = (
-            "📊 <b>Текущие лимиты Rate Limit</b>\n\n"
-            "👥 <b>Обычные пользователи:</b>\n"
-            "• 10 запросов в минуту\n"
-            "• Интервал: 60 секунд\n\n"
-            "👑 <b>Администраторы:</b>\n"
-            f"• 100 запросов в минуту\n"
-            f"• Интервал: 60 секунд\n"
-            f"• Количество админов: {len(admin_ids)}\n\n"
-            "ℹ️ <i>Лимиты применяются к сообщениям и callback-запросам</i>"
-        )
-
-        await message.answer(limits_text)
-
-    except Exception as e:
-        logger.error(f"Error handling limits command: {e}")
-        await message.answer("❌ Ошибка при получении информации о лимитах")
-
-
-@admin_router.message(Command("setlimits"), IsAdminOrSilentFilter())
-async def handle_setlimits_command(message: Message, data: dict = None) -> None:
-    """Handle /setlimits command to change rate limits (super admin only)."""
-    try:
-        from app.config import load_config
-
-        config = load_config()
-        # Only first admin (super admin) can change limits
-        if message.from_user.id != config.admin_ids_list[0]:
-            await message.answer("❌ Только суперадмин может изменять лимиты")
-            return
-
-        # Parse command arguments
-        command_text = message.text or ""
-        args = command_text.split()[1:] if len(command_text.split()) > 1 else []
-
-        if len(args) < 2:
-            help_text = (
-                "⚙️ <b>Изменение лимитов Rate Limit</b>\n\n"
-                "Использование: /setlimits [user_limit] [admin_limit]\n\n"
-                "Примеры:\n"
-                "• /setlimits 5 50 - 5 запросов для пользователей, 50 для админов\n"
-                "• /setlimits 20 200 - 20 запросов для пользователей, 200 для админов\n\n"
-                "⚠️ <i>Изменения вступят в силу после перезапуска бота</i>"
-            )
-            await message.answer(help_text)
-            return
-
-        try:
-            user_limit = int(args[0])
-            admin_limit = int(args[1])
-
-            if user_limit < 1 or admin_limit < 1:
-                await message.answer("❌ Лимиты должны быть больше 0")
-                return
-
-            if user_limit > admin_limit:
-                await message.answer("❌ Лимит пользователей не может быть больше лимита админов")
-                return
-
-            # Update limits in bot.py (this would require bot restart)
-            success_text = (
-                f"✅ <b>Лимиты обновлены!</b>\n\n"
-                f"👥 Пользователи: {user_limit} запросов в минуту\n"
-                f"👑 Админы: {admin_limit} запросов в минуту\n\n"
-                f"⚠️ <i>Для применения изменений перезапустите бота</i>"
-            )
-            await message.answer(success_text)
-
-        except ValueError:
-            await message.answer("❌ Лимиты должны быть числами")
-
-    except Exception as e:
-        logger.error(f"Error handling setlimits command: {e}")
-        await message.answer("❌ Ошибка при изменении лимитов")
-
-
-@admin_router.message(Command("logs"), IsAdminOrSilentFilter())
-async def handle_logs_command(message: Message, data: dict = None) -> None:
-    """Handle /logs command."""
-    try:
-        import os
-        from datetime import datetime
-
-        # Check if logs directory exists
-        logs_dir = "logs"
-        if not os.path.exists(logs_dir):
-            await message.answer("📝 Логи не найдены. Директория logs не существует.")
-            return
-
-        # Get list of log files
-        log_files = [f for f in os.listdir(logs_dir) if f.endswith(".log")]
-
-        if not log_files:
-            await message.answer("📝 Логи не найдены. Нет файлов .log в директории logs.")
-            return
-
-        # Sort by modification time (newest first)
-        log_files.sort(key=lambda x: os.path.getmtime(os.path.join(logs_dir, x)), reverse=True)
-
-        # Get the most recent log file
-        latest_log = log_files[0]
-        log_path = os.path.join(logs_dir, latest_log)
-
-        # Get file size
-        file_size = os.path.getsize(log_path)
-
-        # Read last 50 lines of the log file
-        with open(log_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-            last_lines = lines[-50:] if len(lines) > 50 else lines
-
-        # Format log content
-        log_content = "".join(last_lines)
-
-        # Truncate if too long for Telegram (4096 chars limit)
-        if len(log_content) > 4000:
-            log_content = "...\n" + log_content[-4000:]
-
-        response_text = (
-            f"📝 <b>Последние логи</b>\n\n"
-            f"📁 Файл: <code>{latest_log}</code>\n"
-            f"📏 Размер: {file_size:,} байт\n"
-            f"📅 Обновлен: {datetime.fromtimestamp(os.path.getmtime(log_path)).strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-            f"<b>Последние 50 строк:</b>\n"
-            f"<pre>{log_content}</pre>"
-        )
-
-        await message.answer(response_text, parse_mode="HTML")
-
-    except Exception as e:
-        logger.error(f"Error handling logs command: {e}")
-        await message.answer("❌ Ошибка при получении логов")
-
-
-@admin_router.callback_query(F.data == "admin_stats")
-async def handle_admin_stats_callback(callback: CallbackQuery, data: dict = None) -> None:
-    """Handle admin stats callback."""
-    try:
-        # Get services from data
-        # data is already passed as parameter
-        channel_service = data.get("channel_service")
-        bot_service = data.get("bot_service")
-
-        if not channel_service or not bot_service:
-            logger.error("Services not injected properly")
-            await callback.answer("❌ Ошибка: сервисы недоступны")
-            return
-
-        # Get statistics
-        allowed_channels = await channel_service.get_allowed_channels()
-        blocked_channels = await channel_service.get_blocked_channels()
-        pending_channels = await channel_service.get_pending_channels()
-        whitelisted_bots = await bot_service.get_whitelisted_bots()
-
-        stats_text = (
-            "📊 <b>Статистика</b>\n\n"
-            f"<b>Каналы:</b>\n"
-            f"✅ Разрешены: {len(allowed_channels)}\n"
-            f"🚫 Заблокированы: {len(blocked_channels)}\n"
-            f"⏳ Ожидают: {len(pending_channels)}\n\n"
-            f"<b>Боты:</b>\n"
-            f"✅ В whitelist: {len(whitelisted_bots)}"
-        )
-
-        await callback.message.edit_text(stats_text)
-        await callback.answer()
-
-    except Exception as e:
-        logger.error(f"Error handling admin stats callback: {e}")
-        await callback.answer("❌ Ошибка при получении статистики")
-
-
-@admin_router.message(Command("settings"), IsAdminOrSilentFilter())
-async def handle_settings_command(message: Message, data: dict = None) -> None:
-    """Handle /settings command."""
-    try:
-        settings_text = (
-            "⚙️ <b>Настройки AntiSpam Bot</b>\n\n"
-            "Доступные настройки:\n"
-            "• Лимиты сообщений\n"
-            "• Фильтры спама\n"
-            "• Уведомления\n\n"
-            "Используйте /setlimits для настройки лимитов."
-        )
-
-        await message.answer(settings_text)
-
-    except Exception as e:
-        logger.error(f"Error handling settings command: {e}")
-        await message.answer("❌ Ошибка при получении настроек")
-
-
-@admin_router.message(Command("unban"), IsAdminOrSilentFilter())
-async def handle_unban_command(message: Message, data: dict = None, **kwargs) -> None:
-    """Handle /unban command to unban a user."""
-    try:
-        # Get services from data or kwargs
-        if not data:
-            data = kwargs.get("data", {})
-            if not data:
-                data = {
-                    "moderation_service": kwargs.get("moderation_service"),
-                    "admin_id": kwargs.get("admin_id"),
-                }
-                if not any(data.values()):
-                    logger.error("Data not provided to handler")
-                    return
-
-        moderation_service = data.get("moderation_service")
-        admin_id = data.get("admin_id")
-
-        if not moderation_service:
-            logger.error("Moderation service not injected properly")
-            await message.answer("❌ Ошибка: сервис модерации недоступен")
-            return
-
-        # Parse command arguments
-        command_parts = message.text.split()
-        if len(command_parts) < 2:
+        if len(args) < 1:
             await message.answer(
-                "❌ Неверный формат команды.\n"
-                "Использование: /unban <user_id> [chat_id]\n"
-                "Пример: /unban 5172648128 -1003094131978"
+                "❌ Использование: /unban <user_id> [chat_id]\n"
+                "Пример: /unban 123456789 -1001234567890"
             )
             return
 
-        try:
-            user_id = int(command_parts[1])
-        except ValueError:
-            await message.answer("❌ Неверный user_id. Должен быть числом.")
-            return
+        user_id = int(args[0])
+        chat_id = int(args[1]) if len(args) > 1 else message.chat.id
 
-        # Get chat_id from command or use current chat
-        if len(command_parts) >= 3:
-            try:
-                chat_id = int(command_parts[2])
-            except ValueError:
-                await message.answer("❌ Неверный chat_id. Должен быть числом.")
-                return
-        else:
-            chat_id = message.chat.id
-
-        # Unban user
+        # Разблокируем пользователя
         success = await moderation_service.unban_user(
-            user_id=user_id, chat_id=chat_id, admin_id=admin_id
+            user_id=user_id, chat_id=chat_id, admin_id=admin_id, reason="Unbanned by admin command"
         )
 
         if success:
             await message.answer(f"✅ Пользователь {user_id} разблокирован в чате {chat_id}")
+            logger.info(f"User {user_id} unbanned by admin {admin_id}")
         else:
             await message.answer(f"❌ Не удалось разблокировать пользователя {user_id}")
 
+    except ValueError:
+        await message.answer("❌ Неверный формат ID пользователя")
     except Exception as e:
-        logger.error(
-            safe_format_message(
-                "Error handling unban command: {error}", error=sanitize_for_logging(e)
-            )
+        logger.error(f"Error in unban command: {e}")
+        await message.answer("❌ Ошибка при разблокировке пользователя")
+
+
+@admin_router.message(Command("help"))
+async def handle_help_command(
+    message: Message,
+    admin_id: int,
+) -> None:
+    """Справка по командам."""
+    try:
+        logger.info(f"Help command from {message.from_user.id}")
+
+        help_text = (
+            "🤖 <b>AntiSpam Bot - Справка</b>\n\n"
+            "👑 <b>Команды администратора:</b>\n"
+            "/start - главное меню\n"
+            "/status - статистика бота\n"
+            "/channels - управление каналами\n"
+            "/bots - управление ботами\n"
+            "/suspicious - подозрительные профили\n"
+            "/unban - разблокировать пользователя\n"
+            "/help - эта справка\n\n"
+            "📖 <b>Дополнительная информация:</b>\n"
+            "• Все команды работают в личных сообщениях\n"
+            "• Антиспам работает автоматически в каналах\n"
+            "• Для получения прав администратора обратитесь к разработчику"
         )
-        await message.answer("❌ Ошибка при выполнении команды разблокировки")
+
+        await message.answer(help_text)
+        logger.info(f"Help response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in help command: {e}")
+        await message.answer("❌ Ошибка получения справки")

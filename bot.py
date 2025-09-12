@@ -13,7 +13,7 @@ from aiogram.enums import ParseMode
 
 from app.config import load_config
 from app.database import create_tables
-from app.middlewares.dependency_injection_simple import DependencyInjectionMiddleware
+from app.middlewares.dependency_injection import DependencyInjectionMiddleware
 from app.middlewares.logging import LoggingMiddleware
 from app.middlewares.ratelimit import RateLimitMiddleware
 
@@ -66,13 +66,13 @@ async def main():
         logger.info("Middlewares registered successfully")
 
         # 6. Register routers in correct order
-        from app.handlers import admin_simple, antispam
+        from app.handlers import admin, antispam
 
         # Anti-spam router first (catches everything)
         dp.include_router(antispam.antispam_router)
 
         # Admin router second (only admin commands)
-        dp.include_router(admin_simple.admin_router)
+        dp.include_router(admin.admin_router)
 
         logger.info("Routers registered successfully")
         logger.info("Starting bot...")
