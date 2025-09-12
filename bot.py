@@ -42,33 +42,23 @@ async def main():
 
         # Register middlewares (order matters!)
         # DependencyInjectionMiddleware must be first to provide services
+
+        # Register middlewares on dispatcher level (aiogram 3.x style)
         dp.message.middleware(DependencyInjectionMiddleware())
         dp.message.middleware(LoggingMiddleware())
         dp.message.middleware(RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60))
 
-        # Also register for callback queries
         dp.callback_query.middleware(DependencyInjectionMiddleware())
         dp.callback_query.middleware(LoggingMiddleware())
         dp.callback_query.middleware(
             RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60)
         )
 
-        # Register for all other update types
+        # Register for other update types
         dp.my_chat_member.middleware(DependencyInjectionMiddleware())
         dp.chat_member.middleware(DependencyInjectionMiddleware())
-        dp.chosen_inline_result.middleware(DependencyInjectionMiddleware())
-        dp.inline_query.middleware(DependencyInjectionMiddleware())
-        dp.pre_checkout_query.middleware(DependencyInjectionMiddleware())
-        dp.shipping_query.middleware(DependencyInjectionMiddleware())
-        dp.poll_answer.middleware(DependencyInjectionMiddleware())
-        dp.poll.middleware(DependencyInjectionMiddleware())
-        dp.chat_join_request.middleware(DependencyInjectionMiddleware())
-        dp.business_connection.middleware(DependencyInjectionMiddleware())
-        dp.business_message.middleware(DependencyInjectionMiddleware())
-        dp.edited_message.middleware(DependencyInjectionMiddleware())
         dp.channel_post.middleware(DependencyInjectionMiddleware())
-        dp.channel_post.middleware(LoggingMiddleware())
-        dp.channel_post.middleware(RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60))
+        dp.edited_message.middleware(DependencyInjectionMiddleware())
         dp.edited_channel_post.middleware(DependencyInjectionMiddleware())
 
         logger.info("Middlewares registered successfully")
@@ -88,7 +78,22 @@ async def main():
         # dp.message.filter(IsAdminOrSilentFilter())
 
         logger.info("Starting bot...")
-        await dp.start_polling(bot)
+
+        # Try different approaches for Bad Gateway errors
+        try:
+            # First try: standard polling
+            await dp.start_polling(bot)
+        except Exception as e:
+            if "Bad Gateway" in str(e):
+                logger.warning("Bad Gateway error, trying with different session settings...")
+                # Second try: with different session settings
+                from aiogram.client.session.aiohttp import AiohttpSession
+
+                session = AiohttpSession(timeout=30)
+                bot.session = session
+                await dp.start_polling(bot)
+            else:
+                raise
 
     except Exception as e:
         logger.error(f"Error starting bot: {e}")

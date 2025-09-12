@@ -4,11 +4,11 @@ FROM python:3.11-slim
 # Создание пользователя для безопасности
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Установка системных зависимостей
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+# Установка системных зависимостей (curl не обязателен для бота)
+# RUN apt-get update && apt-get install -y --fix-missing \
+#     curl \
+#     && rm -rf /var/lib/apt/lists/* \
+#     && apt-get clean
 
 # Установка Python зависимостей
 COPY requirements.txt .

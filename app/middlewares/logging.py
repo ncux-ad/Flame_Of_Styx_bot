@@ -6,10 +6,7 @@ from aiogram.types import Message
 
 class LoggingMiddleware(BaseMiddleware):
     async def __call__(
-        self,
-        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-        event: Message,
-        data: Dict[str, Any],
+        self, handler: Callable[..., Awaitable[Any]], event: Message, data: Dict[str, Any], **kwargs
     ) -> Any:
         print(f"[LOG] {event.from_user.id}: {event.text}")
         return await handler(event, data)

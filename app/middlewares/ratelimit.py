@@ -31,6 +31,7 @@ class RateLimitMiddleware(BaseMiddleware):
         handler: Callable[..., Awaitable[Any]],
         event: Message | CallbackQuery,
         data: Dict[str, Any],
+        **kwargs,
     ) -> Any:
         """Check rate limit before processing."""
         # Get user ID

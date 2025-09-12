@@ -21,8 +21,13 @@ class DependencyInjectionMiddleware(BaseMiddleware):
         handler: Callable[..., Awaitable[Any]],
         event: Message | CallbackQuery,
         data: Dict[str, Any],
+        **kwargs,
     ) -> Any:
         """Inject dependencies into handler."""
+        import logging
+
+        logger = logging.getLogger(__name__)
+
         # Get bot instance
         bot = event.bot
 
@@ -41,6 +46,10 @@ class DependencyInjectionMiddleware(BaseMiddleware):
             # Add services to data
             data.update(services)
 
+            # Debug logging
+            logger.info(f"DI Middleware: Injected {len(services)} services into data")
+            logger.info(f"DI Middleware: Services keys: {list(services.keys())}")
+
             # Call handler with event and data (aiogram 3.x style)
-            # According to aiogram 3 docs, middleware should pass data dict
-            return await handler(event, data=data)
+            # In aiogram 3.x, data is passed as keyword arguments
+            return await handler(event, data)

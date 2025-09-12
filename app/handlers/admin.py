@@ -22,7 +22,7 @@ admin_router = Router()
 
 
 @admin_router.message(Command("start"))
-async def handle_start_command(message: Message, **kwargs) -> None:
+async def handle_start_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /start command for admins."""
     try:
         logger.info(
@@ -60,7 +60,7 @@ async def handle_start_command(message: Message, **kwargs) -> None:
 
 
 @admin_router.message(Command("status"), IsAdminOrSilentFilter())
-async def handle_status_command(message: Message, **kwargs) -> None:
+async def handle_status_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /status command."""
     try:
         # TODO: Get real statistics from database
@@ -83,12 +83,11 @@ async def handle_status_command(message: Message, **kwargs) -> None:
 
 
 @admin_router.message(Command("channels"), IsAdminOrSilentFilter())
-async def handle_channels_command(message: Message, **kwargs) -> None:
+async def handle_channels_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /channels command."""
     try:
-        # Get services from data
-        data = kwargs.get("data", {})
-        channel_service = data.get("channel_service")
+        # Get services from kwargs (aiogram 3.x style)
+        channel_service = kwargs.get("channel_service")
 
         if not channel_service:
             logger.error("Channel service not injected properly")
@@ -136,12 +135,11 @@ async def handle_channels_command(message: Message, **kwargs) -> None:
 
 
 @admin_router.message(Command("bots"), IsAdminOrSilentFilter())
-async def handle_bots_command(message: Message, **kwargs) -> None:
+async def handle_bots_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /bots command."""
     try:
-        # Get services from data
-        data = kwargs.get("data", {})
-        bot_service = data.get("bot_service")
+        # Get services from kwargs (aiogram 3.x style)
+        bot_service = kwargs.get("bot_service")
 
         if not bot_service:
             logger.error("Bot service not injected properly")
@@ -174,15 +172,15 @@ async def handle_bots_command(message: Message, **kwargs) -> None:
 
 
 @admin_router.message(Command("suspicious"), IsAdminOrSilentFilter())
-async def handle_suspicious_command(message: Message, **kwargs) -> None:
+async def handle_suspicious_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /suspicious command."""
     try:
-        # Get services from data
-        data = kwargs.get("data", {})
-        profile_service = data.get("profile_service")
+        # Get services from kwargs (aiogram 3.x style)
+        profile_service = kwargs.get("profile_service")
 
         if not profile_service:
             logger.error("Profile service not injected properly")
+            logger.error(f"Available keys in kwargs: {list(kwargs.keys())}")
             await message.answer("❌ Ошибка: сервис профилей недоступен")
             return
 
@@ -214,7 +212,7 @@ async def handle_suspicious_command(message: Message, **kwargs) -> None:
 
 
 @admin_router.message(Command("help"))
-async def handle_help_command(message: Message, **kwargs) -> None:
+async def handle_help_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /help command."""
     try:
         from app.services.help import HelpService
@@ -233,9 +231,14 @@ async def handle_help_command(message: Message, **kwargs) -> None:
             )
         else:
             # Main help
-            help_text = help_service.get_main_help(
-                user_id=message.from_user.id if message.from_user else None
+            # Check if user is admin
+            from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
+
+            filter_instance = IsAdminOrSilentFilter()
+            is_admin = (
+                message.from_user.id in filter_instance.admin_ids if message.from_user else False
             )
+            help_text = help_service.get_main_help(is_admin=is_admin)
 
         await message.answer(help_text)
 
@@ -245,7 +248,7 @@ async def handle_help_command(message: Message, **kwargs) -> None:
 
 
 @admin_router.message(Command("limits"), IsAdminOrSilentFilter())
-async def handle_limits_command(message: Message, **kwargs) -> None:
+async def handle_limits_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /limits command to show current rate limits."""
     try:
         from app.config import load_config
@@ -273,7 +276,7 @@ async def handle_limits_command(message: Message, **kwargs) -> None:
 
 
 @admin_router.message(Command("setlimits"), IsAdminOrSilentFilter())
-async def handle_setlimits_command(message: Message, **kwargs) -> None:
+async def handle_setlimits_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /setlimits command to change rate limits (super admin only)."""
     try:
         from app.config import load_config
@@ -330,7 +333,7 @@ async def handle_setlimits_command(message: Message, **kwargs) -> None:
 
 
 @admin_router.message(Command("logs"), IsAdminOrSilentFilter())
-async def handle_logs_command(message: Message, **kwargs) -> None:
+async def handle_logs_command(message: Message, data: dict = None, **kwargs) -> None:
     """Handle /logs command."""
     try:
         import os
@@ -423,3 +426,23 @@ async def handle_admin_stats_callback(callback: CallbackQuery, **kwargs) -> None
     except Exception as e:
         logger.error(f"Error handling admin stats callback: {e}")
         await callback.answer("❌ Ошибка при получении статистики")
+
+
+@admin_router.message(Command("settings"), IsAdminOrSilentFilter())
+async def handle_settings_command(message: Message, data: dict = None, **kwargs) -> None:
+    """Handle /settings command."""
+    try:
+        settings_text = (
+            "⚙️ <b>Настройки AntiSpam Bot</b>\n\n"
+            "Доступные настройки:\n"
+            "• Лимиты сообщений\n"
+            "• Фильтры спама\n"
+            "• Уведомления\n\n"
+            "Используйте /setlimits для настройки лимитов."
+        )
+
+        await message.answer(settings_text)
+
+    except Exception as e:
+        logger.error(f"Error handling settings command: {e}")
+        await message.answer("❌ Ошибка при получении настроек")
