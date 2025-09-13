@@ -5,9 +5,12 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    bot_token: str
+    bot_token: str = ""
     admin_ids: str = "366490333,439304619"
     db_path: str = "db.sqlite3"
+
+    # Native channels (каналы, где бот является администратором)
+    native_channel_ids: str = ""
 
     # Лимиты системы
     max_messages_per_minute: int = 10
@@ -16,7 +19,7 @@ class Settings(BaseSettings):
     suspicion_threshold: float = 0.2
 
     @validator("db_path")
-    def validate_db_path(cls, v):
+    def validate_db_path(cls, v: str) -> str:
         """Validate database path."""
         if not v:
             raise ValueError("DB_PATH не может быть пустым")
@@ -28,7 +31,7 @@ class Settings(BaseSettings):
         return v
 
     @validator("bot_token")
-    def validate_token(cls, v):
+    def validate_token(cls, v: str) -> str:
         if not v or len(v) < 20:
             raise ValueError("BOT_TOKEN некорректный или отсутствует")
         # Проверяем формат токена (должен быть в формате 123456789:ABC...)
@@ -37,7 +40,7 @@ class Settings(BaseSettings):
         return v
 
     @validator("admin_ids")
-    def validate_admin_ids(cls, v):
+    def validate_admin_ids(cls, v: str) -> str:
         """Validate admin_ids format."""
         if not v:
             raise ValueError("ADMIN_IDS не может быть пустым")
@@ -59,8 +62,18 @@ class Settings(BaseSettings):
     @property
     def admin_ids_list(self) -> List[int]:
         """Parse admin_ids string to list of integers."""
-        if isinstance(self.admin_ids, str):
-            return [int(x.strip()) for x in self.admin_ids.split(",") if x.strip().isdigit()]
+        return [int(x.strip()) for x in self.admin_ids.split(",") if x.strip().isdigit()]
+
+    @property
+    def native_channel_ids_list(self) -> List[int]:
+        """Parse native_channel_ids string to list of integers."""
+        if isinstance(self.native_channel_ids, str) and self.native_channel_ids.strip():
+            result = []
+            for x in self.native_channel_ids.split(","):
+                x = x.strip()
+                if x and (x.isdigit() or (x.startswith("-") and x[1:].isdigit())):
+                    result.append(int(x))
+            return result
         return []
 
     class Config:

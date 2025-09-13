@@ -29,6 +29,13 @@ class LinkService:
         """Check message for bot links and return list of (username, is_bot) tuples."""
         results = []
 
+        # Skip bot link checking for messages from channels (sender_chat)
+        if message.sender_chat:
+            logger.info(
+                f"Skipping bot link check for message from channel: {message.sender_chat.title}"
+            )
+            return results
+
         # Check text content
         if message.text:
             text_matches = await self._extract_bot_links_from_text(message.text)

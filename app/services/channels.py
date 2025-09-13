@@ -21,10 +21,11 @@ logger = logging.getLogger(__name__)
 class ChannelService:
     """Service for managing channel whitelist/blacklist."""
 
-    def __init__(self, bot: Bot, db_session: AsyncSession):
+    def __init__(self, bot: Bot, db_session: AsyncSession, native_channel_ids: List[int] = None):
         self.bot = bot
         self.db = db_session
         self.moderation_service = ModerationService(bot, db_session)
+        self.native_channel_ids = native_channel_ids or []
 
     async def handle_channel_message(self, message: Message, admin_id: int) -> bool:
         """Handle message from channel (sender_chat)."""
@@ -252,10 +253,10 @@ class ChannelService:
     async def is_native_channel(self, channel_id: int) -> bool:
         """Check if channel is native (where bot is connected)."""
         try:
-            # For now, we'll consider all channels as foreign
-            # In production, this should check bot's chat list
-            # or have a configurable list of native channels
-            return False
+            # Check if channel is in the native channels list
+            is_native = channel_id in self.native_channel_ids
+            logger.info(f"Channel {channel_id} is native: {is_native}")
+            return is_native
         except Exception as e:
             logger.error(
                 safe_format_message(

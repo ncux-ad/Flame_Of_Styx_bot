@@ -50,7 +50,7 @@ class DependencyInjectionMiddleware(BaseMiddleware):
                 "link_service": LinkService(bot, db_session),
                 # Дополнительные сервисы для админки
                 "profile_service": ProfileService(bot, db_session),
-                "channel_service": ChannelService(bot, db_session),
+                "channel_service": ChannelService(bot, db_session, config.native_channel_ids_list),
                 "bot_service": BotService(bot, db_session),
                 "help_service": HelpService(),
                 "limits_service": LimitsService(),

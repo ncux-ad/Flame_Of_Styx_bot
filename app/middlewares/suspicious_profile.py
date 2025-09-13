@@ -27,6 +27,11 @@ class SuspiciousProfileMiddleware(BaseMiddleware):
 
         # Проверяем, что это сообщение от пользователя
         if isinstance(event, Message) and event.from_user:
+            # Пропускаем системного пользователя Telegram (777000) - это каналы
+            if event.from_user.id == 777000:
+                logger.info(f"Skipping profile analysis for Telegram system user (777000)")
+                return await handler(event, data)
+
             logger.info(
                 f"Processing message from user {event.from_user.id} in chat {event.chat.id if event.chat else 'unknown'}"
             )
