@@ -11,6 +11,8 @@ from aiogram.types import CallbackQuery, Message
 from app.database import SessionLocal
 from app.services.bots import BotService
 from app.services.channels import ChannelService
+from app.services.help import HelpService
+from app.services.limits import LimitsService
 from app.services.links import LinkService
 from app.services.moderation import ModerationService
 from app.services.profiles import ProfileService
@@ -50,6 +52,8 @@ class DependencyInjectionMiddleware(BaseMiddleware):
                 "profile_service": ProfileService(bot, db_session),
                 "channel_service": ChannelService(bot, db_session),
                 "bot_service": BotService(bot, db_session),
+                "help_service": HelpService(),
+                "limits_service": LimitsService(),
                 # Метаданные
                 "admin_id": admin_id,
                 "db_session": db_session,

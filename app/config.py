@@ -9,6 +9,12 @@ class Settings(BaseSettings):
     admin_ids: str = "366490333,439304619"
     db_path: str = "db.sqlite3"
 
+    # Лимиты системы
+    max_messages_per_minute: int = 10
+    max_links_per_message: int = 3
+    ban_duration_hours: int = 24
+    suspicion_threshold: float = 0.2
+
     @validator("db_path")
     def validate_db_path(cls, v):
         """Validate database path."""

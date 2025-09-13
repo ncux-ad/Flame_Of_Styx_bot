@@ -12,6 +12,8 @@ from aiogram.types import CallbackQuery, Message
 from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 from app.services.bots import BotService
 from app.services.channels import ChannelService
+from app.services.help import HelpService
+from app.services.limits import LimitsService
 from app.services.moderation import ModerationService
 from app.services.profiles import ProfileService
 
@@ -412,6 +414,131 @@ async def handle_cleanup_duplicates_command(message: Message, profile_service: P
         await message.answer(f"❌ Ошибка при очистке: {e}")
 
 
+@admin_router.message(Command("settings"))
+async def handle_settings_command(message: Message) -> None:
+    """Настройки бота."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Settings command from {message.from_user.id}")
+
+        settings_text = (
+            "⚙️ <b>Настройки бота</b>\n\n"
+            "🔧 <b>Текущие настройки:</b>\n"
+            "• Система подозрительных профилей: ✅ Включена\n"
+            "• Порог подозрительности: 0.2\n"
+            "• Автоматическая модерация: ✅ Включена\n"
+            "• Логирование: ✅ Включено\n\n"
+            "📊 <b>Статистика:</b>\n"
+            "• Middleware активен\n"
+            "• DI сервисы загружены\n"
+            "• База данных подключена\n\n"
+            "ℹ️ Для изменения настроек обратитесь к разработчику"
+        )
+
+        await message.answer(settings_text)
+        if message.from_user:
+            logger.info(f"Settings response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in settings command: {e}")
+
+
+@admin_router.message(Command("setlimits"))
+async def handle_setlimits_command(message: Message, limits_service: LimitsService) -> None:
+    """Просмотр лимитов системы."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Setlimits command from {message.from_user.id}")
+
+        limits_text = (
+            "🔒 <b>Управление лимитами</b>\n\n" "👑 <b>Доступно администраторам</b>\n\n"
+        ) + limits_service.get_limits_display()
+
+        await message.answer(limits_text)
+        if message.from_user:
+            logger.info(f"Setlimits response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in setlimits command: {e}")
+
+
+@admin_router.message(Command("setlimit"))
+async def handle_setlimit_command(message: Message, limits_service: LimitsService) -> None:
+    """Изменение конкретного лимита."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Setlimit command from {message.from_user.id}")
+
+        # Парсим команду: /setlimit <тип> <значение>
+        text = message.text or ""
+        parts = text.split()
+
+        if len(parts) < 3:
+            await message.answer(
+                "❌ <b>Неверный формат команды</b>\n\n"
+                "Используйте: /setlimit &lt;тип&gt; &lt;значение&gt;\n\n"
+                "📋 <b>Доступные типы:</b>\n"
+                "• messages - максимум сообщений в минуту\n"
+                "• links - максимум ссылок в сообщении\n"
+                "• ban - время блокировки в часах\n"
+                "• threshold - порог подозрительности\n\n"
+                "💡 <b>Примеры:</b>\n"
+                "• /setlimit messages 15\n"
+                "• /setlimit links 5\n"
+                "• /setlimit ban 48\n"
+                "• /setlimit threshold 0.3"
+            )
+            return
+
+        limit_type = parts[1].lower()
+        try:
+            value = float(parts[2]) if limit_type == "threshold" else int(parts[2])
+        except ValueError:
+            await message.answer("❌ Значение должно быть числом!")
+            return
+
+        # Маппинг типов лимитов
+        limit_mapping = {
+            "messages": "max_messages_per_minute",
+            "links": "max_links_per_message",
+            "ban": "ban_duration_hours",
+            "threshold": "suspicion_threshold",
+        }
+
+        if limit_type not in limit_mapping:
+            await message.answer(
+                "❌ <b>Неверный тип лимита</b>\n\n"
+                "📋 <b>Доступные типы:</b>\n"
+                "• messages - максимум сообщений в минуту\n"
+                "• links - максимум ссылок в сообщении\n"
+                "• ban - время блокировки в часах\n"
+                "• threshold - порог подозрительности"
+            )
+            return
+
+        # Обновляем лимит
+        success = limits_service.update_limit(limit_mapping[limit_type], value)
+
+        if success:
+            await message.answer(
+                f"✅ <b>Лимит обновлен!</b>\n\n"
+                f"📊 <b>{limit_type}</b> изменен на <b>{value}</b>\n\n"
+                "🔄 Изменения вступят в силу после перезапуска бота"
+            )
+        else:
+            await message.answer("❌ Ошибка при обновлении лимита!")
+
+        if message.from_user:
+            logger.info(f"Setlimit response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in setlimit command: {e}")
+        await message.answer("❌ Ошибка при обработке команды!")
+
+
 @admin_router.message(Command("unban"))
 async def handle_unban_command(
     message: Message,
@@ -779,7 +906,7 @@ async def handle_sync_bans_command(
 @admin_router.message(Command("help"))
 async def handle_help_command(
     message: Message,
-    admin_id: int,
+    help_service: HelpService,
 ) -> None:
     """Справка по командам."""
     try:
@@ -787,24 +914,8 @@ async def handle_help_command(
             return
         logger.info(f"Help command from {message.from_user.id}")
 
-        help_text = (
-            "🤖 <b>AntiSpam Bot - Справка</b>\n\n"
-            "👑 <b>Команды администратора:</b>\n"
-            "/start - главное меню\n"
-            "/status - статистика бота\n"
-            "/channels - управление каналами\n"
-            "/bots - управление ботами\n"
-            "/suspicious - подозрительные профили\n"
-            "/unban - разблокировать пользователя\n"
-            "/banned - список заблокированных\n"
-            "/ban_history - история банов с ID чатов\n"
-            "/sync_bans - синхронизировать баны с Telegram\n"
-            "/help - эта справка\n\n"
-            "📖 <b>Дополнительная информация:</b>\n"
-            "• Все команды работают в личных сообщениях\n"
-            "• Антиспам работает автоматически в каналах\n"
-            "• Для получения прав администратора обратитесь к разработчику"
-        )
+        # Используем HelpService для получения актуальной справки
+        help_text = help_service.get_main_help(is_admin=True)
 
         await message.answer(help_text)
         if message.from_user:

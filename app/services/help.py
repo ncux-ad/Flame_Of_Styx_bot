@@ -89,6 +89,13 @@ class HelpService:
                 examples=["/cleanup_duplicates"],
                 admin_only=True,
             ),
+            "setlimit": CommandInfo(
+                command="/setlimit",
+                description="Изменение лимитов системы",
+                usage="/setlimit <тип> <значение>",
+                examples=["/setlimit messages 15", "/setlimit threshold 0.3"],
+                admin_only=True,
+            ),
             "settings": CommandInfo(
                 command="/settings",
                 description="Настройки бота",
@@ -170,19 +177,15 @@ class HelpService:
 
     def _get_admin_commands(self) -> str:
         """Get admin commands list."""
-        return (
-            "👑 <b>Команды администратора:</b>\n"
-            "/start - главное меню\n"
-            "/status - статистика бота\n"
-            "/channels - управление каналами\n"
-            "/bots - управление ботами\n"
-            "/suspicious - подозрительные профили\n"
-            "/limits - информация о лимитах\n"
-            "/setlimits - изменение лимитов (суперадмин)\n"
-            "/settings - настройки бота\n"
-            "/logs - просмотр логов\n"
-            "/help - эта справка\n\n"
-        )
+        commands_text = "👑 <b>Команды администратора:</b>\n"
+
+        # Генерируем список команд динамически из self.commands
+        for command_key, command_info in self.commands.items():
+            if command_info.admin_only:
+                commands_text += f"{command_info.command} - {command_info.description}\n"
+
+        commands_text += "\n"
+        return commands_text
 
     def _get_user_commands(self) -> str:
         """Get user commands list."""
