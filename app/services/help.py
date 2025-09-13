@@ -96,6 +96,13 @@ class HelpService:
                 examples=["/setlimit messages 15", "/setlimit threshold 0.3"],
                 admin_only=True,
             ),
+            "reload_limits": CommandInfo(
+                command="/reload_limits",
+                description="Перезагрузка лимитов из файла",
+                usage="/reload_limits",
+                examples=["/reload_limits"],
+                admin_only=True,
+            ),
             "settings": CommandInfo(
                 command="/settings",
                 description="Настройки бота",

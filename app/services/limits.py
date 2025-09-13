@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 from typing import Any, Dict
 
 from app.config import load_config
@@ -15,10 +16,16 @@ class LimitsService:
     def __init__(self):
         self.config = load_config()
         self.limits_file = "limits.json"
+        self._cached_limits = None
+        self._last_file_mtime = 0
 
     def get_current_limits(self) -> Dict[str, Any]:
-        """Получить текущие лимиты."""
-        return {
+        """Получить текущие лимиты с поддержкой hot-reload."""
+        # Проверяем, нужно ли обновить кэш
+        if self._should_reload_limits():
+            self._cached_limits = self._load_limits()
+
+        return self._cached_limits or {
             "max_messages_per_minute": self.config.max_messages_per_minute,
             "max_links_per_message": self.config.max_links_per_message,
             "ban_duration_hours": self.config.ban_duration_hours,
@@ -65,6 +72,31 @@ class LimitsService:
             logger.error(f"Error saving limits: {e}")
             raise
 
+    def _should_reload_limits(self) -> bool:
+        """Проверить, нужно ли перезагрузить лимиты."""
+        try:
+            if not os.path.exists(self.limits_file):
+                return False
+
+            current_mtime = os.path.getmtime(self.limits_file)
+            if current_mtime > self._last_file_mtime:
+                self._last_file_mtime = current_mtime
+                return True
+        except Exception as e:
+            logger.error(f"Ошибка проверки времени модификации файла: {e}")
+
+        return False
+
+    def reload_limits(self) -> bool:
+        """Принудительно перезагрузить лимиты из файла."""
+        try:
+            self._cached_limits = self._load_limits()
+            logger.info("Лимиты перезагружены из файла")
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка перезагрузки лимитов: {e}")
+            return False
+
     def get_limits_display(self) -> str:
         """Получить отображение лимитов для пользователя."""
         limits = self.get_current_limits()
@@ -79,5 +111,6 @@ class LimitsService:
             "• /setlimit messages &lt;число&gt; - изменить лимит сообщений\n"
             "• /setlimit links &lt;число&gt; - изменить лимит ссылок\n"
             "• /setlimit ban &lt;часы&gt; - изменить время блокировки\n"
-            "• /setlimit threshold &lt;число&gt; - изменить порог подозрительности"
+            "• /setlimit threshold &lt;число&gt; - изменить порог подозрительности\n\n"
+            "🔄 <b>Hot-reload:</b> Изменения в limits.json применяются автоматически!"
         )

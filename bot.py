@@ -17,6 +17,8 @@ from app.middlewares.dependency_injection import DependencyInjectionMiddleware
 from app.middlewares.logging import LoggingMiddleware
 from app.middlewares.ratelimit import RateLimitMiddleware
 from app.middlewares.suspicious_profile import SuspiciousProfileMiddleware
+from app.services.config_watcher import LimitsHotReload
+from app.services.limits import LimitsService
 
 # Configure logging
 logging.basicConfig(
@@ -92,9 +94,16 @@ async def main():
         dp.include_router(antispam.antispam_router)
 
         logger.info("Routers registered successfully")
+
+        # 7. Initialize hot-reload for limits
+        limits_service = LimitsService()
+        hot_reload = LimitsHotReload(limits_service, bot, config.admin_ids_list)
+        await hot_reload.start()
+        logger.info("Hot-reload for limits started")
+
         logger.info("Starting bot...")
 
-        # 7. Start polling
+        # 8. Start polling
         await dp.start_polling(bot)
 
     except Exception as e:

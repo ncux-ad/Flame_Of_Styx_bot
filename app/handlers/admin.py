@@ -526,7 +526,7 @@ async def handle_setlimit_command(message: Message, limits_service: LimitsServic
             await message.answer(
                 f"✅ <b>Лимит обновлен!</b>\n\n"
                 f"📊 <b>{limit_type}</b> изменен на <b>{value}</b>\n\n"
-                "🔄 Изменения вступят в силу после перезапуска бота"
+                "🔄 Изменения применены немедленно благодаря hot-reload!"
             )
         else:
             await message.answer("❌ Ошибка при обновлении лимита!")
@@ -537,6 +537,39 @@ async def handle_setlimit_command(message: Message, limits_service: LimitsServic
     except Exception as e:
         logger.error(f"Error in setlimit command: {e}")
         await message.answer("❌ Ошибка при обработке команды!")
+
+
+@admin_router.message(Command("reload_limits"))
+async def handle_reload_limits_command(message: Message, limits_service: LimitsService) -> None:
+    """Принудительная перезагрузка лимитов из файла."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Reload limits command from {message.from_user.id}")
+
+        # Перезагружаем лимиты
+        success = limits_service.reload_limits()
+
+        if success:
+            limits = limits_service.get_current_limits()
+            await message.answer(
+                "🔄 <b>Лимиты перезагружены!</b>\n\n"
+                f"📊 <b>Текущие лимиты:</b>\n"
+                f"• Сообщений в минуту: {limits['max_messages_per_minute']}\n"
+                f"• Ссылок в сообщении: {limits['max_links_per_message']}\n"
+                f"• Время блокировки: {limits['ban_duration_hours']} часов\n"
+                f"• Порог подозрительности: {limits['suspicion_threshold']}\n\n"
+                "✅ Изменения применены немедленно!"
+            )
+        else:
+            await message.answer("❌ Ошибка при перезагрузке лимитов!")
+
+        if message.from_user:
+            logger.info(f"Reload limits response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in reload_limits command: {e}")
+        await message.answer("❌ Ошибка при перезагрузке лимитов!")
 
 
 @admin_router.message(Command("unban"))
