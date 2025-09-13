@@ -152,6 +152,9 @@ logs/
 *.sqlite3
 *.db
 
+# Dynamic configuration files
+limits.json
+
 # IDE
 .vscode/
 .idea/

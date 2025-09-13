@@ -1,0 +1,6 @@
+{
+  "max_messages_per_minute": 10,
+  "max_links_per_message": 3,
+  "ban_duration_hours": 24,
+  "suspicion_threshold": 0.2
+}
