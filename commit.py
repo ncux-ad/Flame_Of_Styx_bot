@@ -39,17 +39,14 @@ def format_code():
     # Форматирование с помощью black
     for directory in directories:
         if Path(directory).exists():
-            run_command(
-                ["black", directory],
-                f"Форматирование {directory} с помощью black"
-            )
+            run_command(["black", directory], f"Форматирование {directory} с помощью black")
 
     # Форматирование с помощью isort
     for directory in directories:
         if Path(directory).exists():
             run_command(
                 ["isort", "--profile", "black", directory],
-                f"Сортировка импортов в {directory} с помощью isort"
+                f"Сортировка импортов в {directory} с помощью isort",
             )
 
 
@@ -73,7 +70,7 @@ def get_commit_message():
 
     # Спросить о подробном описании
     print("\n📋 Хотите добавить подробное описание? (y/n): ", end="")
-    if input().lower().startswith('y'):
+    if input().lower().startswith("y"):
         print("Введите подробное описание (завершите пустой строкой):")
         description_lines = []
         while True:

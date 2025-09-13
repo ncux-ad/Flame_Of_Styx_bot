@@ -13,6 +13,10 @@ def run_command(command: list, description: str) -> bool:
     """Запустить команду и вернуть результат."""
     print(f"🔄 {description}...")
     try:
+        # Используем python -m для запуска black и isort
+        if command[0] in ["black", "isort"]:
+            command = ["python", "-m"] + command
+
         result = subprocess.run(command, check=True, capture_output=True, text=True)
         print(f"✅ {description} - успешно")
         return True
@@ -34,10 +38,7 @@ def main():
     black_success = True
     for directory in directories:
         if Path(directory).exists():
-            if not run_command(
-                ["black", directory],
-                f"Форматирование {directory} с помощью black"
-            ):
+            if not run_command(["black", directory], f"Форматирование {directory} с помощью black"):
                 black_success = False
 
     # Форматирование с помощью isort
@@ -46,7 +47,7 @@ def main():
         if Path(directory).exists():
             if not run_command(
                 ["isort", "--profile", "black", directory],
-                f"Сортировка импортов в {directory} с помощью isort"
+                f"Сортировка импортов в {directory} с помощью isort",
             ):
                 isort_success = False
 
