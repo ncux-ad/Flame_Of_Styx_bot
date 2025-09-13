@@ -1,3 +1,6 @@
+# Конфигурация pre-commit с автоматическим форматированием
+# Использовать: pre-commit run --config .pre-commit-config.auto.yaml --all-files
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
@@ -13,14 +16,14 @@ repos:
     rev: 23.3.0
     hooks:
       - id: black
-        # Не изменяем файлы автоматически, только проверяем
-        args: ["--check", "--diff"]
+        # Автоматическое форматирование
+        args: []
 
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
     hooks:
       - id: isort
-        args: ["--profile", "black", "--check-only", "--diff"]
+        args: ["--profile", "black"]
 
   # flake8 отключен - используем только black и isort
   # - repo: https://github.com/pycqa/flake8

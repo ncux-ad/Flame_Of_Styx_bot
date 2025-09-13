@@ -285,7 +285,9 @@ async def handle_suspicious_command(
 
             if profile.is_reviewed:
                 status = (
-                    "✅ Подтвержден" if profile.is_confirmed_suspicious else "❌ Ложное срабатывание"
+                    "✅ Подтвержден"
+                    if profile.is_confirmed_suspicious
+                    else "❌ Ложное срабатывание"
                 )
                 profiles_text += f"• <b>Статус:</b> {status}\n"
             else:
@@ -655,7 +657,9 @@ async def handle_unban_command(
             )
             logger.info(f"User {user_id} unbanned by admin {admin_id}")
         else:
-            await message.answer(f"❌ Не удалось разблокировать пользователя <code>{user_id}</code>")
+            await message.answer(
+                f"❌ Не удалось разблокировать пользователя <code>{user_id}</code>"
+            )
 
     except ValueError:
         await message.answer("❌ Неверный формат ID пользователя")

@@ -1,6 +1,7 @@
 """Profile analysis service for detecting GPT-bots."""
 
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from aiogram import Bot
@@ -269,15 +270,17 @@ class ProfileService:
         """Create suspicious profile entry."""
         profile = SuspiciousProfile(
             user_id=user_id,
-            linked_chat_id=analysis_result["linked_chat"]["id"]
-            if analysis_result["linked_chat"]
-            else None,
-            linked_chat_username=analysis_result["linked_chat"]["username"]
-            if analysis_result["linked_chat"]
-            else None,
-            linked_chat_title=analysis_result["linked_chat"]["title"]
-            if analysis_result["linked_chat"]
-            else None,
+            linked_chat_id=(
+                analysis_result["linked_chat"]["id"] if analysis_result["linked_chat"] else None
+            ),
+            linked_chat_username=(
+                analysis_result["linked_chat"]["username"]
+                if analysis_result["linked_chat"]
+                else None
+            ),
+            linked_chat_title=(
+                analysis_result["linked_chat"]["title"] if analysis_result["linked_chat"] else None
+            ),
             post_count=analysis_result["post_count"],
             has_bait_channel=analysis_result["has_bait_channel"],
             suspicion_score=analysis_result["suspicion_score"],
