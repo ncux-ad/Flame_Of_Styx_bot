@@ -16,6 +16,7 @@ from app.database import create_tables
 from app.middlewares.dependency_injection import DependencyInjectionMiddleware
 from app.middlewares.logging import LoggingMiddleware
 from app.middlewares.ratelimit import RateLimitMiddleware
+from app.middlewares.suspicious_profile import SuspiciousProfileMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -46,10 +47,23 @@ async def main():
         dp = Dispatcher()
 
         # 5. Register middlewares (order matters!)
-        # Logging -> RateLimit -> DI
+        # Logging -> RateLimit -> DI -> SuspiciousProfile
         dp.message.middleware(LoggingMiddleware())
         dp.message.middleware(RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60))
         dp.message.middleware(DependencyInjectionMiddleware())
+
+        # SuspiciousProfile middleware (after DI to get profile_service)
+        async def suspicious_profile_middleware(handler, event, data):
+            logger.info("SuspiciousProfileMiddleware called")
+            if "profile_service" in data:
+                logger.info("Profile service found, creating SuspiciousProfileMiddleware")
+                suspicious_middleware = SuspiciousProfileMiddleware(data["profile_service"])
+                return await suspicious_middleware(handler, event, data)
+            else:
+                logger.warning("Profile service not found in data")
+            return await handler(event, data)
+
+        dp.message.middleware(suspicious_profile_middleware)
 
         # Apply to other update types
         for update_type in [

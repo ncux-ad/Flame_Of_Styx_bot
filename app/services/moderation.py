@@ -267,6 +267,76 @@ class ModerationService:
         )
         return result.scalars().all()
 
+    async def get_deleted_messages_count(self) -> int:
+        """Get total count of deleted messages."""
+        result = await self.db.execute(
+            select(ModerationLog).where(ModerationLog.action == ModerationAction.DELETE_MESSAGE)
+        )
+        return len(result.scalars().all())
+
+    async def get_spam_statistics(self) -> dict:
+        """Get spam statistics."""
+        # Count deleted messages
+        deleted_messages = await self.get_deleted_messages_count()
+
+        # Count bans
+        banned_users = await self.get_banned_users(limit=1000)
+        total_bans = len(banned_users)
+
+        # Count total moderation actions
+        result = await self.db.execute(select(ModerationLog))
+        total_actions = len(result.scalars().all())
+
+        return {
+            "deleted_messages": deleted_messages,
+            "total_bans": total_bans,
+            "total_actions": total_actions,
+        }
+
+    async def cleanup_duplicate_bans(self, chat_id: int) -> int:
+        """Remove duplicate ban records for the same user in the same chat."""
+        try:
+            # Находим дубликаты - записи с одинаковыми user_id, chat_id, action=BAN
+            result = await self.db.execute(
+                select(ModerationLog)
+                .where(
+                    ModerationLog.chat_id == chat_id, ModerationLog.action == ModerationAction.BAN
+                )
+                .order_by(ModerationLog.user_id, ModerationLog.created_at.desc())
+            )
+            all_bans = result.scalars().all()
+
+            # Группируем по user_id
+            user_bans = {}
+            for ban in all_bans:
+                if ban.user_id not in user_bans:
+                    user_bans[ban.user_id] = []
+                user_bans[ban.user_id].append(ban)
+
+            removed_count = 0
+
+            # Для каждого пользователя оставляем только самую новую активную запись
+            for user_id, bans in user_bans.items():
+                if len(bans) > 1:
+                    # Сортируем по дате создания (новые первыми)
+                    bans.sort(key=lambda x: x.created_at, reverse=True)
+
+                    # Оставляем только первую (самую новую) запись
+                    keep_ban = bans[0]
+                    for ban in bans[1:]:
+                        await self.db.delete(ban)
+                        removed_count += 1
+                        logger.info(
+                            f"Removed duplicate ban record for user {user_id} in chat {chat_id}"
+                        )
+
+            await self.db.commit()
+            return removed_count
+
+        except Exception as e:
+            logger.error(f"Error cleaning up duplicate bans: {e}")
+            return 0
+
     async def _deactivate_last_ban(self, user_id: int, chat_id: int) -> None:
         """Deactivate the last ban for user in specific chat."""
         try:
@@ -329,6 +399,21 @@ class ModerationService:
 
                 for user_id in known_banned_users:
                     try:
+                        # Проверяем, есть ли уже активный бан для этого пользователя в этом чате
+                        existing_ban = await self.db.execute(
+                            select(ModerationLog).where(
+                                ModerationLog.user_id == user_id,
+                                ModerationLog.chat_id == chat_id,
+                                ModerationLog.action == ModerationAction.BAN,
+                                ModerationLog.is_active == True,
+                            )
+                        )
+                        if existing_ban.scalar_one_or_none():
+                            logger.info(
+                                f"User {user_id} already has active ban in chat {chat_id}, skipping"
+                            )
+                            continue
+
                         # Проверяем статус пользователя в Telegram
                         member = await self.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
 
@@ -383,13 +468,18 @@ class ModerationService:
             if synced_count > 0 or created_count > 0:
                 await self.db.commit()
 
+            # Очищаем дубликаты
+            removed_duplicates = await self.cleanup_duplicate_bans(chat_id)
+
             # Формируем ответ
-            if synced_count > 0 or created_count > 0:
+            if synced_count > 0 or created_count > 0 or removed_duplicates > 0:
                 message = f"✅ Синхронизация завершена для чата '{chat_title}'\n"
                 if created_count > 0:
                     message += f"Создано записей: {created_count}\n"
                 if synced_count > 0:
                     message += f"Обновлено записей: {synced_count}\n"
+                if removed_duplicates > 0:
+                    message += f"Удалено дубликатов: {removed_duplicates}\n"
                 if errors:
                     message += f"Ошибок: {len(errors)}"
                 return {"status": "success", "message": message}

@@ -62,24 +62,49 @@ class ProfileService:
         try:
             # Check if user already has suspicious profile
             existing_profile = await self._get_suspicious_profile(user.id)
-            if existing_profile and existing_profile.is_reviewed:
-                return existing_profile
 
             # Analyze profile
             analysis_result = await self._perform_profile_analysis(user)
 
             if analysis_result["is_suspicious"]:
-                # Create or update suspicious profile
-                profile = await self._create_suspicious_profile(
-                    user_id=user.id, analysis_result=analysis_result
-                )
+                if existing_profile:
+                    # Update existing profile
+                    existing_profile.suspicion_score = analysis_result["suspicion_score"]
+                    existing_profile.detected_patterns = ",".join(analysis_result["patterns"])
+                    existing_profile.is_suspicious = analysis_result["is_suspicious"]
+                    existing_profile.analysis_reason = (
+                        f"Suspicion score: {analysis_result['suspicion_score']:.2f}"
+                    )
+                    existing_profile.updated_at = datetime.utcnow()
 
-                # Notify admin
-                await self._notify_admin_about_suspicious_profile(
-                    admin_id=admin_id, user=user, profile=profile
-                )
+                    await self.db.commit()
+                    await self.db.refresh(existing_profile)
 
-                return profile
+                    # Only notify admin if profile is not reviewed yet
+                    if not existing_profile.is_reviewed:
+                        await self._notify_admin_about_suspicious_profile(
+                            admin_id=admin_id, user=user, profile=existing_profile
+                        )
+
+                    return existing_profile
+                else:
+                    # Create new suspicious profile
+                    profile = await self._create_suspicious_profile(
+                        user_id=user.id, analysis_result=analysis_result
+                    )
+
+                    # Notify admin
+                    await self._notify_admin_about_suspicious_profile(
+                        admin_id=admin_id, user=user, profile=profile
+                    )
+
+                    return profile
+            else:
+                # If not suspicious and profile exists, mark as not suspicious
+                if existing_profile and existing_profile.is_suspicious:
+                    existing_profile.is_suspicious = False
+                    existing_profile.updated_at = datetime.utcnow()
+                    await self.db.commit()
 
             return None
 
@@ -105,18 +130,16 @@ class ProfileService:
         }
 
         try:
-            # Check if user has linked chat
-            if hasattr(user, "linked_chat") and user.linked_chat:
-                linked_chat = user.linked_chat
-                analysis["linked_chat"] = {
-                    "id": linked_chat.id,
-                    "username": linked_chat.username,
-                    "title": linked_chat.title,
-                }
+            # Check if user has linked chat - this is NOT available in Telegram Bot API
+            # linked_chat is only available for chats, not users
+            logger.info(
+                f"Checking for linked_chat - this is not available for users in Telegram Bot API"
+            )
 
-                # Analyze linked chat
-                chat_analysis = await self._analyze_linked_chat(linked_chat)
-                analysis.update(chat_analysis)
+            # Note: linked_chat information is not available for users in Telegram Bot API
+            # It's only available for chats via getChat() method
+            # We'll skip this check as it's not possible to get user's linked chat via Bot API
+            logger.info(f"Linked chat detection skipped - not available for users in Bot API")
 
             # Check for suspicious patterns
             patterns = await self._detect_suspicious_patterns(user)
@@ -124,7 +147,10 @@ class ProfileService:
 
             # Calculate suspicion score
             analysis["suspicion_score"] = self._calculate_suspicion_score(analysis)
-            analysis["is_suspicious"] = analysis["suspicion_score"] > 0.5
+            analysis["is_suspicious"] = analysis["suspicion_score"] > 0.2
+            logger.info(
+                f"Analysis result for user {user.id}: score={analysis['suspicion_score']:.2f}, patterns={analysis['patterns']}, is_suspicious={analysis['is_suspicious']}"
+            )
 
         except Exception as e:
             logger.error(
@@ -178,14 +204,25 @@ class ProfileService:
         if user.last_name and len(user.last_name) < 3:
             patterns.append("short_last_name")
 
-        if not user.username and not user.first_name:
-            patterns.append("no_identifying_info")
+        # More sensitive pattern: no username (common for bots)
+        if not user.username:
+            patterns.append("no_username")
+
+        # More sensitive pattern: no last name (common for bots)
+        if not user.last_name:
+            patterns.append("no_last_name")
 
         # Check for suspicious username patterns
         if user.username:
             username = user.username.lower()
             if any(pattern in username for pattern in ["bot", "gpt", "ai", "assistant"]):
                 patterns.append("bot_like_username")
+
+        # Check for suspicious first name patterns
+        if user.first_name:
+            first_name = user.first_name.lower()
+            if any(pattern in first_name for pattern in ["bot", "gpt", "ai", "test", "user"]):
+                patterns.append("bot_like_first_name")
 
         return patterns
 
@@ -203,12 +240,15 @@ class ProfileService:
             if analysis["post_count"] == 0:
                 score += 0.2
 
-        # Pattern analysis
+        # Pattern analysis - increased weights since we can't detect linked_chat
         pattern_weights = {
-            "short_first_name": 0.1,
-            "short_last_name": 0.1,
-            "no_identifying_info": 0.3,
-            "bot_like_username": 0.2,
+            "short_first_name": 0.2,
+            "short_last_name": 0.2,
+            "no_identifying_info": 0.4,
+            "bot_like_username": 0.3,
+            "no_username": 0.25,
+            "no_last_name": 0.2,
+            "bot_like_first_name": 0.35,
         }
 
         for pattern in analysis["patterns"]:
@@ -256,6 +296,8 @@ class ProfileService:
     ) -> None:
         """Notify admin about suspicious profile."""
         try:
+            from app.keyboards.inline import get_suspicious_profile_keyboard
+
             message = "⚠️ <b>Подозрительный профиль обнаружен</b>\n\n"
             message += f"<b>Пользователь:</b> {user.first_name or 'Unknown'}\n"
             if user.username:
@@ -269,11 +311,23 @@ class ProfileService:
                     message += f"<b>Username канала:</b> @{profile.linked_chat_username}\n"
 
             if profile.detected_patterns:
-                message += f"<b>Обнаруженные паттерны:</b> {profile.detected_patterns}\n"
+                patterns = profile.detected_patterns.split(",") if profile.detected_patterns else []
+                pattern_names = {
+                    "short_first_name": "Короткое имя",
+                    "short_last_name": "Короткая фамилия",
+                    "no_identifying_info": "Нет идентификаторов",
+                    "bot_like_username": "Bot-подобный username",
+                    "no_username": "Нет username",
+                    "no_last_name": "Нет фамилии",
+                    "bot_like_first_name": "Bot-подобное имя",
+                }
+                pattern_text = ", ".join([pattern_names.get(p, p) for p in patterns])
+                message += f"<b>Обнаруженные паттерны:</b> {pattern_text}\n"
 
-            await self.bot.send_message(
-                chat_id=admin_id, text=message, reply_markup=None  # Will be set by handler
-            )
+            # Создаем клавиатуру для модерации
+            keyboard = get_suspicious_profile_keyboard(user.id)
+
+            await self.bot.send_message(chat_id=admin_id, text=message, reply_markup=keyboard)
 
         except Exception as e:
             logger.error(
@@ -330,3 +384,20 @@ class ProfileService:
                 )
             )
             return []
+
+    async def reset_suspicious_profiles(self) -> int:
+        """Reset all suspicious profiles to unreviewed status."""
+        try:
+            from sqlalchemy import update
+
+            result = await self.db.execute(
+                update(SuspiciousProfile)
+                .where(SuspiciousProfile.is_reviewed == True)
+                .values(is_reviewed=False, is_confirmed_suspicious=False)
+            )
+            await self.db.commit()
+            return result.rowcount
+        except Exception as e:
+            logger.error(f"Error resetting suspicious profiles: {e}")
+            await self.db.rollback()
+            return 0

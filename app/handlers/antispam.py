@@ -117,6 +117,10 @@ async def handle_all_messages(
             logger.info(f"Command message skipped by antispam: {message.text}")
             return
 
+        # Сохраняем информацию о канале, если сообщение от канала
+        if message.sender_chat or message.chat.type in ["channel", "supergroup"]:
+            await channel_service.save_channel_info(message.chat, message.sender_chat)
+
         logger.info(
             f"Anti-spam processing: user_id={message.from_user.id if message.from_user else 'unknown'}, "
             f"chat_id={message.chat.id}, text='{message.text[:50] if message.text else 'None'}'"
@@ -129,7 +133,12 @@ async def handle_all_messages(
         # Для каналов и супергрупп - проверяем антиспам
         if is_channel_message:
             await handle_channel_antispam(
-                message, moderation_service, link_service, channel_service, admin_id
+                message,
+                moderation_service,
+                link_service,
+                channel_service,
+                profile_service,
+                admin_id,
             )
         else:
             # Для личных сообщений - только rate limiting (уже обработан в middleware)
@@ -145,6 +154,7 @@ async def handle_channel_antispam(
     moderation_service: ModerationService,
     link_service: LinkService,
     channel_service: ChannelService,
+    profile_service: ProfileService,
     admin_id: int,
 ) -> None:
     """Обрабатывает антиспам для сообщений в каналах/группах."""
@@ -174,6 +184,19 @@ async def handle_channel_antispam(
             logger.info(f"Message deleted and user banned due to bot links: {bot_links}")
         else:
             logger.info("No bot links detected, message allowed")
+
+            # Если нет бот-ссылок, но есть отправитель - анализируем его профиль
+            if message.from_user:
+                try:
+                    suspicious_profile = await profile_service.analyze_user_profile(
+                        user=message.from_user, admin_id=admin_id
+                    )
+                    if suspicious_profile:
+                        logger.warning(
+                            f"Suspicious profile detected in channel: user_id={message.from_user.id}, score={suspicious_profile.suspicion_score}"
+                        )
+                except Exception as e:
+                    logger.error(f"Error analyzing user profile in channel: {e}")
 
     except Exception as e:
         logger.error(f"Error in channel antispam: {e}")

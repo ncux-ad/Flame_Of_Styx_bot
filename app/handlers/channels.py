@@ -36,18 +36,24 @@ async def handle_channel_message(
         logger.info(
             f"Channel handler: sender_chat={message.sender_chat}, chat_type={message.chat.type}"
         )
+        logger.info(
+            f"handle_channel_message called: from_user={message.from_user}, is_bot={message.from_user.is_bot if message.from_user else None}"
+        )
 
         # Handle messages from channels (sender_chat) or channel comment groups (supergroup)
         # Skip private messages and regular groups
         if message.chat.type not in ["channel", "supergroup"]:
             return
 
-        # Skip if message is from bot
-        if message.from_user and message.from_user.is_bot:
+        # Skip if message is from bot (but allow channel messages)
+        if message.from_user and message.from_user.is_bot and not message.sender_chat:
             return
 
         # Determine channel ID for checking
         channel_id = message.sender_chat.id if message.sender_chat else message.chat.id
+
+        # Save channel information to database
+        await channel_service.save_channel_info(message.chat, message.sender_chat)
 
         # Check if this is the native channel (where bot is connected)
         is_native_channel = await channel_service.is_native_channel(channel_id)
@@ -189,16 +195,19 @@ async def _handle_foreign_channel_message(
 
 
 @channel_router.my_chat_member()
-async def handle_channel_member_update(update) -> None:
+async def handle_channel_member_update(update, channel_service: ChannelService) -> None:
     """Handle channel member updates."""
     try:
-        # This can be used to track when channels are added/removed
-        # For now, just log the event
+        # Log the event
         logger.info(
             safe_format_message(
                 "Channel member update: {update}", update=sanitize_for_logging(update)
             )
         )
+
+        # Save channel information to database
+        if hasattr(update, "chat") and update.chat:
+            await channel_service.save_channel_info(update.chat, None)
 
     except Exception as e:
         logger.error(

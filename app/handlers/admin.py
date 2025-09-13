@@ -6,7 +6,8 @@ import logging
 
 from aiogram import Router
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
 
 from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 from app.services.bots import BotService
@@ -80,17 +81,18 @@ async def handle_status_command(
         banned_users = await moderation_service.get_banned_users(limit=100)
         active_bans = len([ban for ban in banned_users if ban.is_active])
 
-        # Получаем информацию о каналах (упрощённо)
+        # Получаем статистику спама
+        spam_stats = await moderation_service.get_spam_statistics()
+        deleted_messages = spam_stats["deleted_messages"]
+        total_actions = spam_stats["total_actions"]
+
+        # Получаем информацию о каналах из базы данных
         try:
             channels = await channel_service.get_all_channels()
-            channel_info = []
-            for channel in channels[:5]:  # Показываем первые 5 каналов
-                channel_info.append(f"• {channel.title} <code>({channel.chat_id})</code>")
         except Exception:
             channels = []
-            channel_info = []
 
-        # Добавляем известные чаты из логов, если их нет в базе
+        # Добавляем известные чаты, где бот активен
         known_chats = [
             {
                 "title": "Test_FlameOfStyx_bot",
@@ -99,16 +101,27 @@ async def handle_status_command(
             }
         ]
 
-        # Если в базе нет каналов, показываем известные
-        if not channel_info:
-            for chat in known_chats:
-                channel_info.append(f"• {chat['title']} <code>({chat['chat_id']})</code>")
-                channel_info.append(f"  └ Тип: {chat['type']}")
-                channel_info.append("  └ Статус: ✅ Антиспам активен")
+        # Формируем информацию о чатах
+        channel_info = []
+
+        # Добавляем каналы из базы данных
+        for channel in channels[:5]:  # Показываем первые 5 каналов
+            channel_info.append(f"• {channel.title} <code>({channel.telegram_id})</code>")
+            channel_info.append("  └ Тип: Канал")
+            channel_info.append("  └ Статус: ✅ Антиспам активен")
+
+        # Добавляем известные чаты (группы комментариев)
+        for chat in known_chats:
+            channel_info.append(f"• {chat['title']} <code>({chat['chat_id']})</code>")
+            channel_info.append(f"  └ Тип: {chat['type']}")
+            channel_info.append("  └ Статус: ✅ Антиспам активен")
 
         # Информация о боте (упрощённо)
         bot_username = "FlameOfStyx_bot"  # Из конфига
         bot_id = "7977609078"  # Из логов
+
+        # Подсчитываем общее количество чатов
+        total_connected_chats = len(channels) + len(known_chats)
 
         status_text = (
             "📊 <b>Подробная статистика бота</b>\n\n"
@@ -116,7 +129,7 @@ async def handle_status_command(
             f"• Username: @{bot_username}\n"
             f"• ID: <code>{bot_id}</code>\n"
             "• Статус: ✅ Работает\n\n"
-            f"📢 <b>Подключённые чаты ({total_channels}):</b>\n"
+            f"📢 <b>Подключённые чаты ({total_connected_chats}):</b>\n"
         )
 
         if channel_info:
@@ -133,7 +146,9 @@ async def handle_status_command(
 
         status_text += "\n\n🚫 <b>Модерация:</b>\n"
         status_text += f"• Активных банов: {active_bans}\n"
-        status_text += f"• Всего записей: {len(banned_users)}\n\n"
+        status_text += f"• Всего записей: {len(banned_users)}\n"
+        status_text += f"• Удалено спам-сообщений: {deleted_messages}\n"
+        status_text += f"• Всего действий модерации: {total_actions}\n\n"
         status_text += f"👑 <b>Администратор:</b> <code>{admin_id}</code>"
 
         await message.answer(status_text)
@@ -166,7 +181,7 @@ async def handle_channels_command(
         for channel in channels[:10]:  # Показываем первые 10
             status = "✅ Нативный" if channel.is_native else "🔍 Иностранный"
             username = f"@{channel.username}" if channel.username else "Без username"
-            channels_text += f"{status} <b>{channel.title or 'Без названия'}</b>\n"
+            channels_text += f"<b>{channel.title or 'Без названия'}</b>\n"
             channels_text += f"   ID: <code>{channel.telegram_id}</code> | {username}\n"
             if channel.member_count:
                 channels_text += f"   👥 Участников: {channel.member_count}\n"
@@ -236,11 +251,48 @@ async def handle_suspicious_command(
             return
 
         profiles_text = "👤 <b>Подозрительные профили</b>\n\n"
-        for profile in profiles[:10]:  # Показываем первые 10
-            profiles_text += f"ID: {profile.user_id}\n"
+
+        for i, profile in enumerate(profiles[:10], 1):  # Показываем первые 10
+            # Получаем информацию о пользователе
+            user_info = await profile_service.get_user_info(profile.user_id)
+
+            profiles_text += f"<b>{i}. Пользователь {profile.user_id}</b>\n"
+            profiles_text += f"• <b>Имя:</b> {user_info.get('first_name', 'Неизвестно')}\n"
+            if user_info.get("username"):
+                profiles_text += f"• <b>Username:</b> @{user_info['username']}\n"
+            profiles_text += f"• <b>Счет подозрительности:</b> {profile.suspicion_score:.2f}\n"
+
+            if profile.linked_chat_title and profile.linked_chat_title.strip():
+                profiles_text += f"• <b>Связанный канал:</b> {profile.linked_chat_title}\n"
+                if profile.linked_chat_username and profile.linked_chat_username.strip():
+                    profiles_text += f"• <b>Username канала:</b> @{profile.linked_chat_username}\n"
+
+            if profile.detected_patterns and profile.detected_patterns.strip():
+                patterns = profile.detected_patterns.split(",") if profile.detected_patterns else []
+                pattern_names = {
+                    "short_first_name": "Короткое имя",
+                    "short_last_name": "Короткая фамилия",
+                    "no_identifying_info": "Нет идентификаторов",
+                    "bot_like_username": "Bot-подобный username",
+                    "no_username": "Нет username",
+                    "no_last_name": "Нет фамилии",
+                    "bot_like_first_name": "Bot-подобное имя",
+                }
+                pattern_text = ", ".join([pattern_names.get(p, p) for p in patterns if p])
+                profiles_text += f"• <b>Паттерны:</b> {pattern_text}\n"
+
+            if profile.is_reviewed:
+                status = (
+                    "✅ Подтвержден" if profile.is_confirmed_suspicious else "❌ Ложное срабатывание"
+                )
+                profiles_text += f"• <b>Статус:</b> {status}\n"
+            else:
+                profiles_text += f"• <b>Статус:</b> ⏳ Ожидает проверки\n"
+
+            profiles_text += f"• <b>Дата:</b> {profile.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
 
         if len(profiles) > 10:
-            profiles_text += f"\n... и еще {len(profiles) - 10} профилей"
+            profiles_text += f"<i>... и еще {len(profiles) - 10} профилей</i>"
 
         await message.answer(profiles_text)
         logger.info(f"Suspicious response sent to {message.from_user.id}")
@@ -248,6 +300,116 @@ async def handle_suspicious_command(
     except Exception as e:
         logger.error(f"Error in suspicious command: {e}")
         await message.answer("❌ Ошибка получения подозрительных профилей")
+
+
+@admin_router.message(Command("reset_suspicious"))
+async def handle_reset_suspicious_command(message: Message, profile_service: ProfileService):
+    """Reset suspicious profile status for testing."""
+    try:
+        # Reset all suspicious profiles to unreviewed status
+        result = await profile_service.reset_suspicious_profiles()
+
+        if result > 0:
+            await message.answer(f"✅ Сброшено статусов подозрительных профилей: {result}")
+        else:
+            await message.answer("ℹ️ Нет подозрительных профилей для сброса")
+
+    except Exception as e:
+        logger.error(f"Error resetting suspicious profiles: {e}")
+        await message.answer(f"❌ Ошибка при сбросе статусов: {e}")
+
+
+@admin_router.message(Command("recalculate_suspicious"))
+async def handle_recalculate_suspicious_command(message: Message, profile_service: ProfileService):
+    """Recalculate suspicious profiles with new weights."""
+    try:
+        # Get all suspicious profiles
+        profiles = await profile_service.get_suspicious_profiles(limit=100)
+
+        if not profiles:
+            await message.answer("ℹ️ Нет подозрительных профилей для пересчета")
+            return
+
+        updated_count = 0
+        for profile in profiles:
+            # Get user info and recalculate
+            user_info = await profile_service.get_user_info(profile.user_id)
+            if user_info:
+                # Create a mock User object for recalculation
+                from aiogram.types import User
+
+                mock_user = User(
+                    id=profile.user_id,
+                    is_bot=False,
+                    first_name=user_info.get("first_name", ""),
+                    last_name=user_info.get("last_name"),
+                    username=user_info.get("username"),
+                    language_code="ru",
+                )
+
+                # Recalculate analysis
+                analysis_result = await profile_service._perform_profile_analysis(mock_user)
+
+                # Update profile with new score
+                if analysis_result["suspicion_score"] != profile.suspicion_score:
+                    profile.suspicion_score = analysis_result["suspicion_score"]
+                    profile.detected_patterns = ",".join(analysis_result["patterns"])
+                    profile.is_suspicious = analysis_result["is_suspicious"]
+                    updated_count += 1
+
+        if updated_count > 0:
+            await profile_service.db.commit()
+            await message.answer(f"✅ Пересчитано профилей: {updated_count}")
+        else:
+            await message.answer("ℹ️ Нет изменений в профилях")
+
+    except Exception as e:
+        logger.error(f"Error recalculating suspicious profiles: {e}")
+        await message.answer(f"❌ Ошибка при пересчете: {e}")
+
+
+@admin_router.message(Command("cleanup_duplicates"))
+async def handle_cleanup_duplicates_command(message: Message, profile_service: ProfileService):
+    """Clean up duplicate suspicious profiles."""
+    try:
+        from sqlalchemy import delete, func, select
+
+        from app.models.suspicious_profile import SuspiciousProfile
+
+        # Find users with multiple profiles
+        result = await profile_service.db.execute(
+            select(SuspiciousProfile.user_id, func.count(SuspiciousProfile.id).label("count"))
+            .group_by(SuspiciousProfile.user_id)
+            .having(func.count(SuspiciousProfile.id) > 1)
+        )
+
+        duplicates = result.fetchall()
+
+        if not duplicates:
+            await message.answer("ℹ️ Дублирующих профилей не найдено")
+            return
+
+        cleaned_count = 0
+        for user_id, count in duplicates:
+            # Keep the most recent profile, delete others
+            profiles = await profile_service.db.execute(
+                select(SuspiciousProfile)
+                .where(SuspiciousProfile.user_id == user_id)
+                .order_by(SuspiciousProfile.created_at.desc())
+            )
+            profiles_list = profiles.scalars().all()
+
+            # Delete all except the first (most recent)
+            for profile in profiles_list[1:]:
+                await profile_service.db.delete(profile)
+                cleaned_count += 1
+
+        await profile_service.db.commit()
+        await message.answer(f"✅ Удалено дублирующих профилей: {cleaned_count}")
+
+    except Exception as e:
+        logger.error(f"Error cleaning up duplicates: {e}")
+        await message.answer(f"❌ Ошибка при очистке: {e}")
 
 
 @admin_router.message(Command("unban"))
@@ -651,3 +813,123 @@ async def handle_help_command(
     except Exception as e:
         logger.error(f"Error in help command: {e}")
         await message.answer("❌ Ошибка получения справки")
+
+
+# Обработчики callback для подозрительных профилей
+@admin_router.callback_query(lambda c: c.data and c.data.startswith("ban_suspicious:"))
+async def handle_ban_suspicious_callback(
+    callback_query: CallbackQuery,
+    moderation_service: ModerationService,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Забанить подозрительного пользователя."""
+    try:
+        if not callback_query.from_user:
+            return
+
+        user_id = int(callback_query.data.split(":")[1]) if callback_query.data else 0
+
+        # Получаем информацию о пользователе
+        user_info = await profile_service.get_user_info(user_id)
+
+        # Получаем профиль для получения счета подозрительности
+        profile = await profile_service._get_suspicious_profile(user_id)
+        suspicion_score = profile.suspicion_score if profile else 0.0
+
+        # Баним пользователя
+        success = await moderation_service.ban_user(
+            user_id=user_id,
+            chat_id=callback_query.message.chat.id if callback_query.message else 0,
+            reason=f"Подозрительный профиль (счет: {suspicion_score:.2f})",
+            admin_id=admin_id,
+        )
+
+        if success:
+            # Отмечаем профиль как проверенный и подтвержденный
+            await profile_service.mark_profile_as_reviewed(
+                user_id=user_id,
+                admin_id=admin_id,
+                is_confirmed=True,
+                notes="Забанен за подозрительный профиль",
+            )
+
+            await callback_query.answer("✅ Пользователь забанен")
+            if callback_query.message:
+                await callback_query.message.edit_text(
+                    f"🚫 <b>Пользователь забанен</b>\n\n"
+                    f"ID: {user_id}\n"
+                    f"Имя: {user_info.get('first_name', 'Неизвестно')}\n"
+                    f"Причина: Подозрительный профиль"
+                )
+        else:
+            await callback_query.answer("❌ Ошибка при бане пользователя")
+
+    except Exception as e:
+        logger.error(f"Error in ban_suspicious callback: {e}")
+        await callback_query.answer("❌ Ошибка обработки")
+
+
+@admin_router.callback_query(lambda c: c.data and c.data.startswith("watch_suspicious:"))
+async def handle_watch_suspicious_callback(
+    callback_query: CallbackQuery,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Пометить подозрительного пользователя для наблюдения."""
+    try:
+        if not callback_query.from_user:
+            return
+
+        user_id = int(callback_query.data.split(":")[1]) if callback_query.data else 0
+
+        # Отмечаем профиль как проверенный, но не подтвержденный
+        await profile_service.mark_profile_as_reviewed(
+            user_id=user_id, admin_id=admin_id, is_confirmed=False, notes="Помечен для наблюдения"
+        )
+
+        await callback_query.answer("👀 Пользователь добавлен в список наблюдения")
+        if callback_query.message:
+            await callback_query.message.edit_text(
+                f"👀 <b>Пользователь добавлен в наблюдение</b>\n\n"
+                f"ID: {user_id}\n"
+                f"Статус: Наблюдение"
+            )
+
+    except Exception as e:
+        logger.error(f"Error in watch_suspicious callback: {e}")
+        await callback_query.answer("❌ Ошибка обработки")
+
+
+@admin_router.callback_query(lambda c: c.data and c.data.startswith("allow_suspicious:"))
+async def handle_allow_suspicious_callback(
+    callback_query: CallbackQuery,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Разрешить подозрительному пользователю (ложное срабатывание)."""
+    try:
+        if not callback_query.from_user:
+            return
+
+        user_id = int(callback_query.data.split(":")[1]) if callback_query.data else 0
+
+        # Отмечаем профиль как проверенный и ложное срабатывание
+        await profile_service.mark_profile_as_reviewed(
+            user_id=user_id,
+            admin_id=admin_id,
+            is_confirmed=False,
+            notes="Ложное срабатывание - разрешен",
+        )
+
+        await callback_query.answer("✅ Пользователь разрешен")
+        if callback_query.message:
+            await callback_query.message.edit_text(
+                f"✅ <b>Пользователь разрешен</b>\n\n"
+                f"ID: {user_id}\n"
+                f"Статус: Ложное срабатывание"
+            )
+
+    except Exception as e:
+        logger.error(f"Error in allow_suspicious callback: {e}")
+        await callback_query.answer("❌ Ошибка обработки")

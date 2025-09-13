@@ -375,3 +375,56 @@ class ChannelService:
                 "description": None,
                 "member_count": None,
             }
+
+    async def save_channel_info(self, chat, sender_chat=None) -> None:
+        """Save channel information to database."""
+        try:
+            logger.info(f"save_channel_info called: chat={chat}, sender_chat={sender_chat}")
+
+            # Only save main channels, not comment groups
+            # If sender_chat exists, it's a message from a channel - save the channel
+            # If sender_chat is None, it's a message in comment group - don't save
+            if not sender_chat:
+                logger.info("Message in comment group, not saving to database")
+                return
+
+            target_chat = sender_chat
+
+            if not target_chat:
+                logger.info("No target_chat, returning")
+                return
+
+            # Determine if this is a comment group (not needed for now)
+            # is_comment_group = chat.type == "supergroup" and sender_chat is not None
+            # linked_chat_id = sender_chat.id if is_comment_group else None
+
+            # Check if channel already exists
+            result = await self.db.execute(
+                select(ChannelModel).where(ChannelModel.telegram_id == target_chat.id)
+            )
+            existing_channel = result.scalar_one_or_none()
+
+            if existing_channel:
+                # Update existing channel
+                existing_channel.title = target_chat.title
+                existing_channel.username = target_chat.username
+                # existing_channel.is_comment_group = is_comment_group
+                logger.info(f"Updated channel info: {target_chat.title} ({target_chat.id})")
+            else:
+                # Create new channel
+                new_channel = ChannelModel(
+                    telegram_id=target_chat.id,
+                    title=target_chat.title,
+                    username=target_chat.username,
+                    status=ChannelStatus.ALLOWED,  # Use ALLOWED instead of ACTIVE
+                    is_native=False,  # Will be determined later
+                    # is_comment_group=is_comment_group
+                )
+                self.db.add(new_channel)
+                logger.info(f"Saved new channel: {target_chat.title} ({target_chat.id})")
+
+            await self.db.commit()
+
+        except Exception as e:
+            logger.error(f"Error saving channel info: {e}")
+            await self.db.rollback()
