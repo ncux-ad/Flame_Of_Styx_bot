@@ -114,9 +114,7 @@ async def _handle_native_channel_message(
 
         # Check for rate limiting (more lenient for native channel)
         channel_id = message.sender_chat.id if message.sender_chat else message.chat.id
-        is_rate_limited = await channel_service.check_channel_rate_limit(
-            channel_id=channel_id, max_messages=10, time_window=60
-        )
+        is_rate_limited = await channel_service.check_channel_rate_limit(channel_id=channel_id)
         if is_rate_limited:
             # Just log, don't block native channel
             logger.warning(f"Rate limit exceeded in native channel {channel_id}")
