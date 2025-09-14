@@ -32,6 +32,24 @@ class SuspiciousProfileMiddleware(BaseMiddleware):
                 logger.info(f"Skipping profile analysis for Telegram system user (777000)")
                 return await handler(event, data)
 
+            # Пропускаем анализ для сообщений в группах комментариев к каналам
+            # (когда есть sender_chat, это означает, что сообщение от канала)
+            if event.sender_chat:
+                logger.info(
+                    f"Skipping profile analysis for message from channel: {event.sender_chat.title}"
+                )
+                return await handler(event, data)
+
+            # Пропускаем анализ для сообщений в группах комментариев к каналам
+            # (supergroup с linked_chat_id - это группа комментариев к каналу)
+            if event.chat and event.chat.type == "supergroup":
+                # Проверяем, является ли это группой комментариев к каналу
+                # В группах комментариев к каналам не нужно анализировать профили пользователей
+                logger.info(
+                    f"Skipping profile analysis for message in supergroup (likely channel comment group)"
+                )
+                return await handler(event, data)
+
             logger.info(
                 f"Processing message from user {event.from_user.id} in chat {event.chat.id if event.chat else 'unknown'}"
             )
