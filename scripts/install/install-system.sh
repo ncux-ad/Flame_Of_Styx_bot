@@ -212,7 +212,12 @@ install_python_dependencies() {
     sudo -u ${RUN_USER} "${BASE_DIR}/venv/bin/pip" install --upgrade pip setuptools
     sudo -u ${RUN_USER} "${BASE_DIR}/venv/bin/pip" install -r requirements.txt
     
-    success "Python зависимости установлены"
+    # Применяем миграции базы данных
+    info "Применение миграций базы данных..."
+    cd "${BASE_DIR}"
+    sudo -u ${RUN_USER} "${BASE_DIR}/venv/bin/alembic" upgrade head
+    
+    success "Python зависимости установлены и миграции применены"
 }
 
 # Функция установки systemd версии
