@@ -137,7 +137,7 @@ omit = [
     "*/__pycache__/*",
     "*/migrations/*",
     "*/venv/*",
-    "*/\.venv/*",
+    "*/\\.venv/*",
 ]
 
 [tool.coverage.report]
