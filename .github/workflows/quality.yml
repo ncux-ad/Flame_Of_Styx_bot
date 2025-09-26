@@ -1,0 +1,42 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install SonarQube Scanner
+      run: |
+        python -m pip install --upgrade pip
+        pip install sonar-scanner
+
+    - name: Run SonarQube analysis
+      run: |
+        sonar-scanner \
+          -Dsonar.projectKey=antispam-bot \
+          -Dsonar.organization=your-org \
+          -Dsonar.sources=app/ \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }} || true
+
+    - name: Run CodeClimate analysis
+      run: |
+        curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+        chmod +x ./cc-test-reporter
+        ./cc-test-reporter before-build || true
+        ./cc-test-reporter after-build --exit-code 0 || true

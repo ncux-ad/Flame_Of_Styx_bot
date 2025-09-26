@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Основной сервис бота в режиме разработки
+  antispam-bot:
+    build: .
+    container_name: antispam-bot-dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - .:/app  # Hot reload для разработки
+    ports:
+      - "8000:8000"  # Если будет веб-интерфейс
+    networks:
+      - antispam-network
+    command: ["python", "bot.py"]  # Прямой запуск для разработки
+
+  # Redis для кеширования (всегда включен в dev режиме)
+  redis:
+    image: redis:7-alpine
+    container_name: antispam-redis-dev
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - antispam-network
+    ports:
+      - "6379:6379"  # Для отладки
+
+  # SQLite Web UI для просмотра базы данных
+  sqlite-web:
+    image: coleifer/sqlite-web
+    container_name: antispam-sqlite-web
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+    ports:
+      - "8080:8080"
+    networks:
+      - antispam-network
+    command: ["sqlite_web", "-H", "0.0.0.0", "-p", "8080", "/data/db.sqlite3"]
+
+volumes:
+  redis-data:
+
+networks:
+  antispam-network:
+    driver: bridge

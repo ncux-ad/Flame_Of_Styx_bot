@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # Основной сервис бота (только для локальной разработки)
+  antispam-bot:
+    build: .
+    container_name: antispam-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN:-your_telegram_bot_token_here}
+      - ADMIN_IDS=${ADMIN_IDS:-366490333,439304619}
+      - DB_PATH=${DB_PATH:-db.sqlite3}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - .:/app  # Для hot reload при разработке
+    ports:
+      - "8000:8000"  # Если будет веб-интерфейс
+    networks:
+      - antispam-network
+    # Для быстрой разработки
+    command: python bot.py
+
+  # Redis для кеширования (опционально)
+  redis:
+    image: redis:7-alpine
+    container_name: antispam-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - antispam-network
+    profiles:
+      - redis
+
+volumes:
+  redis-data:
+
+networks:
+  antispam-network:
+    driver: bridge

@@ -1,0 +1,32 @@
+[Unit]
+Description=AntiSpam Bot for Telegram
+Documentation=https://github.com/ncux-ad/Flame_Of_Styx_bot
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ncux11/bots/Flame_Of_Styx_bot
+ExecStart=/home/ncux11/bots/Flame_Of_Styx_bot/venv/bin/python bot.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+TimeoutStartSec=30
+
+# Безопасность
+User=ncux11
+Group=ncux11
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=antispam-bot
+
+# Переменные окружения
+Environment=PYTHONPATH=/home/ncux11/bots/Flame_Of_Styx_bot
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,39 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "antispam_rules.yml"
+
+scrape_configs:
+  # Мониторинг самого Prometheus
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Мониторинг Node Exporter (системные метрики)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Мониторинг Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Мониторинг PostgreSQL (если используется)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Мониторинг Docker контейнеров
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # Мониторинг приложения (если добавим метрики)
+  - job_name: 'antispam-bot'
+    static_configs:
+      - targets: ['antispam-bot:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s

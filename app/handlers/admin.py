@@ -1,0 +1,1414 @@
+"""
+Упрощенный админский роутер - только админские команды
+"""
+
+import logging
+
+from aiogram import Router
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
+
+from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
+from app.services.bots import BotService
+from app.services.channels import ChannelService
+from app.services.help import HelpService
+from app.services.limits import LimitsService
+from app.services.moderation import ModerationService
+from app.services.profiles import ProfileService
+
+# from app.utils.security import safe_format_message, sanitize_for_logging
+
+logger = logging.getLogger(__name__)
+
+# Create router
+admin_router = Router()
+
+# Apply admin filter to all handlers in this router
+admin_router.message.filter(IsAdminOrSilentFilter())
+
+
+@admin_router.message(Command("start"))
+async def handle_start_command(
+    message: Message,
+    moderation_service: ModerationService,
+    bot_service: BotService,
+    channel_service: ChannelService,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Главное меню администратора."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Admin start command from {message.from_user.id}")
+
+        welcome_text = (
+            "🤖 <b>AntiSpam Bot - Упрощенная версия</b>\n\n"
+            "Доступные команды:\n"
+            "/status - статистика бота\n"
+            "/channels - управление каналами\n"
+            "/bots - управление ботами\n"
+            "/suspicious - подозрительные профили\n"
+            "/unban - разблокировать пользователя\n"
+            "/banned - список заблокированных\n"
+            "/sync_bans - синхронизировать баны с Telegram\n"
+            "/help - помощь"
+        )
+
+        await message.answer(welcome_text)
+        logger.info(f"Start command response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in start command: {e}")
+
+
+@admin_router.message(Command("status"))
+async def handle_status_command(
+    message: Message,
+    moderation_service: ModerationService,
+    bot_service: BotService,
+    channel_service: ChannelService,
+    admin_id: int,
+) -> None:
+    """Подробная статистика бота."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Status command from {message.from_user.id}")
+
+        # Получаем статистику
+        # total_bots = await bot_service.get_total_bots_count()
+        total_channels = await channel_service.get_total_channels_count()
+        banned_users = await moderation_service.get_banned_users(limit=100)
+        active_bans = len([ban for ban in banned_users if ban.is_active])
+
+        # Получаем статистику спама
+        spam_stats = await moderation_service.get_spam_statistics()
+        deleted_messages = spam_stats["deleted_messages"]
+        total_actions = spam_stats["total_actions"]
+
+        # Получаем информацию о каналах из базы данных
+        try:
+            channels = await channel_service.get_all_channels()
+        except Exception:
+            channels = []
+
+        # Добавляем известные чаты, где бот активен
+        known_chats = [
+            {
+                "title": "Test_FlameOfStyx_bot",
+                "chat_id": "-1003094131978",
+                "type": "Группа для комментариев",
+            }
+        ]
+
+        # Формируем информацию о чатах
+        channel_info = []
+
+        # Добавляем каналы из базы данных
+        for channel in channels[:5]:  # Показываем первые 5 каналов
+            channel_info.append(f"• {channel.title} <code>({channel.telegram_id})</code>")
+            channel_info.append("  └ Тип: Канал")
+            channel_info.append("  └ Статус: ✅ Антиспам активен")
+
+        # Добавляем известные чаты (группы комментариев)
+        for chat in known_chats:
+            channel_info.append(f"• {chat['title']} <code>({chat['chat_id']})</code>")
+            channel_info.append(f"  └ Тип: {chat['type']}")
+            channel_info.append("  └ Статус: ✅ Антиспам активен")
+
+        # Информация о боте (упрощённо)
+        bot_username = "FlameOfStyx_bot"  # Из конфига
+        bot_id = "7977609078"  # Из логов
+
+        # Подсчитываем общее количество чатов
+        total_connected_chats = len(channels) + len(known_chats)
+
+        status_text = (
+            "📊 <b>Подробная статистика бота</b>\n\n"
+            "🤖 <b>Информация о боте:</b>\n"
+            f"• Username: @{bot_username}\n"
+            f"• ID: <code>{bot_id}</code>\n"
+            "• Статус: ✅ Работает\n\n"
+            f"📢 <b>Подключённые чаты ({total_connected_chats}):</b>\n"
+        )
+
+        if channel_info:
+            status_text += "\n".join(channel_info)
+            if len(channels) > 5:
+                status_text += f"\n• ... и ещё {len(channels) - 5} чатов"
+        else:
+            status_text += "• Чаты не обнаружены в базе данных\n"
+            status_text += "💡 <b>Для добавления новых чатов:</b>\n"
+            status_text += "1. Добавьте бота в канал/группу\n"
+            status_text += "2. Дайте права администратора\n"
+            status_text += "3. Включите комментарии к постам\n"
+            status_text += "4. Используйте /channels для проверки"
+
+        status_text += "\n\n🚫 <b>Модерация:</b>\n"
+        status_text += f"• Активных банов: {active_bans}\n"
+        status_text += f"• Всего записей: {len(banned_users)}\n"
+        status_text += f"• Удалено спам-сообщений: {deleted_messages}\n"
+        status_text += f"• Всего действий модерации: {total_actions}\n\n"
+        status_text += f"👑 <b>Администратор:</b> <code>{admin_id}</code>"
+
+        await message.answer(status_text)
+        logger.info(f"Status response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in status command: {e}")
+        await message.answer("❌ Ошибка получения статистики")
+
+
+@admin_router.message(Command("channels"))
+async def handle_channels_command(
+    message: Message,
+    channel_service: ChannelService,
+    admin_id: int,
+) -> None:
+    """Управление каналами."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Channels command from {message.from_user.id}")
+
+        channels = await channel_service.get_all_channels()
+
+        if not channels:
+            await message.answer("📢 Каналы не найдены")
+            return
+
+        # Разделяем каналы на нативные и иностранные
+        native_channels = []
+        foreign_channels = []
+        
+        for channel in channels:
+            # Проверяем, является ли канал нативным (где бот админ)
+            telegram_id = int(channel.telegram_id)
+            is_native = await channel_service.is_native_channel(telegram_id)
+            if is_native:
+                native_channels.append(channel)
+            else:
+                foreign_channels.append(channel)
+
+        channels_text = "📢 <b>Управление каналами</b>\n\n"
+        
+        # Показываем нативные каналы (где бот админ)
+        if native_channels:
+            channels_text += f"✅ <b>Нативные каналы ({len(native_channels)})</b>\n"
+            channels_text += "<i>Каналы где бот является администратором</i>\n\n"
+            
+            for channel in native_channels[:5]:  # Показываем первые 5 нативных
+                username = f"@{channel.username}" if channel.username else "Без username"
+                channels_text += f"<b>{channel.title or 'Без названия'}</b>\n"
+                channels_text += f"   ID: <code>{channel.telegram_id}</code> | {username}\n"
+                if channel.member_count:
+                    channels_text += f"   👥 Участников: {channel.member_count}\n"
+                channels_text += "\n"
+            
+            if len(native_channels) > 5:
+                channels_text += f"... и еще {len(native_channels) - 5} нативных каналов\n\n"
+            else:
+                channels_text += "\n"
+        
+        # Показываем иностранные каналы (откуда приходят сообщения)
+        if foreign_channels:
+            channels_text += f"🔍 <b>Иностранные каналы ({len(foreign_channels)})</b>\n"
+            channels_text += "<i>Каналы откуда приходят сообщения (бот не админ)</i>\n\n"
+            
+            for channel in foreign_channels[:5]:  # Показываем первые 5 иностранных
+                username = f"@{channel.username}" if channel.username else "Без username"
+                channels_text += f"<b>{channel.title or 'Без названия'}</b>\n"
+                channels_text += f"   ID: <code>{channel.telegram_id}</code> | {username}\n"
+                if channel.member_count:
+                    channels_text += f"   👥 Участников: {channel.member_count}\n"
+                channels_text += "\n"
+            
+            if len(foreign_channels) > 5:
+                channels_text += f"... и еще {len(foreign_channels) - 5} иностранных каналов\n\n"
+        
+        # Общая статистика
+        channels_text += f"📊 <b>Общая статистика:</b>\n"
+        channels_text += f"• Нативных каналов: {len(native_channels)}\n"
+        channels_text += f"• Иностранных каналов: {len(foreign_channels)}\n"
+        channels_text += f"• Всего каналов: {len(channels)}"
+
+        await message.answer(channels_text)
+        logger.info(f"Channels response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in channels command: {e}")
+        await message.answer("❌ Ошибка получения списка каналов")
+
+
+@admin_router.message(Command("bots"))
+async def handle_bots_command(
+    message: Message,
+    bot_service: BotService,
+    admin_id: int,
+) -> None:
+    """Управление ботами."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Bots command from {message.from_user.id}")
+
+        bots = await bot_service.get_all_bots()
+
+        if not bots:
+            await message.answer("🤖 Боты не найдены")
+            return
+
+        bots_text = "🤖 <b>Управление ботами</b>\n\n"
+        for bot in bots[:10]:  # Показываем первые 10
+            is_whitelisted = bool(bot.is_whitelisted)
+            status = "✅ Вайтлист" if is_whitelisted else "❌ Блэклист"
+            username_value = bot.username
+            username = str(username_value) if username_value is not None else 'Без username'
+            bots_text += f"{status} @{username}\n"
+
+        if len(bots) > 10:
+            bots_text += f"\n... и еще {len(bots) - 10} ботов"
+
+        await message.answer(bots_text)
+        logger.info(f"Bots response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in bots command: {e}")
+        await message.answer("❌ Ошибка получения списка ботов")
+
+
+@admin_router.message(Command("suspicious"))
+async def handle_suspicious_command(
+    message: Message,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Подозрительные профили."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Suspicious command from {message.from_user.id}")
+
+        profiles = await profile_service.get_suspicious_profiles()
+
+        if not profiles:
+            await message.answer("👤 Подозрительные профили не найдены")
+            return
+
+        profiles_text = "👤 <b>Подозрительные профили</b>\n\n"
+
+        for i, profile in enumerate(profiles[:10], 1):  # Показываем первые 10
+            # Получаем информацию о пользователе
+            user_id_value = profile.user_id
+            user_id = int(user_id_value)
+            user_info = await profile_service.get_user_info(user_id)
+
+            profiles_text += f"<b>{i}. Пользователь {user_id}</b>\n"
+            profiles_text += f"• <b>Имя:</b> {user_info.get('first_name', 'Неизвестно')}\n"
+            if user_info.get("username"):
+                profiles_text += f"• <b>Username:</b> @{user_info['username']}\n"
+            
+            suspicion_score_value = profile.suspicion_score
+            profiles_text += f"• <b>Счет подозрительности:</b> {float(suspicion_score_value):.2f}\n"
+
+            # Проверяем linked_chat_title
+            linked_chat_title_value = profile.linked_chat_title
+            linked_chat_title = str(linked_chat_title_value) if linked_chat_title_value is not None else None
+            if linked_chat_title and linked_chat_title.strip():
+                profiles_text += f"• <b>Связанный канал:</b> {linked_chat_title}\n"
+                # Проверяем linked_chat_username
+                linked_chat_username_value = profile.linked_chat_username
+                linked_chat_username = str(linked_chat_username_value) if linked_chat_username_value is not None else None
+                if linked_chat_username and linked_chat_username.strip():
+                    profiles_text += f"• <b>Username канала:</b> @{linked_chat_username}\n"
+
+            # Проверяем detected_patterns
+            detected_patterns_value = profile.detected_patterns
+            detected_patterns = str(detected_patterns_value) if detected_patterns_value is not None else None
+            if detected_patterns and detected_patterns.strip():
+                patterns = detected_patterns.split(",") if detected_patterns else []
+                pattern_names = {
+                    "short_first_name": "Короткое имя",
+                    "short_last_name": "Короткая фамилия",
+                    "no_identifying_info": "Нет идентификаторов",
+                    "bot_like_username": "Bot-подобный username",
+                    "no_username": "Нет username",
+                    "no_last_name": "Нет фамилии",
+                    "bot_like_first_name": "Bot-подобное имя",
+                }
+                # Фильтруем None значения из patterns
+                valid_patterns = [p for p in patterns if p is not None]
+                pattern_text = ", ".join([pattern_names.get(p, p) for p in valid_patterns])
+                profiles_text += f"• <b>Паттерны:</b> {pattern_text}\n"
+
+            is_reviewed = bool(profile.is_reviewed)
+            if is_reviewed:
+                is_confirmed = bool(profile.is_confirmed_suspicious)
+                status = "✅ Подтвержден" if is_confirmed else "❌ Ложное срабатывание"
+                profiles_text += f"• <b>Статус:</b> {status}\n"
+            else:
+                profiles_text += f"• <b>Статус:</b> ⏳ Ожидает проверки\n"
+
+            profiles_text += f"• <b>Дата:</b> {profile.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
+
+        if len(profiles) > 10:
+            profiles_text += f"<i>... и еще {len(profiles) - 10} профилей</i>"
+
+        await message.answer(profiles_text)
+        logger.info(f"Suspicious response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in suspicious command: {e}")
+        await message.answer("❌ Ошибка получения подозрительных профилей")
+
+
+@admin_router.message(Command("reset_suspicious"))
+async def handle_reset_suspicious_command(message: Message, profile_service: ProfileService):
+    """Reset suspicious profile status for testing."""
+    try:
+        # Reset all suspicious profiles to unreviewed status
+        result = await profile_service.reset_suspicious_profiles()
+
+        if result > 0:
+            await message.answer(f"✅ Сброшено статусов подозрительных профилей: {result}")
+        else:
+            await message.answer("ℹ️ Нет подозрительных профилей для сброса")
+
+    except Exception as e:
+        logger.error(f"Error resetting suspicious profiles: {e}")
+        await message.answer(f"❌ Ошибка при сбросе статусов: {e}")
+
+
+@admin_router.message(Command("recalculate_suspicious"))
+async def handle_recalculate_suspicious_command(message: Message, profile_service: ProfileService):
+    """Recalculate suspicious profiles with new weights."""
+    try:
+        # Get all suspicious profiles
+        profiles = await profile_service.get_suspicious_profiles(limit=100)
+
+        if not profiles:
+            await message.answer("ℹ️ Нет подозрительных профилей для пересчета")
+            return
+
+        updated_count = 0
+        for profile in profiles:
+            # Get user info and recalculate
+            user_id_value = profile.user_id
+            user_id = int(user_id_value)
+            user_info = await profile_service.get_user_info(user_id)
+            if user_info:
+                # Create a mock User object for recalculation
+                from aiogram.types import User
+
+                mock_user = User(
+                    id=user_id,
+                    is_bot=False,
+                    first_name=user_info.get("first_name", ""),
+                    last_name=user_info.get("last_name"),
+                    username=user_info.get("username"),
+                    language_code="ru",
+                )
+
+                # Recalculate analysis
+                analysis_result = await profile_service._perform_profile_analysis(mock_user)
+
+                # Update profile with new score
+                current_score_value = profile.suspicion_score
+                if analysis_result["suspicion_score"] != float(current_score_value):
+                    profile.suspicion_score = analysis_result["suspicion_score"]
+                    # Обновляем detected_patterns через SQLAlchemy
+                    profile.detected_patterns = ",".join(analysis_result["patterns"])
+                    # is_suspicious не является полем модели, убираем эту строку
+                    updated_count += 1
+
+        if updated_count > 0:
+            await profile_service.db.commit()
+            await message.answer(f"✅ Пересчитано профилей: {updated_count}")
+        else:
+            await message.answer("ℹ️ Нет изменений в профилях")
+
+    except Exception as e:
+        logger.error(f"Error recalculating suspicious profiles: {e}")
+        await message.answer(f"❌ Ошибка при пересчете: {e}")
+
+
+@admin_router.message(Command("cleanup_duplicates"))
+async def handle_cleanup_duplicates_command(message: Message, profile_service: ProfileService):
+    """Clean up duplicate suspicious profiles."""
+    try:
+        from sqlalchemy import delete, func, select
+
+        from app.models.suspicious_profile import SuspiciousProfile
+
+        # Find users with multiple profiles
+        result = await profile_service.db.execute(
+            select(SuspiciousProfile.user_id, func.count(SuspiciousProfile.id).label("count"))
+            .group_by(SuspiciousProfile.user_id)
+            .having(func.count(SuspiciousProfile.id) > 1)
+        )
+
+        duplicates = result.fetchall()
+
+        if not duplicates:
+            await message.answer("ℹ️ Дублирующих профилей не найдено")
+            return
+
+        cleaned_count = 0
+        for user_id, count in duplicates:
+            # Keep the most recent profile, delete others
+            profiles = await profile_service.db.execute(
+                select(SuspiciousProfile)
+                .where(SuspiciousProfile.user_id == user_id)
+                .order_by(SuspiciousProfile.created_at.desc())
+            )
+            profiles_list = profiles.scalars().all()
+
+            # Delete all except the first (most recent)
+            for profile in profiles_list[1:]:
+                await profile_service.db.delete(profile)
+                cleaned_count += 1
+
+        await profile_service.db.commit()
+        await message.answer(f"✅ Удалено дублирующих профилей: {cleaned_count}")
+
+    except Exception as e:
+        logger.error(f"Error cleaning up duplicates: {e}")
+        await message.answer(f"❌ Ошибка при очистке: {e}")
+
+
+@admin_router.message(Command("settings"))
+async def handle_settings_command(message: Message) -> None:
+    """Настройки бота."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Settings command from {message.from_user.id}")
+
+        # Load current configuration
+        from app.config import load_config
+        config = load_config()
+
+        settings_text = (
+            "⚙️ <b>Настройки бота</b>\n\n"
+            "🔧 <b>Текущие настройки:</b>\n"
+            f"• Система подозрительных профилей: ✅ Включена\n"
+            f"• Порог подозрительности: {config.suspicion_threshold}\n"
+            f"• Автоматическая модерация: ✅ Включена\n"
+            f"• Логирование: ✅ Включено\n\n"
+            "🛡️ <b>Настройки антиспама:</b>\n"
+            f"• Проверка медиа без подписи: {'✅' if config.check_media_without_caption else '❌'}\n"
+            f"• Разрешать GIF без подписи: {'✅' if config.allow_videos_without_caption else '❌'}\n"
+            f"• Разрешать фото без подписи: {'✅' if config.allow_photos_without_caption else '❌'}\n"
+            f"• Разрешать видео без подписи: {'✅' if config.allow_videos_without_caption else '❌'}\n"
+            f"• Макс. размер документа для подозрения: {config.max_document_size_suspicious} байт\n\n"
+            "📊 <b>Статистика:</b>\n"
+            "• Middleware активен\n"
+            "• DI сервисы загружены\n"
+            "• База данных подключена\n\n"
+            "ℹ️ Для изменения настроек используйте команды:\n"
+            "• /setlimit threshold <значение> - порог подозрительности\n"
+            "• /setlimit media_check <0|1> - проверка медиа без подписи\n"
+            "• /setlimit allow_gifs <0|1> - разрешить GIF без подписи\n"
+            "• /setlimit allow_photos <0|1> - разрешить фото без подписи\n"
+            "• /setlimit allow_videos <0|1> - разрешить видео без подписи\n"
+            "• /setlimit doc_size <байты> - размер документа для подозрения"
+        )
+
+        await message.answer(settings_text)
+        if message.from_user:
+            logger.info(f"Settings response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in settings command: {e}")
+
+
+@admin_router.message(Command("setlimits"))
+async def handle_setlimits_command(message: Message, limits_service: LimitsService) -> None:
+    """Просмотр лимитов системы."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Setlimits command from {message.from_user.id}")
+
+        limits_text = (
+            "🔒 <b>Управление лимитами</b>\n\n" "👑 <b>Доступно администраторам</b>\n\n"
+        ) + limits_service.get_limits_display()
+
+        await message.answer(limits_text)
+        if message.from_user:
+            logger.info(f"Setlimits response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in setlimits command: {e}")
+
+
+@admin_router.message(Command("setlimit"))
+async def handle_setlimit_command(message: Message, limits_service: LimitsService) -> None:
+    """Изменение конкретного лимита."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Setlimit command from {message.from_user.id}")
+
+        # Парсим команду: /setlimit <тип> <значение>
+        text = message.text or ""
+        parts = text.split()
+
+        if len(parts) < 3:
+            await message.answer(
+                "❌ <b>Неверный формат команды</b>\n\n"
+                "Используйте: /setlimit &lt;тип&gt; &lt;значение&gt;\n\n"
+                "📋 <b>Доступные типы:</b>\n"
+                "• messages - максимум сообщений в минуту\n"
+                "• links - максимум ссылок в сообщении\n"
+                "• ban - время блокировки в часах\n"
+                "• threshold - порог подозрительности\n"
+                "• media_check - проверка медиа без подписи (0/1)\n"
+                "• allow_gifs - разрешить GIF без подписи (0/1)\n"
+                "• allow_photos - разрешить фото без подписи (0/1)\n"
+                "• allow_videos - разрешить видео без подписи (0/1)\n"
+                "• doc_size - размер документа для подозрения (байты)\n\n"
+                "💡 <b>Примеры:</b>\n"
+                "• /setlimit messages 15\n"
+                "• /setlimit threshold 0.3\n"
+                "• /setlimit allow_gifs 1\n"
+                "• /setlimit doc_size 100000"
+            )
+            return
+
+        limit_type = parts[1].lower()
+        try:
+            value = float(parts[2]) if limit_type == "threshold" else int(parts[2])
+        except ValueError:
+            await message.answer("❌ Значение должно быть числом!")
+            return
+
+        # Маппинг типов лимитов
+        limit_mapping = {
+            "messages": "max_messages_per_minute",
+            "links": "max_links_per_message",
+            "ban": "ban_duration_hours",
+            "threshold": "suspicion_threshold",
+            "media_check": "check_media_without_caption",
+            "allow_gifs": "allow_videos_without_caption",
+            "allow_photos": "allow_photos_without_caption",
+            "allow_videos": "allow_videos_without_caption",
+            "doc_size": "max_document_size_suspicious",
+        }
+
+        if limit_type not in limit_mapping:
+            await message.answer(
+                "❌ <b>Неверный тип лимита</b>\n\n"
+                "📋 <b>Доступные типы:</b>\n"
+                "• messages - максимум сообщений в минуту\n"
+                "• links - максимум ссылок в сообщении\n"
+                "• ban - время блокировки в часах\n"
+                "• threshold - порог подозрительности\n"
+                "• media_check - проверка медиа без подписи (0/1)\n"
+                "• allow_gifs - разрешить GIF без подписи (0/1)\n"
+                "• allow_photos - разрешить фото без подписи (0/1)\n"
+                "• allow_videos - разрешить видео без подписи (0/1)\n"
+                "• doc_size - размер документа для подозрения (байты)"
+            )
+            return
+
+        # Обновляем лимит
+        success = limits_service.update_limit(limit_mapping[limit_type], value)
+
+        if success:
+            await message.answer(
+                f"✅ <b>Лимит обновлен!</b>\n\n"
+                f"📊 <b>{limit_type}</b> изменен на <b>{value}</b>\n\n"
+                "🔄 Изменения применены немедленно благодаря hot-reload!"
+            )
+        else:
+            await message.answer("❌ Ошибка при обновлении лимита!")
+
+        if message.from_user:
+            logger.info(f"Setlimit response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in setlimit command: {e}")
+        await message.answer("❌ Ошибка при обработке команды!")
+
+
+@admin_router.message(Command("reload_limits"))
+async def handle_reload_limits_command(message: Message, limits_service: LimitsService) -> None:
+    """Принудительная перезагрузка лимитов из файла."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Reload limits command from {message.from_user.id}")
+
+        # Перезагружаем лимиты
+        success = limits_service.reload_limits()
+
+        if success:
+            limits = limits_service.get_current_limits()
+            await message.answer(
+                "🔄 <b>Лимиты перезагружены!</b>\n\n"
+                f"📊 <b>Текущие лимиты:</b>\n"
+                f"• Сообщений в минуту: {limits['max_messages_per_minute']}\n"
+                f"• Ссылок в сообщении: {limits['max_links_per_message']}\n"
+                f"• Время блокировки: {limits['ban_duration_hours']} часов\n"
+                f"• Порог подозрительности: {limits['suspicion_threshold']}\n\n"
+                "✅ Изменения применены немедленно!"
+            )
+        else:
+            await message.answer("❌ Ошибка при перезагрузке лимитов!")
+
+        if message.from_user:
+            logger.info(f"Reload limits response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in reload_limits command: {e}")
+        await message.answer("❌ Ошибка при перезагрузке лимитов!")
+
+
+@admin_router.message(Command("unban"))
+async def handle_unban_command(
+    message: Message,
+    moderation_service: ModerationService,
+    channel_service: ChannelService,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Разблокировать пользователя с подсказками."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Unban command from {message.from_user.id}")
+
+        # Парсим аргументы команды
+        if not message.text:
+            await message.answer("❌ Ошибка: пустое сообщение")
+            return
+        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+
+        if not args:
+            # Показываем последних заблокированных для выбора
+            banned_users = await moderation_service.get_banned_users(limit=5)
+
+            if not banned_users:
+                await message.answer("❌ Нет заблокированных пользователей")
+                return
+
+            text = "🚫 <b>Выберите пользователя для разблокировки:</b>\n\n"
+
+            for i, log_entry in enumerate(banned_users, 1):
+                user_id = log_entry.user_id
+                reason = log_entry.reason or "Спам"
+                chat_id = log_entry.chat_id
+
+                # Получаем информацию о пользователе
+                user_info = await profile_service.get_user_info(user_id)
+                user_display = (
+                    f"@{user_info['username']}"
+                    if user_info["username"]
+                    else f"{user_info['first_name']} {user_info['last_name'] or ''}".strip()
+                )
+                if not user_display or user_display == "Unknown User":
+                    user_display = f"User {user_id}"
+
+                # Получаем информацию о чате
+                chat_info = (
+                    await channel_service.get_channel_info(chat_id)
+                    if chat_id
+                    else {"title": "Unknown Chat", "username": None}
+                )
+                chat_display = (
+                    f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
+                )
+
+                text += f"{i}. <b>{user_display}</b> <code>({user_id})</code>\n"
+                text += f"   Причина: {reason}\n"
+                text += f"   Чат: <b>{chat_display}</b> <code>({chat_id})</code>\n\n"
+
+            text += "💡 <b>Использование:</b>\n"
+            text += "• <code>/unban 1</code> - разблокировать по номеру\n"
+            text += "• <code>/unban &lt;user_id&gt; [chat_id]</code> - разблокировать по ID"
+
+            await message.answer(text)
+            return
+
+        # Обработка выбора по номеру
+        if args[0].isdigit() and 1 <= int(args[0]) <= 5:
+            banned_users = await moderation_service.get_banned_users(limit=5)
+            user_index = int(args[0]) - 1
+
+            if 0 <= user_index < len(banned_users):
+                log_entry = banned_users[user_index]
+                user_id = log_entry.user_id
+                chat_id = log_entry.chat_id
+
+                # Разблокируем пользователя
+                success = await moderation_service.unban_user(
+                    user_id=user_id, chat_id=chat_id, admin_id=admin_id
+                )
+
+                if success:
+                    await message.answer(
+                        f"✅ Пользователь <code>{user_id}</code> разблокирован в чате <code>{chat_id}</code>"
+                    )
+                    logger.info(f"User {user_id} unbanned by admin {admin_id}")
+                else:
+                    await message.answer(
+                        f"❌ Не удалось разблокировать пользователя <code>{user_id}</code>"
+                    )
+            else:
+                await message.answer("❌ Неверный номер пользователя")
+            return
+
+        # Обработка по user_id и chat_id
+        if len(args) < 1:
+            await message.answer(
+                "❌ Использование: /unban &lt;user_id&gt; [chat_id]\n"
+                "Пример: /unban 123456789 -1001234567890"
+            )
+            return
+
+        user_id = int(args[0])
+        chat_id = int(args[1]) if len(args) > 1 else message.chat.id
+
+        # Разблокируем пользователя
+        success = await moderation_service.unban_user(
+            user_id=user_id, chat_id=chat_id, admin_id=admin_id
+        )
+
+        if success:
+            await message.answer(
+                f"✅ Пользователь <code>{user_id}</code> разблокирован в чате <code>{chat_id}</code>"
+            )
+            logger.info(f"User {user_id} unbanned by admin {admin_id}")
+        else:
+            await message.answer(f"❌ Не удалось разблокировать пользователя <code>{user_id}</code>")
+
+    except ValueError:
+        await message.answer("❌ Неверный формат ID пользователя")
+    except Exception as e:
+        logger.error(f"Error in unban command: {e}")
+        await message.answer("❌ Ошибка при разблокировке пользователя")
+
+
+@admin_router.message(Command("banned"))
+async def handle_banned_command(
+    message: Message,
+    moderation_service: ModerationService,
+    channel_service: ChannelService,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Показать список заблокированных пользователей с подробной информацией."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Banned command from {message.from_user.id}")
+
+        # Получаем список заблокированных пользователей
+        banned_users = await moderation_service.get_banned_users(limit=10)
+
+        if not banned_users:
+            await message.answer("📝 Нет заблокированных пользователей")
+            return
+
+        text = "🚫 <b>Заблокированные пользователи:</b>\n\n"
+
+        for i, log_entry in enumerate(banned_users, 1):
+            user_id = log_entry.user_id
+            reason = log_entry.reason or "Спам"
+            date_text = (
+                log_entry.created_at.strftime("%d.%m.%Y %H:%M")
+                if log_entry.created_at
+                else "Неизвестно"
+            )
+            chat_id = log_entry.chat_id
+
+            # Получаем информацию о пользователе
+            user_info = await profile_service.get_user_info(user_id)
+
+            # Формируем отображение пользователя
+            if user_info["username"]:
+                user_display = f"@{user_info['username']}"
+            else:
+                first_name = user_info["first_name"] or ""
+                last_name = user_info["last_name"] or ""
+                full_name = f"{first_name} {last_name}".strip()
+                user_display = full_name if full_name else f"User {user_id}"
+
+            # Получаем информацию о чате
+            chat_info = (
+                await channel_service.get_channel_info(chat_id)
+                if chat_id
+                else {"title": "Unknown Chat", "username": None}
+            )
+            chat_display = (
+                f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
+            )
+
+            text += f"{i}. <b>{user_display}</b> <code>({user_id})</code>\n"
+            text += f"   Причина: {reason}\n"
+            text += f"   Чат: <b>{chat_display}</b> <code>({chat_id})</code>\n"
+            text += f"   Дата: {date_text}\n\n"
+
+        if len(banned_users) == 10:
+            text += "💡 Показаны последние 10 пользователей"
+
+        await message.answer(text)
+        logger.info(f"Banned list sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in banned command: {e}")
+        await message.answer("❌ Ошибка получения списка заблокированных")
+
+
+@admin_router.message(Command("ban_history"))
+async def handle_ban_history_command(
+    message: Message,
+    moderation_service: ModerationService,
+    channel_service: ChannelService,
+    admin_id: int,
+) -> None:
+    """Показать историю банов с chat_id для удобства."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Ban history command from {message.from_user.id}")
+
+        # Получаем последние 10 записей из истории банов
+        ban_history = await moderation_service.get_ban_history(limit=10)
+
+        if not ban_history:
+            await message.answer("📝 Нет записей в истории банов")
+            return
+
+        text = "📋 <b>История банов (с ID чатов):</b>\n\n"
+
+        for i, log_entry in enumerate(ban_history, 1):
+            user_id = log_entry.user_id
+            reason = log_entry.reason or "Спам"
+            chat_id = log_entry.chat_id
+            date_text = (
+                log_entry.created_at.strftime("%d.%m.%Y %H:%M")
+                if log_entry.created_at
+                else "Неизвестно"
+            )
+            is_active = "🟢 Активен" if log_entry.is_active else "🔴 Неактивен"
+
+            # Получаем информацию о чате
+            chat_info = (
+                await channel_service.get_channel_info(chat_id)
+                if chat_id
+                else {"title": "Unknown Chat", "username": None}
+            )
+            chat_display = (
+                f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
+            )
+
+            text += f"{i}. <b>User {user_id}</b>\n"
+            text += f"   Причина: {reason}\n"
+            text += f"   Чат: <b>{chat_display}</b>\n"
+            text += f"   ID чата: <code>{chat_id}</code>\n"
+            text += f"   Статус: {is_active}\n"
+            text += f"   Дата: {date_text}\n\n"
+
+        text += "💡 <b>Для синхронизации используйте:</b>\n"
+        text += "• <code>/sync_bans &lt;chat_id&gt;</code>\n"
+        text += "• <code>/sync_bans 1</code> - синхронизировать по номеру"
+
+        await message.answer(text)
+        logger.info(f"Ban history sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in ban_history command: {e}")
+        await message.answer("❌ Ошибка получения истории банов")
+
+
+@admin_router.message(Command("sync_bans"))
+async def handle_sync_bans_command(
+    message: Message,
+    moderation_service: ModerationService,
+    channel_service: ChannelService,
+    admin_id: int,
+) -> None:
+    """Синхронизировать баны с Telegram API."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Sync bans command from {message.from_user.id}")
+
+        # Парсим аргументы команды
+        if not message.text:
+            await message.answer("❌ Ошибка: пустое сообщение")
+            return
+        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+
+        if not args:
+            # Показываем последние чаты с банами для выбора
+            ban_history = await moderation_service.get_ban_history(limit=10)
+
+            if not ban_history:
+                await message.answer("❌ Нет записей в истории банов")
+                return
+
+            # Получаем уникальные chat_id
+            chat_ids = list(set([log.chat_id for log in ban_history if log.chat_id]))
+
+            if not chat_ids:
+                await message.answer("❌ Нет чатов с банами")
+                return
+
+            text = "🔄 <b>Выберите чат для синхронизации:</b>\n\n"
+
+            for i, chat_id in enumerate(chat_ids[:5], 1):
+                # Получаем информацию о чате
+                chat_info = await channel_service.get_channel_info(chat_id)
+                chat_display = (
+                    f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
+                )
+
+                # Считаем активные баны в этом чате
+                active_bans = len(
+                    [log for log in ban_history if log.chat_id == chat_id and log.is_active]
+                )
+
+                text += f"{i}. <b>{chat_display}</b>\n"
+                text += f"   ID: <code>{chat_id}</code>\n"
+                text += f"   Активных банов: {active_bans}\n\n"
+
+            text += "💡 <b>Использование:</b>\n"
+            text += "• <code>/sync_bans 1</code> - синхронизировать по номеру\n"
+            text += "• <code>/sync_bans &lt;chat_id&gt;</code> - синхронизировать по ID\n"
+            text += "• <code>/ban_history</code> - полная история банов"
+
+            await message.answer(text)
+            return
+
+        # Обработка выбора по номеру
+        if args[0].isdigit() and 1 <= int(args[0]) <= 5:
+            ban_history = await moderation_service.get_ban_history(limit=10)
+            chat_ids = list(set([log.chat_id for log in ban_history if log.chat_id]))
+            chat_index = int(args[0]) - 1
+
+            if 0 <= chat_index < len(chat_ids):
+                chat_id = chat_ids[chat_index]
+
+                result = await moderation_service.sync_bans_from_telegram(chat_id)
+
+                if result["status"] == "success":
+                    await message.answer(f"✅ {result['message']}")
+                elif result["status"] == "info":
+                    await message.answer(f"ℹ️ {result['message']}")
+                elif result["status"] == "error":
+                    await message.answer(f"❌ {result['message']}")
+                else:
+                    await message.answer(f"⚠️ {result['message']}")
+            else:
+                await message.answer("❌ Неверный номер чата")
+            return
+
+        # Обработка по chat_id
+        chat_id = int(args[0])
+
+        result = await moderation_service.sync_bans_from_telegram(chat_id)
+
+        if result["status"] == "success":
+            await message.answer(f"✅ {result['message']}")
+        elif result["status"] == "info":
+            await message.answer(f"ℹ️ {result['message']}")
+        elif result["status"] == "error":
+            await message.answer(f"❌ {result['message']}")
+        else:
+            await message.answer(f"⚠️ {result['message']}")
+
+        logger.info(f"Sync bans response sent to {message.from_user.id}")
+
+    except ValueError:
+        await message.answer("❌ Неверный формат ID чата")
+    except Exception as e:
+        logger.error(f"Error in sync_bans command: {e}")
+        await message.answer("❌ Ошибка синхронизации банов")
+
+
+@admin_router.message(Command("help"))
+async def handle_help_command(
+    message: Message,
+    help_service: HelpService,
+) -> None:
+    """Справка по командам."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Help command from {message.from_user.id}")
+
+        # Парсим аргументы команды
+        message_text = message.text or ""
+        command_args = message_text.split()[1:] if len(message_text.split()) > 1 else []
+        
+        if command_args:
+            # Если есть аргументы, показываем справку по категории
+            category = command_args[0]
+            user_id = message.from_user.id if message.from_user else None
+            logger.info(f"Getting help for category: {category}, user_id: {user_id}")
+            help_text = help_service.get_category_help(category, user_id=user_id)
+        else:
+            # Если аргументов нет, показываем основную справку
+            help_text = help_service.get_main_help(is_admin=True)
+
+        await message.answer(help_text)
+        if message.from_user:
+            logger.info(f"Help response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in help command: {e}")
+        await message.answer("❌ Ошибка получения справки")
+
+
+# Обработчики callback для подозрительных профилей
+@admin_router.callback_query(lambda c: c.data and c.data.startswith("ban_suspicious:"))
+async def handle_ban_suspicious_callback(
+    callback_query: CallbackQuery,
+    moderation_service: ModerationService,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Забанить подозрительного пользователя."""
+    try:
+        if not callback_query.from_user:
+            return
+
+        callback_data = callback_query.data or ""
+        user_id = int(callback_data.split(":")[1]) if callback_data and ":" in callback_data else 0
+
+        # Получаем информацию о пользователе
+        user_info = await profile_service.get_user_info(user_id)
+
+        # Получаем профиль для получения счета подозрительности
+        profile = await profile_service._get_suspicious_profile(user_id)
+        suspicion_score = profile.suspicion_score if profile else 0.0
+
+        # Баним пользователя
+        success = await moderation_service.ban_user(
+            user_id=user_id,
+            chat_id=callback_query.message.chat.id if callback_query.message else 0,
+            reason=f"Подозрительный профиль (счет: {suspicion_score:.2f})",
+            admin_id=admin_id,
+        )
+
+        if success:
+            # Отмечаем профиль как проверенный и подтвержденный
+            await profile_service.mark_profile_as_reviewed(
+                user_id=user_id,
+                admin_id=admin_id,
+                is_confirmed=True,
+                notes="Забанен за подозрительный профиль",
+            )
+
+            await callback_query.answer("✅ Пользователь забанен")
+            try:
+                if callback_query.message and hasattr(callback_query.message, 'edit_text'):
+                    await callback_query.message.edit_text(
+                        f"🚫 <b>Пользователь забанен</b>\n\n"
+                        f"ID: {user_id}\n"
+                        f"Имя: {user_info.get('first_name', 'Неизвестно')}\n"
+                        f"Причина: Подозрительный профиль"
+                    )
+            except Exception as e:
+                logger.warning(f"Could not edit message: {e}")
+        else:
+            await callback_query.answer("❌ Ошибка при бане пользователя")
+
+    except Exception as e:
+        logger.error(f"Error in ban_suspicious callback: {e}")
+        await callback_query.answer("❌ Ошибка обработки")
+
+
+@admin_router.callback_query(lambda c: c.data and c.data.startswith("watch_suspicious:"))
+async def handle_watch_suspicious_callback(
+    callback_query: CallbackQuery,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Пометить подозрительного пользователя для наблюдения."""
+    try:
+        if not callback_query.from_user:
+            return
+
+        callback_data = callback_query.data or ""
+        user_id = int(callback_data.split(":")[1]) if callback_data and ":" in callback_data else 0
+
+        # Отмечаем профиль как проверенный, но не подтвержденный
+        await profile_service.mark_profile_as_reviewed(
+            user_id=user_id, admin_id=admin_id, is_confirmed=False, notes="Помечен для наблюдения"
+        )
+
+        await callback_query.answer("👀 Пользователь добавлен в список наблюдения")
+        try:
+            if callback_query.message and hasattr(callback_query.message, 'edit_text'):
+                await callback_query.message.edit_text(
+                    f"👀 <b>Пользователь добавлен в наблюдение</b>\n\n"
+                    f"ID: {user_id}\n"
+                    f"Статус: Наблюдение"
+                )
+        except Exception as e:
+            logger.warning(f"Could not edit message: {e}")
+
+    except Exception as e:
+        logger.error(f"Error in watch_suspicious callback: {e}")
+        await callback_query.answer("❌ Ошибка обработки")
+
+
+@admin_router.callback_query(lambda c: c.data and c.data.startswith("allow_suspicious:"))
+async def handle_allow_suspicious_callback(
+    callback_query: CallbackQuery,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Разрешить подозрительному пользователю (ложное срабатывание)."""
+    try:
+        if not callback_query.from_user:
+            return
+
+        callback_data = callback_query.data or ""
+        user_id = int(callback_data.split(":")[1]) if callback_data and ":" in callback_data else 0
+
+        # Отмечаем профиль как проверенный и ложное срабатывание
+        await profile_service.mark_profile_as_reviewed(
+            user_id=user_id,
+            admin_id=admin_id,
+            is_confirmed=False,
+            notes="Ложное срабатывание - разрешен",
+        )
+
+        await callback_query.answer("✅ Пользователь разрешен")
+        try:
+            if callback_query.message and hasattr(callback_query.message, 'edit_text'):
+                await callback_query.message.edit_text(
+                    f"✅ <b>Пользователь разрешен</b>\n\n"
+                    f"ID: {user_id}\n"
+                    f"Статус: Ложное срабатывание"
+                )
+        except Exception as e:
+            logger.warning(f"Could not edit message: {e}")
+
+    except Exception as e:
+        logger.error(f"Error in allow_suspicious callback: {e}")
+        await callback_query.answer("❌ Ошибка обработки")
+
+
+@admin_router.message(Command("instructions"))
+async def handle_instructions_command(
+    message: Message,
+    admin_id: int,
+) -> None:
+    """Отправить инструкцию по настройке бота для админов каналов."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Instructions command from {message.from_user.id}")
+
+        # Get bot username for instructions
+        bot_username = getattr(message.bot, 'username', None) or "your_bot"
+        
+        instructions = (
+            "📋 <b>ИНСТРУКЦИЯ ПО НАСТРОЙКЕ ПРАВ БОТА</b>\n\n"
+            
+            "🤖 <b>Что получают админы каналов при добавлении бота:</b>\n"
+            "• Уведомление о готовности бота к работе\n"
+            "• Подробную инструкцию по настройке прав\n"
+            "• Контакты для связи с владельцем бота\n\n"
+            
+            "🔧 <b>ОБЯЗАТЕЛЬНЫЕ ПРАВА для работы бота:</b>\n\n"
+            
+            "1️⃣ <b>Удаление сообщений</b>\n"
+            "• Настройки канала → Администраторы → @your_bot\n"
+            "• Включить \"Удалять сообщения\"\n"
+            "• Без этого бот не сможет удалять спам\n\n"
+            
+            "2️⃣ <b>Блокировка пользователей</b>\n"
+            "• Включить \"Добавлять участников\" или \"Исключать участников\"\n"
+            "• Без этого бот не сможет банить спамеров\n\n"
+            
+            "3️⃣ <b>Просмотр сообщений</b>\n"
+            "• Убедиться, что бот может читать сообщения\n"
+            "• Нужно для анализа контента\n\n"
+            
+            "✅ <b>ДОПОЛНИТЕЛЬНЫЕ ПРАВА (рекомендуется):</b>\n"
+            "• Приглашение пользователей (для разбана)\n"
+            "• Закрепление сообщений (для уведомлений)\n\n"
+            
+            "⚠️ <b>ВАЖНО для админов каналов:</b>\n"
+            "• Без прав на удаление и бан бот работать НЕ БУДЕТ!\n"
+            "• Настроить права нужно сразу после добавления\n"
+            "• Бот начнет работать автоматически после настройки\n\n"
+            
+            "🔍 <b>Проверка работы:</b>\n"
+            "• Отправить тестовое сообщение с бот-ссылкой\n"
+            "• Бот должен удалить его (если права настроены)\n"
+            "• Если не удаляет - проверить права\n\n"
+            
+            "⚙️ <b>Управление ботом (только для владельца):</b>\n"
+            "• <code>/status</code> - статистика работы бота\n"
+            "• <code>/settings</code> - настройки антиспама\n"
+            "• <code>/suspicious</code> - просмотр подозрительных профилей\n"
+            "• <code>/channels</code> - управление каналами\n"
+            "• <code>/setlimits</code> - настройка лимитов\n\n"
+            
+            "📞 <b>Поддержка:</b>\n"
+            "• Владелец бота: [@ncux-ad](https://github.com/ncux-ad)\n"
+            "• GitHub: https://github.com/ncux-ad/Flame_Of_Styx_bot\n"
+            "• При проблемах с настройкой - обращайтесь к владельцу\n\n"
+            
+            "💡 <b>Совет:</b> Админы каналов должны настроить права, а управление остается за владельцем бота!"
+        )
+
+        await message.answer(instructions)
+        if message.from_user:
+            logger.info(f"Instructions sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in instructions command: {e}")
+        await message.answer("❌ Ошибка получения инструкций")
+
+
+@admin_router.message(Command("logs"))
+async def handle_logs_command(
+    message: Message,
+    admin_id: int,
+) -> None:
+    """Просмотр логов системы."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Logs command from {message.from_user.id}")
+
+        # Парсим аргументы команды
+        message_text = message.text or ""
+        command_args = message_text.split()[1:] if len(message_text.split()) > 1 else []
+        log_level = command_args[0] if command_args else "all"
+        
+        # Получаем логи из journalctl
+        import subprocess
+        import os
+        
+        # Пробуем разные пути к journalctl
+        journalctl_paths = [
+            "/usr/bin/journalctl",
+            "/bin/journalctl", 
+            "journalctl"
+        ]
+        
+        journalctl_path = None
+        for path in journalctl_paths:
+            try:
+                # Проверяем, существует ли файл
+                if os.path.exists(path) or path == "journalctl":
+                    journalctl_path = path
+                    break
+            except:
+                continue
+        
+        if not journalctl_path:
+            # Если journalctl не найден, попробуем получить логи из файлов
+            try:
+                log_files = [
+                    "/var/log/antispam-bot.log",
+                    "logs/antispam-bot.log", 
+                    "antispam-bot.log"
+                ]
+                
+                logs_text = ""
+                for log_file in log_files:
+                    if os.path.exists(log_file):
+                        with open(log_file, 'r', encoding='utf-8') as f:
+                            lines = f.readlines()
+                            if log_level == "error":
+                                logs_text = "\n".join([line for line in lines if "ERROR" in line or "CRITICAL" in line])[-2000:]
+                            elif log_level == "warning":
+                                logs_text = "\n".join([line for line in lines if "WARNING" in line or "ERROR" in line or "CRITICAL" in line])[-2000:]
+                            else:
+                                logs_text = "\n".join(lines[-50:])
+                        break
+                
+                if logs_text:
+                    if len(logs_text) > 3500:
+                        logs_text = logs_text[:3500] + "\n... (логи обрезаны)"
+                    response = f"📋 <b>Логи из файла ({log_level})</b>\n\n<code>{logs_text}</code>"
+                else:
+                    response = "❌ <b>Логи не найдены</b>\n\njournalctl недоступен и файлы логов не найдены"
+                
+                await message.answer(response)
+                return
+                
+            except Exception as e:
+                response = f"❌ <b>Ошибка чтения логов</b>\n\n{str(e)}"
+                await message.answer(response)
+                return
+        
+        try:
+            
+            if log_level == "error":
+                # Только ошибки
+                result = subprocess.run(
+                    [journalctl_path, "-u", "antispam-bot.service", "--since", "1 hour ago", 
+                     "--priority", "err", "--no-pager", "-n", "50"],
+                    capture_output=True, text=True, timeout=10, shell=False
+                )
+            elif log_level == "warning":
+                # Предупреждения и ошибки - используем grep для фильтрации
+                result = subprocess.run(
+                    [journalctl_path, "-u", "antispam-bot.service", "--since", "1 hour ago", 
+                     "--no-pager", "-n", "100"],
+                    capture_output=True, text=True, timeout=10, shell=False
+                )
+                if result.returncode == 0 and result.stdout:
+                    # Фильтруем только WARNING и ERROR уровни
+                    import re
+                    warning_lines = []
+                    for line in result.stdout.split('\n'):
+                        if re.search(r'(WARNING|ERROR|CRITICAL)', line, re.IGNORECASE):
+                            warning_lines.append(line)
+                    result.stdout = '\n'.join(warning_lines[-50:])  # Последние 50 строк
+            else:
+                # Все логи
+                result = subprocess.run(
+                    [journalctl_path, "-u", "antispam-bot.service", "--since", "1 hour ago", 
+                     "--no-pager", "-n", "30"],
+                    capture_output=True, text=True, timeout=10, shell=False
+                )
+            
+            if result.returncode == 0:
+                logs_text = result.stdout.strip() if result.stdout else ""
+                
+                if logs_text:
+                    # Ограничиваем размер сообщения (Telegram лимит 4096 символов)
+                    if len(logs_text) > 3500:
+                        logs_text = logs_text[:3500] + "\n... (логи обрезаны)"
+                    
+                    response = f"📋 <b>Логи системы ({log_level})</b>\n\n<code>{logs_text}</code>"
+                else:
+                    # Нет логов указанного уровня
+                    if log_level == "error":
+                        response = "✅ <b>Ошибок не найдено</b>\n\nЗа последний час ошибок в логах не обнаружено."
+                    elif log_level == "warning":
+                        response = "✅ <b>Предупреждений не найдено</b>\n\nЗа последний час предупреждений в логах не обнаружено."
+                    else:
+                        response = "📋 <b>Логи системы (all)</b>\n\n<code>-- No entries --</code>"
+                
+            else:
+                error_msg = result.stderr or 'Неизвестная ошибка'
+                response = f"❌ <b>Ошибка получения логов</b>\n\nКод возврата: {result.returncode}\nОшибка: {error_msg}\n\nПроверьте, что бот запущен как systemd сервис на Ubuntu сервере."
+                
+        except subprocess.TimeoutExpired:
+            response = "⏰ <b>Таймаут получения логов</b>\n\nЛоги слишком большие, попробуйте позже"
+        except Exception as e:
+            response = f"❌ <b>Ошибка выполнения команды</b>\n\n{str(e)}"
+        
+        await message.answer(response)
+        if message.from_user:
+            logger.info(f"Logs response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in logs command: {e}")
+        await message.answer("❌ Ошибка получения логов")

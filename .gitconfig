@@ -1,0 +1,35 @@
+[core]
+    autocrlf = true
+    filemode = false
+    ignorecase = true
+    precomposeunicode = true
+    quotepath = false
+    safecrlf = true
+
+[push]
+    default = simple
+
+[pull]
+    rebase = false
+
+[init]
+    defaultBranch = main
+
+[user]
+    name = Your Name
+    email = your.email@example.com
+
+[alias]
+    st = status
+    co = checkout
+    br = branch
+    ci = commit
+    unstage = reset HEAD --
+    last = log -1 HEAD
+    visual = !gitk
+    lg = log --oneline --decorate --graph --all
+    amend = commit --amend --no-edit
+    undo = reset --soft HEAD~1
+    wip = commit -am "WIP: work in progress"
+    unwip = reset HEAD~1
+    cleanup = "!git branch --merged | grep -v '\\*\\|main\\|develop' | xargs -n 1 git branch -d"
