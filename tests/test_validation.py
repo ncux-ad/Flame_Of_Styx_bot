@@ -67,7 +67,7 @@ class TestValidationMiddleware:
     @pytest.mark.asyncio
     async def test_validate_message_success(self, validation_middleware, mock_message):
         """Тест успешной валидации сообщения"""
-        result = await validation_middleware._validate_message(mock_message)
+        result = await validation_middleware._validate_event(mock_message, {})
         
         assert result["is_valid"] is True
         assert len(result["errors"]) == 0
@@ -75,107 +75,149 @@ class TestValidationMiddleware:
     @pytest.mark.asyncio
     async def test_validate_message_missing_chat(self, validation_middleware):
         """Тест валидации сообщения без чата"""
-        user = User(id=123456789, is_bot=False, first_name="Test")
-        message = Message(
-            message_id=1,
-            date=1234567890,
-            chat=None,  # Отсутствует чат
-            from_user=user,
-            text="Test message"
-        )
+        from unittest.mock import Mock
+        
+        # Создаем мок-объекты вместо реальных Pydantic объектов
+        user = Mock()
+        user.id = 123456789
+        user.is_bot = False
+        
+        message = Mock()
+        message.chat = None  # Отсутствует чат
+        message.from_user = user
+        message.text = "Test message"
+        message.photo = None
+        message.video = None
+        message.document = None
         
         result = await validation_middleware._validate_message(message)
         
-        assert result["is_valid"] is False
-        assert "Отсутствует информация о чате" in result["errors"]
+        assert "Отсутствует информация о чате" in result
     
     @pytest.mark.asyncio
     async def test_validate_message_missing_user_id(self, validation_middleware):
         """Тест валидации сообщения без ID пользователя"""
-        user = User(id=None, is_bot=False, first_name="Test")  # Отсутствует ID
-        chat = Chat(id=-1001234567890, type="supergroup")
-        message = Message(
-            message_id=1,
-            date=1234567890,
-            chat=chat,
-            from_user=user,
-            text="Test message"
-        )
+        from unittest.mock import Mock
+        
+        # Создаем мок-объекты
+        user = Mock()
+        user.id = None  # Отсутствует ID
+        user.is_bot = False
+        
+        chat = Mock()
+        chat.id = -1001234567890
+        
+        message = Mock()
+        message.chat = chat
+        message.from_user = user
+        message.text = "Test message"
+        message.photo = None
+        message.video = None
+        message.document = None
         
         result = await validation_middleware._validate_message(message)
         
-        assert result["is_valid"] is False
-        assert "Отсутствует ID пользователя" in result["errors"]
+        assert "Отсутствует ID пользователя" in result
     
     @pytest.mark.asyncio
-    async def test_validate_message_too_long(self, validation_middleware, mock_message):
+    async def test_validate_message_too_long(self, validation_middleware):
         """Тест валидации слишком длинного сообщения"""
-        # Создаем сообщение длиннее 4096 символов
-        long_text = "a" * 5000
-        mock_message.text = long_text
+        from unittest.mock import Mock
         
-        result = await validation_middleware._validate_message(mock_message)
+        # Создаем мок-объекты с длинным текстом
+        user = Mock()
+        user.id = 123456789
+        user.is_bot = False
         
-        assert result["is_valid"] is False
-        assert "Сообщение слишком длинное" in result["errors"]
+        chat = Mock()
+        chat.id = -1001234567890
+        
+        message = Mock()
+        message.chat = chat
+        message.from_user = user
+        message.text = "a" * 5000  # Длинное сообщение
+        message.photo = None
+        message.video = None
+        message.document = None
+        
+        result = await validation_middleware._validate_message(message)
+        
+        assert "Сообщение слишком длинное" in result
     
     @pytest.mark.asyncio
-    async def test_validate_message_suspicious_content(self, validation_middleware, mock_message):
+    async def test_validate_message_suspicious_content(self, validation_middleware):
         """Тест валидации подозрительного содержимого"""
-        # Сообщение с JavaScript
-        mock_message.text = "<script>alert('xss')</script>"
+        from unittest.mock import Mock
         
-        result = await validation_middleware._validate_message(mock_message)
+        # Создаем мок-объекты с подозрительным содержимым
+        user = Mock()
+        user.id = 123456789
+        user.is_bot = False
         
-        assert result["is_valid"] is False
-        assert "Подозрительное содержимое сообщения" in result["errors"]
+        chat = Mock()
+        chat.id = -1001234567890
+        
+        message = Mock()
+        message.chat = chat
+        message.from_user = user
+        message.text = "<script>alert('xss')</script>"  # Подозрительное содержимое
+        message.photo = None
+        message.video = None
+        message.document = None
+        
+        result = await validation_middleware._validate_message(message)
+        
+        assert "Подозрительное содержимое сообщения" in result
     
     @pytest.mark.asyncio
     async def test_validate_callback_query_success(self, validation_middleware, mock_callback_query):
         """Тест успешной валидации callback query"""
         result = await validation_middleware._validate_callback_query(mock_callback_query)
         
-        assert result["is_valid"] is True
-        assert len(result["errors"]) == 0
+        assert len(result) == 0  # Пустой список ошибок
     
     @pytest.mark.asyncio
     async def test_validate_callback_query_missing_data(self, validation_middleware):
         """Тест валидации callback query без данных"""
-        user = User(id=123456789, is_bot=False, first_name="Test")
-        callback_query = CallbackQuery(
-            id="test_callback",
-            from_user=user,
-            chat_instance="test_chat",
-            data=None  # Отсутствуют данные
-        )
+        from unittest.mock import Mock
+        
+        # Создаем мок-объекты
+        user = Mock()
+        user.id = 123456789
+        user.is_bot = False
+        
+        callback_query = Mock()
+        callback_query.data = None  # Отсутствуют данные
         
         result = await validation_middleware._validate_callback_query(callback_query)
         
-        assert result["is_valid"] is False
-        assert "Отсутствуют данные callback query" in result["errors"]
+        assert "Отсутствуют данные callback query" in result
     
     @pytest.mark.asyncio
-    async def test_validate_callback_query_too_long(self, validation_middleware, mock_callback_query):
+    async def test_validate_callback_query_too_long(self, validation_middleware):
         """Тест валидации слишком длинных данных callback query"""
-        # Данные длиннее 64 символов
-        long_data = "a" * 100
-        mock_callback_query.data = long_data
+        from unittest.mock import Mock
         
-        result = await validation_middleware._validate_callback_query(mock_callback_query)
+        # Создаем мок-объекты с длинными данными
+        callback_query = Mock()
+        callback_query.data = "a" * 100  # Данные длиннее 64 символов
         
-        assert result["is_valid"] is False
-        assert "Callback data слишком длинные" in result["errors"]
+        result = await validation_middleware._validate_callback_query(callback_query)
+        
+        assert "Callback data слишком длинные" in result
     
     @pytest.mark.asyncio
-    async def test_validate_callback_query_suspicious_data(self, validation_middleware, mock_callback_query):
+    async def test_validate_callback_query_suspicious_data(self, validation_middleware):
         """Тест валидации подозрительных данных callback query"""
-        # Данные с JavaScript
-        mock_callback_query.data = "<script>alert('xss')</script>"
+        from unittest.mock import Mock
         
-        result = await validation_middleware._validate_callback_query(mock_callback_query)
+        # Создаем мок-объекты с подозрительными данными
+        callback_query = Mock()
+        callback_query.data = "<script>alert('xss')</script>"  # Подозрительные данные
         
-        assert result["is_valid"] is False
-        assert "Подозрительные данные callback query" in result["errors"]
+        result = await validation_middleware._validate_callback_query(callback_query)
+        
+        assert "Подозрительные данные callback query" in result
     
     def test_is_suspicious_text_javascript(self, validation_middleware):
         """Тест обнаружения JavaScript в тексте"""
@@ -280,23 +322,24 @@ class TestValidationMiddleware:
         
         assert not validation_middleware._is_safe_media(message)
     
-    def test_is_safe_media_safe_content(self, validation_middleware, mock_message):
+    def test_is_safe_media_safe_content(self, validation_middleware):
         """Тест что безопасный контент проходит проверку"""
+        from unittest.mock import Mock
+        
         # Обычное текстовое сообщение
-        assert validation_middleware._is_safe_media(mock_message)
+        message = Mock()
+        message.document = None
+        message.video = None
+        message.photo = None
+        assert validation_middleware._is_safe_media(message)
         
         # Сообщение с небольшим документом
-        from aiogram.types import Document
-        small_document = Document(
-            file_id="test_file_id",
-            file_unique_id="test_unique_id",
-            file_name="small_file.txt",
-            file_size=1024,  # 1KB
-            mime_type="text/plain"
-        )
-        mock_message.document = small_document
-        
-        assert validation_middleware._is_safe_media(mock_message)
+        message_with_doc = Mock()
+        message_with_doc.document = Mock()
+        message_with_doc.document.file_size = 1024  # 1KB
+        message_with_doc.video = None
+        message_with_doc.photo = None
+        assert validation_middleware._is_safe_media(message_with_doc)
 
 
 class TestCommandValidationMiddleware:
@@ -350,26 +393,31 @@ class TestCommandValidationMiddleware:
         assert "Отсутствует текст команды" in result["errors"]
     
     @pytest.mark.asyncio
-    async def test_validate_command_too_long(self, command_middleware, mock_command_message):
+    async def test_validate_command_too_long(self, command_middleware):
         """Тест валидации слишком длинной команды"""
-        # Команда длиннее 32 символов
-        long_command = "/" + "a" * 35
-        mock_command_message.text = long_command
+        from unittest.mock import Mock
         
-        result = await command_middleware._validate_command(mock_command_message)
+        # Создаем мок-объекты с длинной командой
+        message = Mock()
+        message.text = "/" + "a" * 35  # Команда длиннее 32 символов
         
-        assert result["is_valid"] is False
+        result = await command_middleware._validate_command(message)
+        
+        assert not result["is_valid"]
         assert "Команда слишком длинная" in result["errors"]
     
     @pytest.mark.asyncio
-    async def test_validate_command_suspicious_parameter(self, command_middleware, mock_command_message):
+    async def test_validate_command_suspicious_parameter(self, command_middleware):
         """Тест валидации команды с подозрительным параметром"""
-        # Команда с JavaScript в параметре
-        mock_command_message.text = "/help <script>alert('xss')</script>"
+        from unittest.mock import Mock
         
-        result = await command_middleware._validate_command(mock_command_message)
+        # Создаем мок-объекты с подозрительным параметром
+        message = Mock()
+        message.text = "/help <script>alert('xss')</script>"  # Команда с JavaScript в параметре
         
-        assert result["is_valid"] is False
+        result = await command_middleware._validate_command(message)
+        
+        assert not result["is_valid"]
         assert "Подозрительный параметр команды" in result["errors"]
     
     def test_is_suspicious_text_command_middleware(self, command_middleware):
