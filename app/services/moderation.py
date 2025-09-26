@@ -264,10 +264,45 @@ class ModerationService:
         return result.scalars().all()
 
     async def get_ban_history(self, limit: int = 20) -> list:
-        """Get ban history (all bans, active and inactive)."""
+        """Get ban history (all bans, active and inactive) from all chats."""
+        # Получаем уникальные чаты с банами
+        chat_result = await self.db.execute(
+            select(ModerationLog.chat_id)
+            .where(ModerationLog.action == ModerationAction.BAN)
+            .distinct()
+        )
+        chat_ids = [row[0] for row in chat_result.fetchall()]
+        
+        if not chat_ids:
+            return []
+        
+        # Получаем последние баны из каждого чата
+        all_bans = []
+        for chat_id in chat_ids:
+            result = await self.db.execute(
+                select(ModerationLog)
+                .where(
+                    ModerationLog.action == ModerationAction.BAN,
+                    ModerationLog.chat_id == chat_id
+                )
+                .order_by(ModerationLog.created_at.desc())
+                .limit(limit // len(chat_ids) + 1)  # Равномерно распределяем лимит
+            )
+            chat_bans = result.scalars().all()
+            all_bans.extend(chat_bans)
+        
+        # Сортируем по дате и ограничиваем общий лимит
+        all_bans.sort(key=lambda x: x.created_at, reverse=True)
+        return all_bans[:limit]
+
+    async def get_ban_history_by_chat(self, chat_id: int, limit: int = 10) -> list:
+        """Get ban history for specific chat."""
         result = await self.db.execute(
             select(ModerationLog)
-            .where(ModerationLog.action == ModerationAction.BAN)
+            .where(
+                ModerationLog.action == ModerationAction.BAN,
+                ModerationLog.chat_id == chat_id
+            )
             .order_by(ModerationLog.created_at.desc())
             .limit(limit)
         )

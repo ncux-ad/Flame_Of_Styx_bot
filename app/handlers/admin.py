@@ -894,39 +894,52 @@ async def handle_ban_history_command(
             await message.answer("📝 Нет записей в истории банов")
             return
 
-        text = "📋 <b>История банов (с ID чатов):</b>\n\n"
-
-        for i, log_entry in enumerate(ban_history, 1):
-            user_id = log_entry.user_id
-            reason = log_entry.reason or "Спам"
+        # Группируем баны по чатам
+        bans_by_chat = {}
+        for log_entry in ban_history:
             chat_id = log_entry.chat_id
-            date_text = log_entry.created_at.strftime("%d.%m.%Y %H:%M") if log_entry.created_at else "Неизвестно"
-            is_active = "🟢 Активен" if log_entry.is_active else "🔴 Неактивен"
+            if chat_id not in bans_by_chat:
+                bans_by_chat[chat_id] = []
+            bans_by_chat[chat_id].append(log_entry)
 
-            # Получаем информацию о пользователе
-            user_info = await profile_service.get_user_info(user_id)
-            
-            # Формируем отображение пользователя
-            if user_info["username"]:
-                user_display = f"@{user_info['username']}"
-            else:
-                first_name = user_info["first_name"] or ""
-                last_name = user_info["last_name"] or ""
-                full_name = f"{first_name} {last_name}".strip()
-                user_display = full_name if full_name else f"User {user_id}"
+        text = "📋 <b>История банов (по чатам):</b>\n\n"
 
+        entry_number = 1
+        for chat_id, chat_bans in bans_by_chat.items():
             # Получаем информацию о чате
             chat_info = (
                 await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
             )
             chat_display = f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
+            
+            text += f"<b>💬 {chat_display}</b> <code>({chat_id})</code>\n"
+            
+            for log_entry in chat_bans:
+                user_id = log_entry.user_id
+                reason = log_entry.reason or "Спам"
+                date_text = log_entry.created_at.strftime("%d.%m.%Y %H:%M") if log_entry.created_at else "Неизвестно"
+                is_active = "🟢 Активен" if log_entry.is_active else "🔴 Неактивен"
 
-            text += f"{i}. <b>{user_display}</b> <code>({user_id})</code>\n"
-            text += f"   Причина: {reason}\n"
-            text += f"   Чат: <b>{chat_display}</b>\n"
-            text += f"   ID чата: <code>{chat_id}</code>\n"
-            text += f"   Статус: {is_active}\n"
-            text += f"   Дата: {date_text}\n\n"
+                # Получаем информацию о пользователе
+                user_info = await profile_service.get_user_info(user_id)
+                
+                # Формируем отображение пользователя
+                if user_info["username"]:
+                    user_display = f"@{user_info['username']}"
+                else:
+                    first_name = user_info["first_name"] or ""
+                    last_name = user_info["last_name"] or ""
+                    full_name = f"{first_name} {last_name}".strip()
+                    user_display = full_name if full_name else f"User {user_id}"
+
+                text += f"  {entry_number}. <b>{user_display}</b> <code>({user_id})</code>\n"
+                text += f"     Причина: {reason}\n"
+                text += f"     Статус: {is_active}\n"
+                text += f"     Дата: {date_text}\n\n"
+                
+                entry_number += 1
+            
+            text += "\n"
 
         text += "💡 <b>Для синхронизации используйте:</b>\n"
         text += "• <code>/sync_bans &lt;chat_id&gt;</code>\n"
