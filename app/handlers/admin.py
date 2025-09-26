@@ -788,12 +788,40 @@ async def handle_unban_command(
         # Обработка по user_id и chat_id
         if len(args) < 1:
             await message.answer(
-                "❌ Использование: /unban &lt;user_id&gt; [chat_id]\n" "Пример: /unban 123456789 -1001234567890"
+                "❌ Использование: /unban &lt;user_id_or_username&gt; [chat_id]\n" 
+                "Примеры:\n"
+                "• /unban 123456789 -1001234567890\n"
+                "• /unban @username -1001234567890"
             )
             return
 
-        user_id = int(args[0])
+        user_identifier = args[0]
         chat_id = int(args[1]) if len(args) > 1 else message.chat.id
+        
+        # Если ID положительный и длинный, добавляем минус для групп/каналов
+        if chat_id > 0 and len(str(chat_id)) >= 10:
+            chat_id = -chat_id
+
+        # Определяем user_id
+        user_id = None
+        if user_identifier.startswith("@"):
+            # Это username, нужно найти user_id
+            username = user_identifier[1:]  # Убираем @
+            try:
+                # Пытаемся получить информацию о пользователе через Telegram API
+                user_info = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=username)
+                user_id = user_info.user.id
+                logger.info(f"Found user_id {user_id} for username @{username}")
+            except Exception as e:
+                await message.answer(f"❌ Не удалось найти пользователя @{username}: {e}")
+                return
+        else:
+            # Это user_id
+            try:
+                user_id = int(user_identifier)
+            except ValueError:
+                await message.answer(f"❌ Неверный формат ID пользователя: {user_identifier}")
+                return
 
         # Разблокируем пользователя
         success = await moderation_service.unban_user(user_id=user_id, chat_id=chat_id, admin_id=admin_id)
