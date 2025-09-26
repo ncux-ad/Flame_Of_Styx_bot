@@ -878,6 +878,7 @@ async def handle_ban_history_command(
     message: Message,
     moderation_service: ModerationService,
     channel_service: ChannelService,
+    profile_service: ProfileService,
     admin_id: int,
 ) -> None:
     """Показать историю банов с chat_id для удобства."""
@@ -902,13 +903,25 @@ async def handle_ban_history_command(
             date_text = log_entry.created_at.strftime("%d.%m.%Y %H:%M") if log_entry.created_at else "Неизвестно"
             is_active = "🟢 Активен" if log_entry.is_active else "🔴 Неактивен"
 
+            # Получаем информацию о пользователе
+            user_info = await profile_service.get_user_info(user_id)
+            
+            # Формируем отображение пользователя
+            if user_info["username"]:
+                user_display = f"@{user_info['username']}"
+            else:
+                first_name = user_info["first_name"] or ""
+                last_name = user_info["last_name"] or ""
+                full_name = f"{first_name} {last_name}".strip()
+                user_display = full_name if full_name else f"User {user_id}"
+
             # Получаем информацию о чате
             chat_info = (
                 await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
             )
             chat_display = f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
 
-            text += f"{i}. <b>User {user_id}</b>\n"
+            text += f"{i}. <b>{user_display}</b> <code>({user_id})</code>\n"
             text += f"   Причина: {reason}\n"
             text += f"   Чат: <b>{chat_display}</b>\n"
             text += f"   ID чата: <code>{chat_id}</code>\n"
