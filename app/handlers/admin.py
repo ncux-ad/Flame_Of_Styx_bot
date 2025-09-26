@@ -51,6 +51,7 @@ async def handle_start_command(
         "/unban - разблокировать пользователя\n"
         "/banned - список заблокированных\n"
         "/sync_bans - синхронизировать баны с Telegram\n"
+        "/force_unban - принудительный разбан по ID/username\n"
         "/help - помощь"
     )
 
@@ -808,6 +809,113 @@ async def handle_unban_command(
     except Exception as e:
         logger.error(f"Error in unban command: {e}")
         await message.answer("❌ Ошибка при разблокировке пользователя")
+
+
+@admin_router.message(Command("force_unban"))
+async def handle_force_unban_command(
+    message: Message,
+    moderation_service: ModerationService,
+    channel_service: ChannelService,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Принудительный разбан пользователя по ID или username."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Force unban command from {message.from_user.id}")
+
+        # Парсим аргументы команды
+        if not message.text:
+            await message.answer("❌ Ошибка: пустое сообщение")
+            return
+        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+
+        if len(args) < 2:
+            await message.answer(
+                "❌ Использование: /force_unban <user_id_or_username> <chat_id>\n"
+                "Примеры:\n"
+                "• /force_unban 123456789 -1001234567890\n"
+                "• /force_unban @username -1001234567890"
+            )
+            return
+
+        user_identifier = args[0]
+        chat_id = int(args[1])
+        
+        # Если ID положительный и длинный, добавляем минус для групп/каналов
+        if chat_id > 0 and len(str(chat_id)) >= 10:
+            chat_id = -chat_id
+
+        # Определяем user_id
+        user_id = None
+        if user_identifier.startswith("@"):
+            # Это username, нужно найти user_id
+            username = user_identifier[1:]  # Убираем @
+            try:
+                # Пытаемся получить информацию о пользователе через Telegram API
+                user_info = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=username)
+                user_id = user_info.user.id
+                logger.info(f"Found user_id {user_id} for username @{username}")
+            except Exception as e:
+                await message.answer(f"❌ Не удалось найти пользователя @{username}: {e}")
+                return
+        else:
+            # Это user_id
+            try:
+                user_id = int(user_identifier)
+            except ValueError:
+                await message.answer(f"❌ Неверный формат ID пользователя: {user_identifier}")
+                return
+
+        # Принудительно разблокируем пользователя
+        logger.info(f"Force unbanning user {user_id} in chat {chat_id}")
+        
+        try:
+            # Принудительно разблокируем в Telegram
+            await moderation_service.bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
+            logger.info(f"Successfully force unbanned user {user_id} in Telegram chat {chat_id}")
+        except Exception as telegram_error:
+            logger.error(f"Telegram API error during force unban: {telegram_error}")
+            await message.answer(f"⚠️ Ошибка Telegram API: {telegram_error}")
+            return
+
+        # Обновляем статус в базе данных
+        await moderation_service._update_user_status(user_id, is_banned=False, ban_reason=None)
+        
+        # Деактивируем все активные баны
+        await moderation_service._deactivate_all_user_bans(user_id)
+        
+        # Логируем действие
+        await moderation_service._log_moderation_action(
+            action=ModerationAction.UNBAN, 
+            user_id=user_id, 
+            admin_id=admin_id, 
+            chat_id=chat_id
+        )
+
+        # Проверяем статус пользователя после разбана
+        try:
+            member = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+            status_info = f"Статус после разбана: {member.status}"
+        except Exception as status_error:
+            status_info = f"Не удалось проверить статус: {status_error}"
+
+        await message.answer(
+            f"✅ <b>Принудительный разбан выполнен</b>\n\n"
+            f"👤 Пользователь: <code>{user_id}</code>\n"
+            f"💬 Чат: <code>{chat_id}</code>\n"
+            f"📊 {status_info}\n\n"
+            f"🔄 Пользователь должен попробовать присоединиться к каналу снова"
+        )
+        
+        logger.info(f"Force unban completed for user {user_id} in chat {chat_id}")
+
+    except ValueError as e:
+        await message.answer(f"❌ Неверный формат ID чата: {e}")
+    except Exception as e:
+        logger.error(f"Error in force_unban command: {e}")
+        await message.answer("❌ Ошибка при принудительном разбане")
 
 
 @admin_router.message(Command("banned"))
