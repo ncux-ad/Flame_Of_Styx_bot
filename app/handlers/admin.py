@@ -89,9 +89,20 @@ async def handle_status_command(
 
         # Получаем информацию о каналах из базы данных
         try:
-            channels = await channel_service.get_all_channels()
+            all_channels = await channel_service.get_all_channels()
         except Exception:
-            channels = []
+            all_channels = []
+
+        # Фильтруем только каналы, где бот является администратором
+        connected_channels = []
+        for channel in all_channels:
+            try:
+                telegram_id = int(channel.telegram_id)
+                is_native = await channel_service.is_native_channel(telegram_id)
+                if is_native:
+                    connected_channels.append(channel)
+            except Exception:
+                continue
 
         # Добавляем известные чаты, где бот активен
         known_chats = [
@@ -105,8 +116,8 @@ async def handle_status_command(
         # Формируем информацию о чатах
         channel_info = []
 
-        # Добавляем каналы из базы данных
-        for channel in channels[:5]:  # Показываем первые 5 каналов
+        # Добавляем только подключенные каналы (где бот админ)
+        for channel in connected_channels[:5]:  # Показываем первые 5 подключенных каналов
             channel_info.append(f"• {channel.title} <code>({channel.telegram_id})</code>")
             channel_info.append("  └ Тип: Канал")
             channel_info.append("  └ Статус: ✅ Антиспам активен")
@@ -122,7 +133,7 @@ async def handle_status_command(
         bot_id = "7977609078"  # Из логов
 
         # Подсчитываем общее количество чатов
-        total_connected_chats = len(channels) + len(known_chats)
+        total_connected_chats = len(connected_channels) + len(known_chats)
 
         status_text = (
             "📊 <b>Подробная статистика бота</b>\n\n"
@@ -135,10 +146,10 @@ async def handle_status_command(
 
         if channel_info:
             status_text += "\n".join(channel_info)
-            if len(channels) > 5:
-                status_text += f"\n• ... и ещё {len(channels) - 5} чатов"
+            if len(connected_channels) > 5:
+                status_text += f"\n• ... и ещё {len(connected_channels) - 5} подключенных каналов"
         else:
-            status_text += "• Чаты не обнаружены в базе данных\n"
+            status_text += "• Подключенные чаты не обнаружены\n"
             status_text += "💡 <b>Для добавления новых чатов:</b>\n"
             status_text += "1. Добавьте бота в канал/группу\n"
             status_text += "2. Дайте права администратора\n"
