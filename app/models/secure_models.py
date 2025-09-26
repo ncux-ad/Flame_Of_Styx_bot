@@ -3,7 +3,7 @@
 import re
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.utils.security import sanitize_user_input, validate_user_id, validate_username
 
@@ -18,19 +18,20 @@ class SecureUser(BaseModel):
     is_bot: bool = False
     is_premium: bool = False
 
-    @validator("id")
+    @field_validator("id")
+    @classmethod
     def validate_user_id(cls, v):
         if not validate_user_id(v):
             raise ValueError("Invalid user ID")
         return v
 
-    @validator("username")
+    @field_validator("username")
     def validate_username(cls, v):
         if v and not validate_username(v):
             raise ValueError("Invalid username format")
         return v
 
-    @validator("first_name", "last_name")
+    @field_validator("first_name", "last_name")
     def sanitize_names(cls, v):
         if v:
             return sanitize_user_input(v)
@@ -46,13 +47,13 @@ class SecureMessage(BaseModel):
     chat_id: int = Field(..., description="Chat ID")
     date: int = Field(..., description="Message timestamp")
 
-    @validator("text")
+    @field_validator("text")
     def sanitize_text(cls, v):
         if v:
             return sanitize_user_input(v)
         return v
 
-    @validator("chat_id")
+    @field_validator("chat_id")
     def validate_chat_id(cls, v):
         if not isinstance(v, int) or v == 0:
             raise ValueError("Invalid chat ID")
@@ -70,17 +71,17 @@ class SecureChannel(BaseModel):
     is_scam: bool = False
     is_fake: bool = False
 
-    @validator("title")
+    @field_validator("title")
     def sanitize_title(cls, v):
         return sanitize_user_input(v)
 
-    @validator("username")
+    @field_validator("username")
     def validate_channel_username(cls, v):
         if v and not re.match(r"^[a-zA-Z0-9_]{5,32}$", v):
             raise ValueError("Invalid channel username format")
         return v
 
-    @validator("description")
+    @field_validator("description")
     def sanitize_description(cls, v):
         if v:
             return sanitize_user_input(v)
@@ -97,13 +98,13 @@ class SecureBot(BaseModel):
     can_read_all_group_messages: bool = False
     supports_inline_queries: bool = False
 
-    @validator("username")
+    @field_validator("username")
     def validate_bot_username(cls, v):
         if not validate_username(v):
             raise ValueError("Invalid bot username format")
         return v
 
-    @validator("first_name")
+    @field_validator("first_name")
     def sanitize_first_name(cls, v):
         return sanitize_user_input(v)
 
@@ -120,19 +121,19 @@ class SecureSuspiciousProfile(BaseModel):
     is_reviewed: bool = False
     admin_id: Optional[int] = Field(None, gt=0)
 
-    @validator("user_id", "admin_id")
+    @field_validator("user_id", "admin_id")
     def validate_ids(cls, v):
         if v and not validate_user_id(v):
             raise ValueError("Invalid user ID")
         return v
 
-    @validator("username")
+    @field_validator("username")
     def validate_username(cls, v):
         if v and not validate_username(v):
             raise ValueError("Invalid username format")
         return v
 
-    @validator("first_name", "last_name", "reason")
+    @field_validator("first_name", "last_name", "reason")
     def sanitize_text_fields(cls, v):
         if v:
             return sanitize_user_input(v)
@@ -147,17 +148,17 @@ class SecureCommand(BaseModel):
     user_id: int = Field(..., gt=0)
     chat_id: int = Field(..., description="Chat ID")
 
-    @validator("command")
+    @field_validator("command")
     def validate_command(cls, v):
         if not re.match(r"^/[a-zA-Z0-9_]+$", v):
             raise ValueError("Invalid command format")
         return v
 
-    @validator("args")
+    @field_validator("args")
     def sanitize_args(cls, v):
         return [sanitize_user_input(arg) for arg in v]
 
-    @validator("user_id", "chat_id")
+    @field_validator("user_id", "chat_id")
     def validate_ids(cls, v):
         if not isinstance(v, int) or v == 0:
             raise ValueError("Invalid ID")
@@ -171,20 +172,20 @@ class SecureConfig(BaseModel):
     admin_ids: List[int] = Field(..., min_items=1)
     db_path: str = Field(..., min_length=1)
 
-    @validator("bot_token")
+    @field_validator("bot_token")
     def validate_bot_token(cls, v):
         if not re.match(r"^\d+:[a-zA-Z0-9_-]+$", v):
             raise ValueError("Invalid bot token format")
         return v
 
-    @validator("admin_ids")
+    @field_validator("admin_ids")
     def validate_admin_ids(cls, v):
         for admin_id in v:
             if not validate_user_id(admin_id):
                 raise ValueError(f"Invalid admin ID: {admin_id}")
         return v
 
-    @validator("db_path")
+    @field_validator("db_path")
     def validate_db_path(cls, v):
         # Prevent path traversal
         if ".." in v or v.startswith("/"):
