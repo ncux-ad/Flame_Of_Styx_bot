@@ -217,6 +217,22 @@ class ModerationService:
 
     async def is_user_banned(self, user_id: int) -> bool:
         """Check if user is banned."""
+        # Сначала проверяем активные баны в moderation_logs
+        result = await self.db.execute(
+            select(ModerationLog)
+            .where(
+                ModerationLog.user_id == user_id,
+                ModerationLog.action == ModerationAction.BAN,
+                ModerationLog.is_active.is_(True),
+            )
+        )
+        active_bans = result.scalars().all()
+        
+        if active_bans:
+            logger.info(f"User {user_id} has {len(active_bans)} active ban(s) in moderation_logs")
+            return True
+        
+        # Если нет активных банов в moderation_logs, проверяем users.is_banned
         result = await self.db.execute(select(UserModel.is_banned).where(UserModel.telegram_id == user_id))
         user = result.scalar_one_or_none()
         return user is True if user is not None else False
