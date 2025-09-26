@@ -412,7 +412,17 @@ class ChannelService:
                 # Message in comment group - save the comment group
                 target_chat = chat
                 is_comment_group = True
-                linked_chat_id = chat.linked_chat_id if hasattr(chat, 'linked_chat_id') else None
+                
+                # Try to get linked_chat_id from Telegram API
+                linked_chat_id = None
+                try:
+                    chat_info = await self.bot.get_chat(chat.id)
+                    if hasattr(chat_info, 'linked_chat') and chat_info.linked_chat:
+                        linked_chat_id = chat_info.linked_chat.id
+                        logger.info(f"Found linked chat: {linked_chat_id} for comment group {chat.id}")
+                except Exception as e:
+                    logger.warning(f"Could not get linked chat info for {chat.id}: {e}")
+                    # Still save as comment group even if we can't get linked_chat_id
 
             if not target_chat:
                 logger.info("No target_chat, returning")
