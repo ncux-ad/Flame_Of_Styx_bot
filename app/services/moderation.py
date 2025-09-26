@@ -491,6 +491,35 @@ class ModerationService:
         if update_data:
             await self.db.execute(update(UserModel).where(UserModel.telegram_id == user_id).values(**update_data))
             await self.db.commit()
+            
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если разблокируем пользователя, 
+        # деактивируем ВСЕ его активные баны
+        if is_banned is False:
+            await self._deactivate_all_user_bans(user_id)
+
+    async def _deactivate_all_user_bans(self, user_id: int) -> None:
+        """Deactivate ALL active bans for user across all chats."""
+        try:
+            # Находим ВСЕ активные баны для пользователя
+            result = await self.db.execute(
+                select(ModerationLog)
+                .where(
+                    ModerationLog.user_id == user_id,
+                    ModerationLog.action == ModerationAction.BAN,
+                    ModerationLog.is_active.is_(True),
+                )
+            )
+            active_bans = result.scalars().all()
+
+            # Деактивируем все найденные баны
+            for ban in active_bans:
+                ban.is_active = False
+                logger.info(f"Deactivated ban {ban.id} for user {user_id} in chat {ban.chat_id}")
+
+            await self.db.commit()
+            logger.info(f"Deactivated {len(active_bans)} active bans for user {user_id}")
+        except Exception as e:
+            logger.error(f"Error deactivating all bans for user {user_id}: {e}")
 
     async def _log_moderation_action(
         self,
