@@ -64,19 +64,35 @@ class ModerationService:
     async def unban_user(self, user_id: int, chat_id: int, admin_id: int) -> bool:
         """Unban user from chat."""
         try:
+            logger.info(f"Starting unban process for user {user_id} in chat {chat_id}")
+            
             # Unban user in Telegram
-            await self.bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
+            try:
+                await self.bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
+                logger.info(f"Successfully unbanned user {user_id} in Telegram chat {chat_id}")
+            except Exception as telegram_error:
+                logger.error(f"Telegram API error during unban: {telegram_error}")
+                # Продолжаем выполнение даже если Telegram API ошибся
 
             # Deactivate the last ban for this user in this chat
             await self._deactivate_last_ban(user_id, chat_id)
+            logger.info(f"Deactivated last ban for user {user_id} in chat {chat_id}")
 
             # Update user status in database
             await self._update_user_status(user_id, is_banned=False, ban_reason=None)
+            logger.info(f"Updated user {user_id} status to not banned in database")
 
             # Log moderation action
             await self._log_moderation_action(
                 action=ModerationAction.UNBAN, user_id=user_id, admin_id=admin_id, chat_id=chat_id
             )
+
+            # Проверяем статус пользователя после разбана
+            try:
+                member = await self.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+                logger.info(f"User {user_id} status after unban: {member.status}")
+            except Exception as status_error:
+                logger.warning(f"Could not check user {user_id} status after unban: {status_error}")
 
             logger.info(
                 safe_format_message(
