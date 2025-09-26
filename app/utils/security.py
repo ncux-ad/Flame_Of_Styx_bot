@@ -338,3 +338,104 @@ def validate_config(config: Dict[str, Any]) -> List[str]:
                 errors.append(f"Некорректный ID администратора: {admin_id}")
     
     return errors
+
+
+def validate_user_id(user_id: Union[str, int]) -> bool:
+    """
+    Валидирует ID пользователя.
+    
+    Args:
+        user_id: ID для проверки
+        
+    Returns:
+        True если ID валидный, False иначе
+    """
+    if isinstance(user_id, int):
+        user_id = str(user_id)
+    
+    if not isinstance(user_id, str):
+        return False
+    
+    # Проверяем что это число
+    if not user_id.isdigit():
+        return False
+    
+    # Проверяем длину
+    if len(user_id) < 8:
+        return False
+    
+    return True
+
+
+def validate_username(username: str) -> bool:
+    """
+    Валидирует username пользователя.
+    
+    Args:
+        username: Username для проверки
+        
+    Returns:
+        True если username валидный, False иначе
+    """
+    if not isinstance(username, str):
+        return False
+    
+    # Проверяем длину
+    if len(username) < 5 or len(username) > 32:
+        return False
+    
+    # Проверяем что содержит только допустимые символы
+    import re
+    pattern = r'^[a-zA-Z0-9_]+$'
+    return bool(re.match(pattern, username))
+
+
+def validate_chat_id(chat_id: Union[str, int]) -> bool:
+    """
+    Валидирует ID чата.
+    
+    Args:
+        chat_id: ID чата для проверки
+        
+    Returns:
+        True если ID чата валидный, False иначе
+    """
+    if isinstance(chat_id, int):
+        chat_id = str(chat_id)
+    
+    if not isinstance(chat_id, str):
+        return False
+    
+    # Проверяем что это число
+    if not chat_id.isdigit():
+        return False
+    
+    # Проверяем длину
+    if len(chat_id) < 8:
+        return False
+    
+    return True
+
+
+def hash_user_id(user_id: Union[str, int]) -> str:
+    """
+    Хеширует ID пользователя для безопасного логирования.
+    
+    Args:
+        user_id: ID пользователя для хеширования
+        
+    Returns:
+        Хешированный ID пользователя
+    """
+    import hashlib
+    
+    if isinstance(user_id, int):
+        user_id = str(user_id)
+    
+    if not isinstance(user_id, str):
+        return "unknown"
+    
+    # Создаем хеш с солью для безопасности
+    salt = "antispam_bot_salt_2024"
+    hash_object = hashlib.sha256(f"{user_id}{salt}".encode())
+    return hash_object.hexdigest()[:16]  # Возвращаем первые 16 символов
