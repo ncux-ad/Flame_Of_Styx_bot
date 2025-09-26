@@ -402,14 +402,17 @@ class ChannelService:
         try:
             logger.info(f"save_channel_info called: chat={chat}, sender_chat={sender_chat}")
 
-            # Only save main channels, not comment groups
-            # If sender_chat exists, it's a message from a channel - save the channel
-            # If sender_chat is None, it's a message in comment group - don't save
-            if not sender_chat:
-                logger.info("Message in comment group, not saving to database")
-                return
-
-            target_chat = sender_chat
+            # Determine target chat and if it's a comment group
+            if sender_chat:
+                # Message from a channel - save the channel
+                target_chat = sender_chat
+                is_comment_group = False
+                linked_chat_id = None
+            else:
+                # Message in comment group - save the comment group
+                target_chat = chat
+                is_comment_group = True
+                linked_chat_id = chat.linked_chat_id if hasattr(chat, 'linked_chat_id') else None
 
             if not target_chat:
                 logger.info("No target_chat, returning")
@@ -429,8 +432,10 @@ class ChannelService:
                 # Update existing channel
                 existing_channel.title = target_chat.title
                 existing_channel.username = target_chat.username
-                # existing_channel.is_comment_group = is_comment_group
-                logger.info(f"Updated channel info: {target_chat.title} ({target_chat.id})")
+                existing_channel.is_comment_group = is_comment_group
+                if linked_chat_id:
+                    existing_channel.linked_chat_id = linked_chat_id
+                logger.info(f"Updated channel info: {target_chat.title} ({target_chat.id}), is_comment_group={is_comment_group}")
             else:
                 # Create new channel
                 new_channel = ChannelModel(
@@ -439,7 +444,8 @@ class ChannelService:
                     username=target_chat.username,
                     status=ChannelStatus.ALLOWED,  # Use ALLOWED instead of ACTIVE
                     is_native=False,  # Will be determined later
-                    # is_comment_group=is_comment_group
+                    is_comment_group=is_comment_group,
+                    linked_chat_id=linked_chat_id
                 )
                 self.db.add(new_channel)
                 logger.info(f"Saved new channel: {target_chat.title} ({target_chat.id})")
