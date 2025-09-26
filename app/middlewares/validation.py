@@ -3,18 +3,16 @@ Middleware для валидации входных данных
 """
 
 import logging
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List
 
 from aiogram import BaseMiddleware
 from aiogram.types import CallbackQuery, Message, TelegramObject
 
-from app.constants import ERROR_MESSAGES, ErrorCodes
+from app.constants import ERROR_MESSAGES
 from app.utils.security import (
     log_security_event,
     sanitize_for_logging,
     sanitize_user_input,
-    validate_channel_link,
-    validate_channel_username,
 )
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,6 @@
 """Database models."""
 
-from app.models.secure_models import *
+# from app.models.secure_models import *  # Wildcard import - требует рефакторинга
 
 from .bot import Bot
 from .channel import Channel

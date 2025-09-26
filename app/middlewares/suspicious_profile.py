@@ -81,7 +81,7 @@ class SuspiciousProfileMiddleware(BaseMiddleware):
     async def _handle_suspicious_profile(self, event: Message, suspicious_profile, data: Dict[str, Any]) -> None:
         """Handle suspicious profile with optional auto-ban or auto-mute."""
         try:
-            from app.services.moderation import ModerationService
+            # from app.services.moderation import ModerationService  # Не используется
 
             # Получаем сервисы из data
             moderation_service = data.get("moderation_service")

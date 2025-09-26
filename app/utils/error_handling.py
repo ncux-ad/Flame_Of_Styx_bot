@@ -6,12 +6,12 @@ import logging
 import traceback
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 from aiogram.exceptions import TelegramAPIError, TelegramBadRequest, TelegramForbiddenError
-from aiogram.types import CallbackQuery, Message, TelegramObject
+from aiogram.types import CallbackQuery, Message
 
-from app.constants import ERROR_MESSAGES, SUCCESS_MESSAGES, ErrorCodes
+from app.constants import ERROR_MESSAGES, ErrorCodes
 from app.utils.security import log_security_event, sanitize_for_logging
 
 logger = logging.getLogger(__name__)

@@ -6,7 +6,7 @@
 from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
-from aiogram.types import CallbackQuery, Message, TelegramObject
+from aiogram.types import TelegramObject
 
 from app.database import SessionLocal
 from app.services.bots import BotService

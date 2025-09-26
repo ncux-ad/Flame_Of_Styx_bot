@@ -308,7 +308,7 @@ class ModerationService:
                     bans.sort(key=lambda x: x.created_at, reverse=True)
 
                     # Оставляем только первую (самую новую) запись
-                    keep_ban = bans[0]
+                    # keep_ban = bans[0]  # Не используется
                     for ban in bans[1:]:
                         await self.db.delete(ban)
                         removed_count += 1

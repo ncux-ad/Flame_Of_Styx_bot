@@ -7,7 +7,7 @@ from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, Str
 from sqlalchemy.orm import relationship
 
 from app.database import Base
-from app.models.secure_models import *
+# from app.models.secure_models import *  # Wildcard import - требует рефакторинга
 
 
 class ModerationAction(enum.Enum):

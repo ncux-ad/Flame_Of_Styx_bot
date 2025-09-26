@@ -6,8 +6,8 @@
 import asyncio
 import json
 import logging
-import os
-import time
+# import os  # Не используется
+# import time  # Не используется
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 

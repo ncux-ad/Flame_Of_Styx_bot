@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text
 
 from app.database import Base
-from app.models.secure_models import *
+# from app.models.secure_models import *  # Wildcard import - требует рефакторинга
 
 # from sqlalchemy.orm import relationship
 

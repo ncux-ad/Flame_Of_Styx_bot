@@ -470,7 +470,7 @@ async def handle_recalculate_suspicious_command(message: Message, profile_servic
 async def handle_cleanup_duplicates_command(message: Message, profile_service: ProfileService):
     """Clean up duplicate suspicious profiles."""
     try:
-        from sqlalchemy import delete, func, select
+        from sqlalchemy import func, select
 
         from app.models.suspicious_profile import SuspiciousProfile
 
