@@ -227,11 +227,31 @@ async def handle_channels_command(
             if len(foreign_channels) > 5:
                 channels_text += f"... и еще {len(foreign_channels) - 5} иностранных каналов\n\n"
         
+        # Добавляем группы комментариев
+        comment_groups = [
+            {
+                "title": "Test_FlameOfStyx_bot",
+                "chat_id": "-1003094131978",
+                "type": "Группа для комментариев"
+            }
+        ]
+        
+        if comment_groups:
+            channels_text += f"\n💬 <b>Группы комментариев ({len(comment_groups)})</b>\n"
+            channels_text += "<i>Группы для модерации комментариев к постам</i>\n\n"
+            
+            for group in comment_groups:
+                channels_text += f"<b>{group['title']}</b>\n"
+                channels_text += f"   ID: <code>{group['chat_id']}</code>\n"
+                channels_text += f"   Тип: {group['type']}\n"
+                channels_text += f"   Статус: ✅ Антиспам активен\n\n"
+
         # Общая статистика
         channels_text += f"📊 <b>Общая статистика:</b>\n"
         channels_text += f"• Нативных каналов: {len(native_channels)}\n"
         channels_text += f"• Иностранных каналов: {len(foreign_channels)}\n"
-        channels_text += f"• Всего каналов: {len(channels)}"
+        channels_text += f"• Групп комментариев: {len(comment_groups)}\n"
+        channels_text += f"• Всего чатов: {len(channels) + len(comment_groups)}"
 
         await message.answer(channels_text)
         logger.info(f"Channels response sent to {message.from_user.id}")
