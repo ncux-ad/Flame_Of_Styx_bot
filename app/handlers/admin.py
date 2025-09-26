@@ -985,22 +985,88 @@ async def handle_find_chat_command(
             # Пытаемся получить информацию о чате
             chat = await moderation_service.bot.get_chat(chat_identifier)
             
+            # Проверяем, является ли бот администратором
+            try:
+                bot_member = await moderation_service.bot.get_chat_member(chat.id, moderation_service.bot.id)
+                admin_status = "✅ Админ" if bot_member.status in ["administrator", "creator"] else "❌ Не админ"
+            except Exception:
+                admin_status = "❓ Неизвестно"
+            
             await message.answer(
                 f"✅ <b>Информация о чате:</b>\n\n"
                 f"📝 Название: {chat.title}\n"
                 f"🆔 ID: <code>{chat.id}</code>\n"
                 f"👤 Username: @{chat.username if chat.username else 'Нет'}\n"
                 f"📊 Тип: {chat.type}\n"
-                f"👥 Участников: {chat.member_count if hasattr(chat, 'member_count') else 'Неизвестно'}\n\n"
+                f"👥 Участников: {chat.member_count if hasattr(chat, 'member_count') else 'Неизвестно'}\n"
+                f"🤖 Статус бота: {admin_status}\n\n"
                 f"💡 Используйте ID для команд: <code>{chat.id}</code>"
             )
             
         except Exception as e:
-            await message.answer(f"❌ Не удалось найти чат: {e}")
+            await message.answer(
+                f"❌ <b>Не удалось найти чат:</b>\n\n"
+                f"🔍 Идентификатор: <code>{chat_identifier}</code>\n"
+                f"❌ Ошибка: {e}\n\n"
+                f"💡 <b>Возможные причины:</b>\n"
+                f"• Бот не является администратором канала\n"
+                f"• Неправильная invite ссылка\n"
+                f"• Канал не существует или удален\n"
+                f"• У бота нет доступа к каналу\n\n"
+                f"🔧 <b>Попробуйте:</b>\n"
+                f"• Добавить бота как администратора в канал\n"
+                f"• Использовать username канала: @channel_name\n"
+                f"• Проверить правильность invite ссылки"
+            )
 
     except Exception as e:
         logger.error(f"Error in find_chat command: {e}")
         await message.answer("❌ Ошибка при поиске чата")
+
+
+@admin_router.message(Command("my_chats"))
+async def handle_my_chats_command(
+    message: Message,
+    channel_service: ChannelService,
+    admin_id: int,
+) -> None:
+    """Показать все каналы, где бот является администратором."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"My chats command from {message.from_user.id}")
+
+        # Получаем все каналы из базы данных
+        channels = await channel_service.get_all_channels()
+        
+        if not channels:
+            await message.answer("❌ Нет каналов в базе данных")
+            return
+
+        text = "📢 <b>Каналы в базе данных:</b>\n\n"
+        
+        for i, channel in enumerate(channels, 1):
+            # Проверяем статус бота в канале
+            try:
+                bot_member = await channel_service.bot.get_chat_member(channel.telegram_id, channel_service.bot.id)
+                admin_status = "✅ Админ" if bot_member.status in ["administrator", "creator"] else "❌ Не админ"
+            except Exception:
+                admin_status = "❓ Неизвестно"
+            
+            text += f"{i}. <b>{channel.title}</b>\n"
+            text += f"   ID: <code>{channel.telegram_id}</code>\n"
+            text += f"   Username: @{channel.username if channel.username else 'Нет'}\n"
+            text += f"   Статус бота: {admin_status}\n"
+            text += f"   Тип: {'Канал' if not channel.is_comment_group else 'Группа комментариев'}\n\n"
+
+        text += "💡 <b>Используйте ID канала для команд разбана</b>"
+        
+        await message.answer(text)
+        logger.info(f"My chats response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in my_chats command: {e}")
+        await message.answer("❌ Ошибка получения списка каналов")
 
 
 @admin_router.message(Command("banned"))
