@@ -952,6 +952,57 @@ async def handle_force_unban_command(
         await message.answer("❌ Ошибка при принудительном разбане")
 
 
+@admin_router.message(Command("find_chat"))
+async def handle_find_chat_command(
+    message: Message,
+    moderation_service: ModerationService,
+    admin_id: int,
+) -> None:
+    """Найти ID чата по invite ссылке или username."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Find chat command from {message.from_user.id}")
+
+        # Парсим аргументы команды
+        if not message.text:
+            await message.answer("❌ Ошибка: пустое сообщение")
+            return
+        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+
+        if len(args) < 1:
+            await message.answer(
+                "❌ Использование: /find_chat <invite_link_or_username>\n"
+                "Примеры:\n"
+                "• /find_chat https://t.me/+xlbTj-RSikM0NjA6\n"
+                "• /find_chat @channel_username"
+            )
+            return
+
+        chat_identifier = args[0]
+        
+        try:
+            # Пытаемся получить информацию о чате
+            chat = await moderation_service.bot.get_chat(chat_identifier)
+            
+            await message.answer(
+                f"✅ <b>Информация о чате:</b>\n\n"
+                f"📝 Название: {chat.title}\n"
+                f"🆔 ID: <code>{chat.id}</code>\n"
+                f"👤 Username: @{chat.username if chat.username else 'Нет'}\n"
+                f"📊 Тип: {chat.type}\n"
+                f"👥 Участников: {chat.member_count if hasattr(chat, 'member_count') else 'Неизвестно'}\n\n"
+                f"💡 Используйте ID для команд: <code>{chat.id}</code>"
+            )
+            
+        except Exception as e:
+            await message.answer(f"❌ Не удалось найти чат: {e}")
+
+    except Exception as e:
+        logger.error(f"Error in find_chat command: {e}")
+        await message.answer("❌ Ошибка при поиске чата")
+
+
 @admin_router.message(Command("banned"))
 async def handle_banned_command(
     message: Message,
