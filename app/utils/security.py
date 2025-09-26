@@ -4,7 +4,7 @@
 
 import logging
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from app.constants import MAX_LOG_MESSAGE_LENGTH, SENSITIVE_PATTERNS
 
@@ -23,8 +23,7 @@ def sanitize_for_logging(message: str) -> str:
     Returns:
         Санитизированное сообщение
     """
-    if not isinstance(message, str):
-        return str(message)
+    # message уже str по типу параметра
 
     sanitized = message
 
@@ -51,8 +50,7 @@ def sanitize_user_input(user_input: str) -> str:
     Returns:
         Санитизированный ввод
     """
-    if not isinstance(user_input, str):
-        return str(user_input)
+    # user_input уже str по типу параметра
 
     # Удаляем HTML теги
     sanitized = re.sub(r"<[^>]+>", "", user_input)
@@ -100,8 +98,7 @@ def validate_bot_token(token: str) -> bool:
     Returns:
         True если токен валидный, False иначе
     """
-    if not isinstance(token, str):
-        return False
+    # token уже str по типу параметра
 
     # Проверяем базовую структуру
     if ":" not in token:
@@ -128,7 +125,7 @@ def validate_bot_token(token: str) -> bool:
     return True
 
 
-def validate_admin_id(admin_id: Union[str, int]) -> bool:
+def validate_admin_id(admin_id: str | int) -> bool:
     """
     Валидирует ID администратора.
 
@@ -165,8 +162,7 @@ def validate_channel_username(username: str) -> bool:
     Returns:
         True если username валидный, False иначе
     """
-    if not isinstance(username, str):
-        return False
+    # username уже str по типу параметра
 
     # Проверяем формат @username
     pattern = r"^@[a-zA-Z0-9_]{5,32}$"
@@ -265,7 +261,7 @@ def mask_sensitive_data(data: str, mask_char: str = "*") -> str:
     return data[:2] + mask_char * (len(data) - 4) + data[-2:]
 
 
-def check_rate_limit(user_id: int, action: str, limits: Dict[str, Any]) -> bool:
+def check_rate_limit(user_id: int, action: str, limits: dict[str, Any]) -> bool:
     """
     Проверяет rate limit для пользователя.
 
@@ -282,7 +278,7 @@ def check_rate_limit(user_id: int, action: str, limits: Dict[str, Any]) -> bool:
     return True
 
 
-def log_security_event(event_type: str, user_id: Optional[int], details: Dict[str, Any]) -> None:
+def log_security_event(event_type: str, user_id: int | None, details: dict[str, Any]) -> None:
     """
     Логирует событие безопасности.
 
@@ -302,7 +298,7 @@ def log_security_event(event_type: str, user_id: Optional[int], details: Dict[st
     logger.warning(f"Security event: {event_type}, " f"user_id: {user_id}, " f"details: {safe_details}")
 
 
-def validate_config(config: Dict[str, Any]) -> List[str]:
+def validate_config(config: dict[str, Any]) -> list[str]:
     """
     Валидирует конфигурацию.
 
@@ -315,13 +311,13 @@ def validate_config(config: Dict[str, Any]) -> List[str]:
     errors = []
 
     # Проверяем обязательные поля
-    required_fields = ["bot_token", "admin_ids", "db_path"]
+    required_fields = ["bottoken", "admin_ids", "db_path"]
     for field in required_fields:
         if field not in config or not config[field]:
             errors.append(f"Отсутствует обязательное поле: {field}")
 
     # Валидируем токен бота
-    if "bot_token" in config and not validate_bot_token(config["bot_token"]):
+    if "bottoken" in config and not validate_bot_token(config["bottoken"]):
         errors.append("Некорректный токен бота")
 
     # Валидируем ID администраторов
@@ -337,7 +333,7 @@ def validate_config(config: Dict[str, Any]) -> List[str]:
     return errors
 
 
-def validate_user_id(user_id: Union[str, int]) -> bool:
+def validate_user_id(user_id: str | int) -> bool:
     """
     Валидирует ID пользователя.
 
@@ -374,8 +370,7 @@ def validate_username(username: str) -> bool:
     Returns:
         True если username валидный, False иначе
     """
-    if not isinstance(username, str):
-        return False
+    # username уже str по типу параметра
 
     # Проверяем длину
     if len(username) < 5 or len(username) > 32:
@@ -388,7 +383,7 @@ def validate_username(username: str) -> bool:
     return bool(re.match(pattern, username))
 
 
-def validate_chat_id(chat_id: Union[str, int]) -> bool:
+def validate_chat_id(chat_id: str | int) -> bool:
     """
     Валидирует ID чата.
 
@@ -415,7 +410,7 @@ def validate_chat_id(chat_id: Union[str, int]) -> bool:
     return True
 
 
-def hash_user_id(user_id: Union[str, int]) -> str:
+def hash_user_id(user_id: str | int) -> str:
     """
     Хеширует ID пользователя для безопасного логирования.
 

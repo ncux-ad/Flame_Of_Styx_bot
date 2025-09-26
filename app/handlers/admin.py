@@ -1035,7 +1035,15 @@ async def handle_sync_bans_command(
         # Обработка по chat_id или user_id
         if len(args) == 1:
             # Только chat_id - синхронизируем все баны в чате
-            chat_id = int(args[0])
+            try:
+                chat_id = int(args[0])
+                # Если ID положительный и длинный, добавляем минус для групп/каналов
+                if chat_id > 0 and len(str(chat_id)) >= 10:
+                    chat_id = -chat_id
+            except ValueError:
+                await message.answer("❌ Неверный формат ID чата")
+                return
+            
             result = await moderation_service.sync_bans_from_telegram(chat_id)
             
             if result["status"] == "success":
@@ -1048,8 +1056,15 @@ async def handle_sync_bans_command(
                 await message.answer(f"⚠️ {result['message']}")
         else:
             # user_id и chat_id - синхронизируем конкретного пользователя
-            user_id = int(args[0])
-            chat_id = int(args[1])
+            try:
+                user_id = int(args[0])
+                chat_id = int(args[1])
+                # Если ID положительный и длинный, добавляем минус для групп/каналов
+                if chat_id > 0 and len(str(chat_id)) >= 10:
+                    chat_id = -chat_id
+            except ValueError:
+                await message.answer("❌ Неверный формат ID пользователя или чата")
+                return
             
             try:
                 # Проверяем статус пользователя в Telegram
