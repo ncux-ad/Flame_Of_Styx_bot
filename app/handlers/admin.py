@@ -13,8 +13,10 @@ from app.services.channels import ChannelService
 from app.services.help import HelpService
 from app.services.limits import LimitsService
 from app.services.moderation import ModerationService
+from app.models.moderation_log import ModerationAction
 from app.services.profiles import ProfileService
 from app.utils.error_handling import ValidationError, handle_errors
+from app.utils.security import sanitize_for_logging, safe_format_message
 
 logger = logging.getLogger(__name__)
 
@@ -796,7 +798,11 @@ async def handle_unban_command(
             return
 
         user_identifier = args[0]
-        chat_id = int(args[1]) if len(args) > 1 else message.chat.id
+        if len(args) > 1:
+            chat_id = int(args[1])
+        else:
+            await message.answer("❌ Необходимо указать ID чата: /unban <user_id> <chat_id>")
+            return
         
         # Если ID положительный и длинный, добавляем минус для групп/каналов
         if chat_id > 0 and len(str(chat_id)) >= 10:
