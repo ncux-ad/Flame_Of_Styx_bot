@@ -3,10 +3,10 @@ max-line-length = 127
 max-complexity = 10
 select = E,W,F,C
 ignore = 
-    E203,  # whitespace before ':'
-    E501,  # line too long
-    W503,  # line break before binary operator
-    C901,  # too complex
+    E203,
+    E501,
+    W503,
+    C901
 exclude = 
     .git,
     __pycache__,

@@ -73,9 +73,7 @@ class ProfileService:
                     existing_profile.suspicion_score = analysis_result["suspicion_score"]
                     existing_profile.detected_patterns = ",".join(analysis_result["patterns"])
                     existing_profile.is_suspicious = analysis_result["is_suspicious"]
-                    existing_profile.analysis_reason = (
-                        f"Suspicion score: {analysis_result['suspicion_score']:.2f}"
-                    )
+                    existing_profile.analysis_reason = f"Suspicion score: {analysis_result['suspicion_score']:.2f}"
                     existing_profile.updated_at = datetime.utcnow()
 
                     await self.db.commit()
@@ -90,14 +88,10 @@ class ProfileService:
                     return existing_profile
                 else:
                     # Create new suspicious profile
-                    profile = await self._create_suspicious_profile(
-                        user_id=user.id, analysis_result=analysis_result
-                    )
+                    profile = await self._create_suspicious_profile(user_id=user.id, analysis_result=analysis_result)
 
                     # Notify admin
-                    await self._notify_admin_about_suspicious_profile(
-                        admin_id=admin_id, user=user, profile=profile
-                    )
+                    await self._notify_admin_about_suspicious_profile(admin_id=admin_id, user=user, profile=profile)
 
                     return profile
             else:
@@ -133,14 +127,12 @@ class ProfileService:
         try:
             # Check if user has linked chat - this is NOT available in Telegram Bot API
             # linked_chat is only available for chats, not users
-            logger.info(
-                f"Checking for linked_chat - this is not available for users in Telegram Bot API"
-            )
+            logger.info("Checking for linked_chat - this is not available for users in Telegram Bot API")
 
             # Note: linked_chat information is not available for users in Telegram Bot API
             # It's only available for chats via getChat() method
             # We'll skip this check as it's not possible to get user's linked chat via Bot API
-            logger.info(f"Linked chat detection skipped - not available for users in Bot API")
+            logger.info("Linked chat detection skipped - not available for users in Bot API")
 
             # Check for suspicious patterns
             patterns = await self._detect_suspicious_patterns(user)
@@ -154,11 +146,7 @@ class ProfileService:
             )
 
         except Exception as e:
-            logger.error(
-                safe_format_message(
-                    "Error in profile analysis: {error}", error=sanitize_for_logging(e)
-                )
-            )
+            logger.error(safe_format_message("Error in profile analysis: {error}", error=sanitize_for_logging(e)))
 
         return analysis
 
@@ -243,13 +231,13 @@ class ProfileService:
 
         # Pattern analysis - balanced weights for better accuracy
         pattern_weights = {
-            "short_first_name": 0.1,      # Снижено с 0.2
-            "short_last_name": 0.1,       # Снижено с 0.2
-            "no_identifying_info": 0.2,   # Снижено с 0.4
-            "bot_like_username": 0.15,    # Снижено с 0.3
-            "no_username": 0.1,           # Снижено с 0.25
-            "no_last_name": 0.1,          # Снижено с 0.2
-            "bot_like_first_name": 0.2,   # Снижено с 0.35
+            "short_first_name": 0.1,  # Снижено с 0.2
+            "short_last_name": 0.1,  # Снижено с 0.2
+            "no_identifying_info": 0.2,  # Снижено с 0.4
+            "bot_like_username": 0.15,  # Снижено с 0.3
+            "no_username": 0.1,  # Снижено с 0.25
+            "no_last_name": 0.1,  # Снижено с 0.2
+            "bot_like_first_name": 0.2,  # Снижено с 0.35
         }
 
         for pattern in analysis["patterns"]:
@@ -259,28 +247,16 @@ class ProfileService:
 
     async def _get_suspicious_profile(self, user_id: int) -> Optional[SuspiciousProfile]:
         """Get existing suspicious profile for user."""
-        result = await self.db.execute(
-            select(SuspiciousProfile).where(SuspiciousProfile.user_id == user_id)
-        )
+        result = await self.db.execute(select(SuspiciousProfile).where(SuspiciousProfile.user_id == user_id))
         return result.scalar_one_or_none()
 
-    async def _create_suspicious_profile(
-        self, user_id: int, analysis_result: Dict[str, Any]
-    ) -> SuspiciousProfile:
+    async def _create_suspicious_profile(self, user_id: int, analysis_result: Dict[str, Any]) -> SuspiciousProfile:
         """Create suspicious profile entry."""
         profile = SuspiciousProfile(
             user_id=user_id,
-            linked_chat_id=(
-                analysis_result["linked_chat"]["id"] if analysis_result["linked_chat"] else None
-            ),
-            linked_chat_username=(
-                analysis_result["linked_chat"]["username"]
-                if analysis_result["linked_chat"]
-                else None
-            ),
-            linked_chat_title=(
-                analysis_result["linked_chat"]["title"] if analysis_result["linked_chat"] else None
-            ),
+            linked_chat_id=(analysis_result["linked_chat"]["id"] if analysis_result["linked_chat"] else None),
+            linked_chat_username=(analysis_result["linked_chat"]["username"] if analysis_result["linked_chat"] else None),
+            linked_chat_title=(analysis_result["linked_chat"]["title"] if analysis_result["linked_chat"] else None),
             post_count=analysis_result["post_count"],
             has_bait_channel=analysis_result["has_bait_channel"],
             suspicion_score=analysis_result["suspicion_score"],
@@ -294,9 +270,7 @@ class ProfileService:
 
         return profile
 
-    async def _notify_admin_about_suspicious_profile(
-        self, admin_id: int, user: User, profile: SuspiciousProfile
-    ) -> None:
+    async def _notify_admin_about_suspicious_profile(self, admin_id: int, user: User, profile: SuspiciousProfile) -> None:
         """Notify admin about suspicious profile."""
         try:
             from app.keyboards.inline import get_suspicious_profile_keyboard
@@ -366,11 +340,7 @@ class ProfileService:
             return True
 
         except Exception as e:
-            logger.error(
-                safe_format_message(
-                    "Error marking profile as reviewed: {error}", error=sanitize_for_logging(e)
-                )
-            )
+            logger.error(safe_format_message("Error marking profile as reviewed: {error}", error=sanitize_for_logging(e)))
             return False
 
     async def get_suspicious_profiles(self, limit: int = 50) -> List[SuspiciousProfile]:
@@ -381,11 +351,7 @@ class ProfileService:
             )
             return result.scalars().all()
         except Exception as e:
-            logger.error(
-                safe_format_message(
-                    "Error getting suspicious profiles: {error}", error=sanitize_for_logging(e)
-                )
-            )
+            logger.error(safe_format_message("Error getting suspicious profiles: {error}", error=sanitize_for_logging(e)))
             return []
 
     async def reset_suspicious_profiles(self) -> int:
@@ -395,7 +361,7 @@ class ProfileService:
 
             result = await self.db.execute(
                 update(SuspiciousProfile)
-                .where(SuspiciousProfile.is_reviewed == True)
+                .where(SuspiciousProfile.is_reviewed.is_(True))
                 .values(is_reviewed=False, is_confirmed_suspicious=False)
             )
             await self.db.commit()

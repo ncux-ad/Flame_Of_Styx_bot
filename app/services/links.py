@@ -24,9 +24,10 @@ class LinkService:
         self.bot = bot
         self.db = db_session
         self.moderation_service = ModerationService(bot, db_session)
-        
+
         # Load limits service for configuration
         from app.services.limits import LimitsService
+
         self.limits_service = LimitsService()
 
     async def check_message_for_bot_links(self, message: Message) -> List[Tuple[str, bool]]:
@@ -35,9 +36,7 @@ class LinkService:
 
         # Skip bot link checking for messages from channels (sender_chat)
         if message.sender_chat:
-            logger.info(
-                f"Skipping bot link check for message from channel: {message.sender_chat.title}"
-            )
+            logger.info(f"Skipping bot link check for message from channel: {message.sender_chat.title}")
             return results
 
         # Check text content
@@ -99,9 +98,7 @@ class LinkService:
         # Check for forwarded media from suspicious sources
         if message.forward_from_chat:
             if message.forward_from_chat.type in ["channel", "supergroup"]:
-                logger.info(
-                    f"Media forwarded from {message.forward_from_chat.type}: {message.forward_from_chat.title}"
-                )
+                logger.info(f"Media forwarded from {message.forward_from_chat.type}: {message.forward_from_chat.title}")
                 # Flag forwarded media as potentially suspicious
                 results.append(("forwarded_media", True))
 
@@ -146,37 +143,31 @@ class LinkService:
         try:
             limits = self.limits_service.get_current_limits()
             max_size = limits.get("max_document_size_suspicious", 50000)
-            
+
             # Check file size - very small files might be QR codes
             if document.file_size and document.file_size < max_size:
                 logger.info(f"Small document detected: {document.file_size} bytes (threshold: {max_size})")
                 return True
-            
+
             # Check MIME type for suspicious patterns
             if document.mime_type:
-                suspicious_types = [
-                    "image/png",
-                    "image/jpeg", 
-                    "image/jpg",
-                    "application/pdf"
-                ]
-                if document.mime_type in suspicious_types and document.file_size and document.file_size < 100000:  # Less than 100KB
+                suspicious_types = ["image/png", "image/jpeg", "image/jpg", "application/pdf"]
+                if (
+                    document.mime_type in suspicious_types and document.file_size and document.file_size < 100000
+                ):  # Less than 100KB
                     logger.info(f"Suspicious document type: {document.mime_type}, size: {document.file_size}")
                     return True
-            
+
             # Check file name for suspicious patterns
             if document.file_name:
                 file_name_lower = document.file_name.lower()
-                suspicious_patterns = [
-                    "qr", "код", "code", "scan", "сканировать",
-                    "bot", "бот", "telegram", "телеграм"
-                ]
+                suspicious_patterns = ["qr", "код", "code", "scan", "сканировать", "bot", "бот", "telegram", "телеграм"]
                 if any(pattern in file_name_lower for pattern in suspicious_patterns):
                     logger.info(f"Suspicious document name: {document.file_name}")
                     return True
-            
+
             return False
-            
+
         except Exception as e:
             logger.error(f"Error checking document suspiciousness: {e}")
             return False
@@ -243,15 +234,11 @@ class LinkService:
 
     async def _is_bot_whitelisted(self, username: str) -> bool:
         """Check if bot is in whitelist."""
-        result = await self.db.execute(
-            select(BotModel.is_whitelisted).where(BotModel.username == username)
-        )
+        result = await self.db.execute(select(BotModel.is_whitelisted).where(BotModel.username == username))
         is_whitelisted = result.scalar_one_or_none()
         return is_whitelisted is True
 
-    async def handle_bot_link_detection(
-        self, message: Message, bot_links: List[Tuple[str, bool]]
-    ) -> bool:
+    async def handle_bot_link_detection(self, message: Message, bot_links: List[Tuple[str, bool]]) -> bool:
         """Handle detection of bot links in message."""
         if not bot_links:
             return False
@@ -263,7 +250,14 @@ class LinkService:
         suspicious_media = [
             link_type
             for link_type, is_suspicious in bot_links
-            if link_type in ["suspicious_media", "forwarded_media", "document_without_caption", "video_without_caption", "photo_without_caption"]
+            if link_type
+            in [
+                "suspicious_media",
+                "forwarded_media",
+                "document_without_caption",
+                "video_without_caption",
+                "photo_without_caption",
+            ]
             and is_suspicious
         ]
 
@@ -302,9 +296,7 @@ class LinkService:
 
         return False
 
-    async def add_bot_to_whitelist(
-        self, username: str, admin_id: int, telegram_id: Optional[int] = None
-    ) -> bool:
+    async def add_bot_to_whitelist(self, username: str, admin_id: int, telegram_id: Optional[int] = None) -> bool:
         """Add bot to whitelist."""
         try:
             # Check if bot already exists
@@ -317,9 +309,7 @@ class LinkService:
                 existing_bot.telegram_id = telegram_id or existing_bot.telegram_id
             else:
                 # Create new bot entry
-                new_bot = BotModel(
-                    username=username, telegram_id=telegram_id or 0, is_whitelisted=True
-                )
+                new_bot = BotModel(username=username, telegram_id=telegram_id or 0, is_whitelisted=True)
                 self.db.add(new_bot)
 
             await self.db.commit()

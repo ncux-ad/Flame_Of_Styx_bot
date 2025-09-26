@@ -1,11 +1,11 @@
-from typing import List, Optional
 import logging
+from typing import List
 
-from pydantic import field_validator, Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
-from app.constants import SUSPICION_THRESHOLD, DEFAULT_RATE_LIMIT, RATE_LIMIT_INTERVAL
-from app.utils.security import validate_bot_token, validate_admin_id
+from app.constants import SUSPICION_THRESHOLD
+from app.utils.security import validate_admin_id, validate_bot_token
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +23,13 @@ class Settings(BaseSettings):
     max_links_per_message: int = Field(default=3, ge=1, le=10, description="Максимум ссылок в сообщении")
     ban_duration_hours: int = Field(default=24, ge=1, le=168, description="Длительность бана в часах")
     suspicion_threshold: float = Field(default=SUSPICION_THRESHOLD, ge=0.0, le=1.0, description="Порог подозрительности")
-    
+
     # Настройки антиспама
     check_media_without_caption: bool = True  # Проверять медиа без подписи
-    allow_gifs_without_caption: bool = True   # Разрешать GIF без подписи
-    allow_photos_without_caption: bool = True # Разрешать фото без подписи
-    allow_videos_without_caption: bool = True # Разрешать видео без подписи
-    max_document_size_suspicious: int = 50000 # Максимальный размер документа для подозрения (байты)
+    allow_gifs_without_caption: bool = True  # Разрешать GIF без подписи
+    allow_photos_without_caption: bool = True  # Разрешать фото без подписи
+    allow_videos_without_caption: bool = True  # Разрешать видео без подписи
+    max_document_size_suspicious: int = 50000  # Максимальный размер документа для подозрения (байты)
 
     @field_validator("db_path")
     @classmethod
@@ -50,10 +50,10 @@ class Settings(BaseSettings):
         """Валидация токена бота с использованием утилит безопасности."""
         if not v:
             raise ValueError("BOT_TOKEN не может быть пустым")
-        
+
         if not validate_bot_token(v):
             raise ValueError("BOT_TOKEN некорректный формат")
-        
+
         logger.info("Токен бота успешно валидирован")
         return v
 
@@ -94,9 +94,7 @@ class Settings(BaseSettings):
             return result
         return []
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"  # Игнорировать дополнительные поля
+    model_config = {"env_file": ".env", "extra": "ignore"}  # Игнорировать дополнительные поля
 
 
 def load_config() -> Settings:
@@ -123,6 +121,4 @@ def _validate_config(config: Settings) -> None:
 
     # Проверяем, что токен не является placeholder
     if config.bot_token == "your_telegram_bot_token_here":
-        raise ValueError(
-            "BOT_TOKEN не настроен. Замените 'your_telegram_bot_token_here' на реальный токен."
-        )
+        raise ValueError("BOT_TOKEN не настроен. Замените 'your_telegram_bot_token_here' на реальный токен.")

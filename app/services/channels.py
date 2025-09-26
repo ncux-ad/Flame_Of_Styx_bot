@@ -49,9 +49,7 @@ class ChannelService:
             )
 
             # Notify admin about new channel
-            await self._notify_admin_about_channel(
-                admin_id=admin_id, channel=channel, message=message
-            )
+            await self._notify_admin_about_channel(admin_id=admin_id, channel=channel, message=message)
 
             return True
 
@@ -76,9 +74,7 @@ class ChannelService:
 
         else:  # PENDING
             # Channel is pending - notify admin again
-            await self._notify_admin_about_channel(
-                admin_id=admin_id, channel=channel, message=message
-            )
+            await self._notify_admin_about_channel(admin_id=admin_id, channel=channel, message=message)
             return True
 
     async def allow_channel(self, channel_id: int, admin_id: int) -> bool:
@@ -99,9 +95,7 @@ class ChannelService:
             await self.db.commit()
 
             # Log moderation action
-            await self._log_channel_action(
-                action=ModerationAction.ALLOW_CHANNEL, channel_id=channel_id, admin_id=admin_id
-            )
+            await self._log_channel_action(action=ModerationAction.ALLOW_CHANNEL, channel_id=channel_id, admin_id=admin_id)
 
             logger.info(
                 safe_format_message(
@@ -143,9 +137,7 @@ class ChannelService:
             await self.db.commit()
 
             # Log moderation action
-            await self._log_channel_action(
-                action=ModerationAction.BLOCK_CHANNEL, channel_id=channel_id, admin_id=admin_id
-            )
+            await self._log_channel_action(action=ModerationAction.BLOCK_CHANNEL, channel_id=channel_id, admin_id=admin_id)
 
             logger.info(
                 safe_format_message(
@@ -176,39 +168,29 @@ class ChannelService:
 
     async def get_allowed_channels(self) -> List[ChannelModel]:
         """Get list of allowed channels."""
-        result = await self.db.execute(
-            select(ChannelModel).where(ChannelModel.status == ChannelStatus.ALLOWED)
-        )
+        result = await self.db.execute(select(ChannelModel).where(ChannelModel.status == ChannelStatus.ALLOWED))
         return list(result.scalars().all())
 
     async def get_blocked_channels(self) -> List[ChannelModel]:
         """Get list of blocked channels."""
-        result = await self.db.execute(
-            select(ChannelModel).where(ChannelModel.status == ChannelStatus.BLOCKED)
-        )
+        result = await self.db.execute(select(ChannelModel).where(ChannelModel.status == ChannelStatus.BLOCKED))
         return list(result.scalars().all())
 
     async def get_pending_channels(self) -> List[ChannelModel]:
         """Get list of pending channels."""
-        result = await self.db.execute(
-            select(ChannelModel).where(ChannelModel.status == ChannelStatus.PENDING)
-        )
+        result = await self.db.execute(select(ChannelModel).where(ChannelModel.status == ChannelStatus.PENDING))
         return list(result.scalars().all())
 
     async def _get_channel_by_id(self, channel_id: int) -> Optional[ChannelModel]:
         """Get channel by ID."""
-        result = await self.db.execute(
-            select(ChannelModel).where(ChannelModel.telegram_id == channel_id)
-        )
+        result = await self.db.execute(select(ChannelModel).where(ChannelModel.telegram_id == channel_id))
         return result.scalar_one_or_none()
 
     async def _create_channel(
         self, channel_id: int, username: Optional[str], title: str, status: ChannelStatus
     ) -> ChannelModel:
         """Create new channel entry."""
-        channel = ChannelModel(
-            telegram_id=channel_id, username=username, title=title, status=status
-        )
+        channel = ChannelModel(telegram_id=channel_id, username=username, title=title, status=status)
 
         self.db.add(channel)
         await self.db.commit()
@@ -216,9 +198,7 @@ class ChannelService:
 
         return channel
 
-    async def _notify_admin_about_channel(
-        self, admin_id: int, channel: ChannelModel, message: Message
-    ) -> None:
+    async def _notify_admin_about_channel(self, admin_id: int, channel: ChannelModel, message: Message) -> None:
         """Notify admin about new channel message."""
         try:
             channel_info = "📢 <b>Новое сообщение от канала</b>\n\n"
@@ -230,20 +210,12 @@ class ChannelService:
             message_text = message.text or ""
             channel_info += f"<b>Сообщение:</b> {message_text[:200]}..."
 
-            await self.bot.send_message(
-                chat_id=admin_id, text=channel_info, reply_markup=None  # Will be set by handler
-            )
+            await self.bot.send_message(chat_id=admin_id, text=channel_info, reply_markup=None)  # Will be set by handler
 
         except Exception as e:
-            logger.error(
-                safe_format_message(
-                    "Error notifying admin about channel: {error}", error=sanitize_for_logging(e)
-                )
-            )
+            logger.error(safe_format_message("Error notifying admin about channel: {error}", error=sanitize_for_logging(e)))
 
-    async def _log_channel_action(
-        self, action: ModerationAction, channel_id: int, admin_id: int
-    ) -> None:
+    async def _log_channel_action(self, action: ModerationAction, channel_id: int, admin_id: int) -> None:
         """Log channel action to database."""
         log_entry = ModerationLog(action=action, channel_id=channel_id, admin_telegram_id=admin_id)
 
@@ -255,43 +227,37 @@ class ChannelService:
         try:
             logger.info(f"Checking if channel {channel_id} is native...")
             logger.info(f"Configured native channels: {self.native_channel_ids}")
-            
+
             # First check if channel is in the configured native channels list
             if channel_id in self.native_channel_ids:
                 logger.info(f"Channel {channel_id} is in native list: True")
                 return True
-            
+
             # If not in list, check if bot has admin rights in this channel
             try:
                 # Get bot's member status in the channel
                 bot_member = await self.bot.get_chat_member(chat_id=channel_id, user_id=self.bot.id)
-                
+
                 # Check if bot is admin or creator
-                is_admin = bot_member.status in ['administrator', 'creator']
+                is_admin = bot_member.status in ["administrator", "creator"]
                 logger.info(f"Channel {channel_id} bot admin status: {is_admin} (status: {bot_member.status})")
-                
+
                 return is_admin
-                
+
             except Exception as e:
                 # If we can't get member status, assume it's not native
                 logger.warning(f"Could not check admin status for channel {channel_id}: {e}")
                 return False
-                
+
         except Exception as e:
-            logger.error(
-                safe_format_message(
-                    "Error checking if channel is native: {error}", error=sanitize_for_logging(e)
-                )
-            )
+            logger.error(safe_format_message("Error checking if channel is native: {error}", error=sanitize_for_logging(e)))
             return False
 
     async def mark_channel_as_suspicious(self, channel_id: int, reason: str, admin_id: int) -> None:
         """Mark channel as suspicious."""
         try:
             # Update channel status to suspicious
-            result = await self.db.execute(
-                select(ChannelModel).where(ChannelModel.telegram_id == channel_id)
-            )
+            result = await self.db.execute(select(ChannelModel).where(ChannelModel.telegram_id == channel_id))
             channel = result.scalar_one_or_none()
 
             if channel:
@@ -302,9 +268,7 @@ class ChannelService:
                 await self.db.commit()
 
                 # Log the action
-                await self._log_channel_action(
-                    ModerationAction.MARK_SUSPICIOUS, channel_id, admin_id
-                )
+                await self._log_channel_action(ModerationAction.MARK_SUSPICIOUS, channel_id, admin_id)
 
                 logger.info(
                     safe_format_message(
@@ -315,11 +279,7 @@ class ChannelService:
                 )
 
         except Exception as e:
-            logger.error(
-                safe_format_message(
-                    "Error marking channel as suspicious: {error}", error=sanitize_for_logging(e)
-                )
-            )
+            logger.error(safe_format_message("Error marking channel as suspicious: {error}", error=sanitize_for_logging(e)))
 
     async def check_channel_rate_limit(self, channel_id: int) -> bool:
         """Check if channel exceeded rate limit."""
@@ -337,9 +297,7 @@ class ChannelService:
 
             # Clean old messages
             self._channel_messages[channel_id] = [
-                msg_time
-                for msg_time in self._channel_messages[channel_id]
-                if now - msg_time < 60  # 1 minute
+                msg_time for msg_time in self._channel_messages[channel_id] if now - msg_time < 60  # 1 minute
             ]
 
             # Add current message
@@ -349,11 +307,7 @@ class ChannelService:
             return len(self._channel_messages[channel_id]) > 10
 
         except Exception as e:
-            logger.error(
-                safe_format_message(
-                    "Error checking channel rate limit: {error}", error=sanitize_for_logging(e)
-                )
-            )
+            logger.error(safe_format_message("Error checking channel rate limit: {error}", error=sanitize_for_logging(e)))
             return False
 
     async def get_all_channels(self) -> List[ChannelModel]:
@@ -412,12 +366,12 @@ class ChannelService:
                 # Message in comment group - save the comment group
                 target_chat = chat
                 is_comment_group = True
-                
+
                 # Try to get linked_chat_id from Telegram API
                 linked_chat_id = None
                 try:
                     chat_info = await self.bot.get_chat(chat.id)
-                    if hasattr(chat_info, 'linked_chat') and chat_info.linked_chat:
+                    if hasattr(chat_info, "linked_chat") and chat_info.linked_chat:
                         linked_chat_id = chat_info.linked_chat.id
                         logger.info(f"Found linked chat: {linked_chat_id} for comment group {chat.id}")
                 except Exception as e:
@@ -433,9 +387,7 @@ class ChannelService:
             # linked_chat_id = sender_chat.id if is_comment_group else None
 
             # Check if channel already exists
-            result = await self.db.execute(
-                select(ChannelModel).where(ChannelModel.telegram_id == target_chat.id)
-            )
+            result = await self.db.execute(select(ChannelModel).where(ChannelModel.telegram_id == target_chat.id))
             existing_channel = result.scalar_one_or_none()
 
             if existing_channel:
@@ -445,7 +397,9 @@ class ChannelService:
                 existing_channel.is_comment_group = is_comment_group
                 if linked_chat_id:
                     existing_channel.linked_chat_id = linked_chat_id
-                logger.info(f"Updated channel info: {target_chat.title} ({target_chat.id}), is_comment_group={is_comment_group}")
+                logger.info(
+                    f"Updated channel info: {target_chat.title} ({target_chat.id}), is_comment_group={is_comment_group}"
+                )
             else:
                 # Create new channel
                 new_channel = ChannelModel(
@@ -455,7 +409,7 @@ class ChannelService:
                     status=ChannelStatus.ALLOWED,  # Use ALLOWED instead of ACTIVE
                     is_native=False,  # Will be determined later
                     is_comment_group=is_comment_group,
-                    linked_chat_id=linked_chat_id
+                    linked_chat_id=linked_chat_id,
                 )
                 self.db.add(new_channel)
                 logger.info(f"Saved new channel: {target_chat.title} ({target_chat.id})")

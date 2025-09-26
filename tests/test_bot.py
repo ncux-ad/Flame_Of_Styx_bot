@@ -13,9 +13,9 @@ class TestBot:
 
     def test_settings_validation(self, test_settings):
         """Test settings validation."""
-        assert test_settings.bot_token == "test_token"
-        assert test_settings.admin_ids == [123456789]
-        assert test_settings.db_path == ":memory:"
+        assert test_settings.bot_token == "123456789:ABCdefGHIjklMNOpqrsTUVwxyz123456789"
+        assert test_settings.admin_ids_list == [123456789, 987654321]
+        assert test_settings.db_path == "test.db"
 
     def test_user_model_creation(self):
         """Test user model creation."""
@@ -25,6 +25,8 @@ class TestBot:
             first_name="Test",
             last_name="User",
             is_bot=False,
+            is_banned=False,
+            is_muted=False,
         )
 
         assert user.telegram_id == 123456789

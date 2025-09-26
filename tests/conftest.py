@@ -21,7 +21,11 @@ def event_loop():
 @pytest.fixture
 def test_settings():
     """Test settings."""
-    return Settings(bot_token="test_token", admin_ids=[123456789], db_path=":memory:")
+    return Settings(
+        bot_token="123456789:ABCdefGHIjklMNOpqrsTUVwxyz123456789",
+        admin_ids="123456789,987654321",
+        db_path="test.db"
+    )
 
 
 @pytest.fixture

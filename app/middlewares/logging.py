@@ -10,29 +10,15 @@ logger = logging.getLogger(__name__)
 
 
 class LoggingMiddleware(BaseMiddleware):
-    async def __call__(
-        self, handler: Callable[..., Awaitable[Any]], event: Message, data: Dict[str, Any], **kwargs
-    ) -> Any:
+    async def __call__(self, handler: Callable[..., Awaitable[Any]], event: Message, data: Dict[str, Any], **kwargs) -> Any:
         # Enhanced logging with more details
-        user_id = (
-            getattr(event.from_user, "id", "unknown")
-            if hasattr(event, "from_user") and event.from_user
-            else "unknown"
-        )
+        user_id = getattr(event.from_user, "id", "unknown") if hasattr(event, "from_user") and event.from_user else "unknown"
 
         # Hash user_id for security
         hashed_user_id = hash_user_id(user_id) if user_id != "unknown" else "unknown"
         text = getattr(event, "text", "None") if hasattr(event, "text") else "None"
-        chat_id = (
-            getattr(event.chat, "id", "unknown")
-            if hasattr(event, "chat") and event.chat
-            else "unknown"
-        )
-        chat_type = (
-            getattr(event.chat, "type", "unknown")
-            if hasattr(event, "chat") and event.chat
-            else "unknown"
-        )
+        chat_id = getattr(event.chat, "id", "unknown") if hasattr(event, "chat") and event.chat else "unknown"
+        chat_type = getattr(event.chat, "type", "unknown") if hasattr(event, "chat") and event.chat else "unknown"
         sender_chat = getattr(event, "sender_chat", None) if hasattr(event, "sender_chat") else None
 
         # Получаем название чата для лучшего понимания

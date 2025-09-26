@@ -23,9 +23,7 @@ class BotService:
         self.bot = bot
         self.db = db_session
 
-    async def add_bot_to_whitelist(
-        self, username: str, admin_id: int, telegram_id: Optional[int] = None
-    ) -> bool:
+    async def add_bot_to_whitelist(self, username: str, admin_id: int, telegram_id: Optional[int] = None) -> bool:
         """Add bot to whitelist."""
         try:
             # Check if bot already exists
@@ -45,9 +43,7 @@ class BotService:
             await self.db.commit()
 
             # Log moderation action
-            await self._log_bot_action(
-                action=ModerationAction.ALLOW_BOT, bot_username=username, admin_id=admin_id
-            )
+            await self._log_bot_action(action=ModerationAction.ALLOW_BOT, bot_username=username, admin_id=admin_id)
 
             logger.info(f"Bot {username} added to whitelist by admin {admin_id}")
             return True
@@ -67,9 +63,7 @@ class BotService:
                 await self.db.commit()
 
                 # Log moderation action
-                await self._log_bot_action(
-                    action=ModerationAction.BLOCK_BOT, bot_username=username, admin_id=admin_id
-                )
+                await self._log_bot_action(action=ModerationAction.BLOCK_BOT, bot_username=username, admin_id=admin_id)
 
                 logger.info(f"Bot {username} removed from whitelist by admin {admin_id}")
                 return True
@@ -142,13 +136,9 @@ class BotService:
             logger.error(f"Error getting bots count: {e}")
             return 0
 
-    async def _log_bot_action(
-        self, action: ModerationAction, bot_username: str, admin_id: int
-    ) -> None:
+    async def _log_bot_action(self, action: ModerationAction, bot_username: str, admin_id: int) -> None:
         """Log bot action to database."""
-        log_entry = ModerationLog(
-            action=action, admin_telegram_id=admin_id, details=f"Bot: {bot_username}"
-        )
+        log_entry = ModerationLog(action=action, admin_telegram_id=admin_id, details=f"Bot: {bot_username}")
 
         self.db.add(log_entry)
         await self.db.commit()

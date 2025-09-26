@@ -36,7 +36,7 @@ class RateLimitMiddleware(BaseMiddleware):
         """Check rate limit before processing."""
         # Get user ID from different event types
         user_id = self._get_user_id(event)
-        
+
         if not user_id:
             return await handler(event, data)
 
@@ -50,9 +50,7 @@ class RateLimitMiddleware(BaseMiddleware):
         # Clean old requests
         if user_id in self.requests:
             self.requests[user_id] = [
-                req_time
-                for req_time in self.requests[user_id]
-                if current_time - req_time < self.interval
+                req_time for req_time in self.requests[user_id] if current_time - req_time < self.interval
             ]
         else:
             self.requests[user_id] = []
@@ -62,7 +60,7 @@ class RateLimitMiddleware(BaseMiddleware):
             # Rate limit exceeded
             user_type = "админ" if is_admin else "пользователь"
             remaining_time = self.interval - (current_time - self.requests[user_id][0])
-            
+
             # Try to send rate limit message for different event types
             if isinstance(event, Message):
                 await event.answer(
@@ -73,13 +71,11 @@ class RateLimitMiddleware(BaseMiddleware):
                     reply_to_message_id=event.message_id,
                 )
             elif isinstance(event, CallbackQuery):
-                await event.answer(
-                    f"⏰ Rate Limit превышен! Попробуйте через {int(remaining_time)} секунд",
-                    show_alert=True
-                )
+                await event.answer(f"⏰ Rate Limit превышен! Попробуйте через {int(remaining_time)} секунд", show_alert=True)
             # For other event types (channel_post, edited_message), just log
             else:
                 import logging
+
                 logger = logging.getLogger(__name__)
                 logger.warning(
                     f"Rate limit exceeded for {user_type} {user_id}: "
@@ -106,9 +102,9 @@ class RateLimitMiddleware(BaseMiddleware):
         else:
             # For other event types (channel_post, edited_message, etc.)
             # Try to get from_user if available
-            if hasattr(event, 'from_user') and event.from_user:
+            if hasattr(event, "from_user") and event.from_user:
                 return event.from_user.id
             # For channel posts, try sender_chat
-            if hasattr(event, 'sender_chat') and event.sender_chat:
+            if hasattr(event, "sender_chat") and event.sender_chat:
                 return event.sender_chat.id
             return None

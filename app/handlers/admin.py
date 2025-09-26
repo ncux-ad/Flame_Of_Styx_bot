@@ -3,11 +3,8 @@
 """
 
 import logging
-from typing import Optional, List, Dict, Any
-
 from aiogram import Router
 from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
@@ -17,8 +14,7 @@ from app.services.help import HelpService
 from app.services.limits import LimitsService
 from app.services.moderation import ModerationService
 from app.services.profiles import ProfileService
-from app.utils.error_handling import handle_errors, send_error_message, BotError, ValidationError
-from app.utils.security import safe_format_message, sanitize_for_logging
+from app.utils.error_handling import ValidationError, handle_errors
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +38,7 @@ async def handle_start_command(
     """Главное меню администратора."""
     if not message.from_user:
         raise ValidationError("Отсутствует информация о пользователе")
-    
+
     logger.info(f"Admin start command from {message.from_user.id}")
 
     welcome_text = (
@@ -78,7 +74,7 @@ async def handle_status_command(
 
         # Получаем статистику
         # total_bots = await bot_service.get_total_bots_count()
-        total_channels = await channel_service.get_total_channels_count()
+        # total_channels = await channel_service.get_total_channels_count()  # Не используется
         banned_users = await moderation_service.get_banned_users(limit=100)
         active_bans = len([ban for ban in banned_users if ban.is_active])
 
@@ -107,12 +103,14 @@ async def handle_status_command(
         # Получаем группы комментариев из базы данных
         comment_groups = []
         for channel in all_channels:
-            if hasattr(channel, 'is_comment_group') and channel.is_comment_group:
-                comment_groups.append({
-                    "title": channel.title or f"Группа {channel.telegram_id}",
-                    "chat_id": str(channel.telegram_id),
-                    "type": "Группа для комментариев",
-                })
+            if hasattr(channel, "is_comment_group") and channel.is_comment_group:
+                comment_groups.append(
+                    {
+                        "title": channel.title or f"Группа {channel.telegram_id}",
+                        "chat_id": str(channel.telegram_id),
+                        "type": "Группа для комментариев",
+                    }
+                )
 
         # Формируем информацию о чатах
         channel_info = []
@@ -130,7 +128,7 @@ async def handle_status_command(
             channel_info.append("  └ Статус: ✅ Антиспам активен")
 
         # Информация о боте (упрощённо)
-        bot_username = "FlameOfStyx_bot"  # Из конфига
+        # bot_username = "FlameOfStyx_bot"  # Из конфига - не используется
         bot_id = "7977609078"  # Из логов
 
         # Подсчитываем общее количество чатов
@@ -139,7 +137,7 @@ async def handle_status_command(
         status_text = (
             "📊 <b>Подробная статистика бота</b>\n\n"
             "🤖 <b>Информация о боте:</b>\n"
-            f"• Username: @{bot_username}\n"
+            "• Username: @FlameOfStyx_bot\n"
             f"• ID: <code>{bot_id}</code>\n"
             "• Статус: ✅ Работает\n\n"
             f"📢 <b>Подключённые чаты ({total_connected_chats}):</b>\n"
@@ -193,7 +191,7 @@ async def handle_channels_command(
         # Разделяем каналы на нативные и иностранные
         native_channels = []
         foreign_channels = []
-        
+
         for channel in channels:
             # Проверяем, является ли канал нативным (где бот админ)
             telegram_id = int(channel.telegram_id)
@@ -204,12 +202,12 @@ async def handle_channels_command(
                 foreign_channels.append(channel)
 
         channels_text = "📢 <b>Управление каналами</b>\n\n"
-        
+
         # Показываем нативные каналы (где бот админ)
         if native_channels:
             channels_text += f"✅ <b>Нативные каналы ({len(native_channels)})</b>\n"
             channels_text += "<i>Каналы где бот является администратором</i>\n\n"
-            
+
             for channel in native_channels[:5]:  # Показываем первые 5 нативных
                 username = f"@{channel.username}" if channel.username else "Без username"
                 channels_text += f"<b>{channel.title or 'Без названия'}</b>\n"
@@ -217,17 +215,17 @@ async def handle_channels_command(
                 if channel.member_count:
                     channels_text += f"   👥 Участников: {channel.member_count}\n"
                 channels_text += "\n"
-            
+
             if len(native_channels) > 5:
                 channels_text += f"... и еще {len(native_channels) - 5} нативных каналов\n\n"
             else:
                 channels_text += "\n"
-        
+
         # Показываем иностранные каналы (откуда приходят сообщения)
         if foreign_channels:
             channels_text += f"🔍 <b>Иностранные каналы ({len(foreign_channels)})</b>\n"
             channels_text += "<i>Каналы откуда приходят сообщения (бот не админ)</i>\n\n"
-            
+
             for channel in foreign_channels[:5]:  # Показываем первые 5 иностранных
                 username = f"@{channel.username}" if channel.username else "Без username"
                 channels_text += f"<b>{channel.title or 'Без названия'}</b>\n"
@@ -235,32 +233,34 @@ async def handle_channels_command(
                 if channel.member_count:
                     channels_text += f"   👥 Участников: {channel.member_count}\n"
                 channels_text += "\n"
-            
+
             if len(foreign_channels) > 5:
                 channels_text += f"... и еще {len(foreign_channels) - 5} иностранных каналов\n\n"
-        
+
         # Получаем группы комментариев из базы данных
         comment_groups = []
         for channel in channels:
-            if hasattr(channel, 'is_comment_group') and channel.is_comment_group:
-                comment_groups.append({
-                    "title": channel.title or f"Группа {channel.telegram_id}",
-                    "chat_id": str(channel.telegram_id),
-                    "type": "Группа для комментариев"
-                })
-        
+            if hasattr(channel, "is_comment_group") and channel.is_comment_group:
+                comment_groups.append(
+                    {
+                        "title": channel.title or f"Группа {channel.telegram_id}",
+                        "chat_id": str(channel.telegram_id),
+                        "type": "Группа для комментариев",
+                    }
+                )
+
         if comment_groups:
             channels_text += f"\n💬 <b>Группы комментариев ({len(comment_groups)})</b>\n"
             channels_text += "<i>Группы для модерации комментариев к постам</i>\n\n"
-            
+
             for group in comment_groups:
                 channels_text += f"<b>{group['title']}</b>\n"
                 channels_text += f"   ID: <code>{group['chat_id']}</code>\n"
                 channels_text += f"   Тип: {group['type']}\n"
-                channels_text += f"   Статус: ✅ Антиспам активен\n\n"
+                channels_text += "   Статус: ✅ Антиспам активен\n\n"
 
         # Общая статистика
-        channels_text += f"📊 <b>Общая статистика:</b>\n"
+        channels_text += "📊 <b>Общая статистика:</b>\n"
         channels_text += f"• Нативных каналов: {len(native_channels)}\n"
         channels_text += f"• Иностранных каналов: {len(foreign_channels)}\n"
         channels_text += f"• Групп комментариев: {len(comment_groups)}\n"
@@ -297,7 +297,7 @@ async def handle_bots_command(
             is_whitelisted = bool(bot.is_whitelisted)
             status = "✅ Вайтлист" if is_whitelisted else "❌ Блэклист"
             username_value = bot.username
-            username = str(username_value) if username_value is not None else 'Без username'
+            username = str(username_value) if username_value is not None else "Без username"
             bots_text += f"{status} @{username}\n"
 
         if len(bots) > 10:
@@ -341,7 +341,7 @@ async def handle_suspicious_command(
             profiles_text += f"• <b>Имя:</b> {user_info.get('first_name', 'Неизвестно')}\n"
             if user_info.get("username"):
                 profiles_text += f"• <b>Username:</b> @{user_info['username']}\n"
-            
+
             suspicion_score_value = profile.suspicion_score
             profiles_text += f"• <b>Счет подозрительности:</b> {float(suspicion_score_value):.2f}\n"
 
@@ -381,7 +381,7 @@ async def handle_suspicious_command(
                 status = "✅ Подтвержден" if is_confirmed else "❌ Ложное срабатывание"
                 profiles_text += f"• <b>Статус:</b> {status}\n"
             else:
-                profiles_text += f"• <b>Статус:</b> ⏳ Ожидает проверки\n"
+                profiles_text += "• <b>Статус:</b> ⏳ Ожидает проверки\n"
 
             profiles_text += f"• <b>Дата:</b> {profile.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
 
@@ -520,6 +520,7 @@ async def handle_settings_command(message: Message) -> None:
 
         # Load current configuration
         from app.config import load_config
+
         config = load_config()
 
         settings_text = (
@@ -746,13 +747,9 @@ async def handle_unban_command(
 
                 # Получаем информацию о чате
                 chat_info = (
-                    await channel_service.get_channel_info(chat_id)
-                    if chat_id
-                    else {"title": "Unknown Chat", "username": None}
+                    await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
                 )
-                chat_display = (
-                    f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
-                )
+                chat_display = f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
 
                 text += f"{i}. <b>{user_display}</b> <code>({user_id})</code>\n"
                 text += f"   Причина: {reason}\n"
@@ -776,19 +773,13 @@ async def handle_unban_command(
                 chat_id = log_entry.chat_id
 
                 # Разблокируем пользователя
-                success = await moderation_service.unban_user(
-                    user_id=user_id, chat_id=chat_id, admin_id=admin_id
-                )
+                success = await moderation_service.unban_user(user_id=user_id, chat_id=chat_id, admin_id=admin_id)
 
                 if success:
-                    await message.answer(
-                        f"✅ Пользователь <code>{user_id}</code> разблокирован в чате <code>{chat_id}</code>"
-                    )
+                    await message.answer(f"✅ Пользователь <code>{user_id}</code> разблокирован в чате <code>{chat_id}</code>")
                     logger.info(f"User {user_id} unbanned by admin {admin_id}")
                 else:
-                    await message.answer(
-                        f"❌ Не удалось разблокировать пользователя <code>{user_id}</code>"
-                    )
+                    await message.answer(f"❌ Не удалось разблокировать пользователя <code>{user_id}</code>")
             else:
                 await message.answer("❌ Неверный номер пользователя")
             return
@@ -796,8 +787,7 @@ async def handle_unban_command(
         # Обработка по user_id и chat_id
         if len(args) < 1:
             await message.answer(
-                "❌ Использование: /unban &lt;user_id&gt; [chat_id]\n"
-                "Пример: /unban 123456789 -1001234567890"
+                "❌ Использование: /unban &lt;user_id&gt; [chat_id]\n" "Пример: /unban 123456789 -1001234567890"
             )
             return
 
@@ -805,14 +795,10 @@ async def handle_unban_command(
         chat_id = int(args[1]) if len(args) > 1 else message.chat.id
 
         # Разблокируем пользователя
-        success = await moderation_service.unban_user(
-            user_id=user_id, chat_id=chat_id, admin_id=admin_id
-        )
+        success = await moderation_service.unban_user(user_id=user_id, chat_id=chat_id, admin_id=admin_id)
 
         if success:
-            await message.answer(
-                f"✅ Пользователь <code>{user_id}</code> разблокирован в чате <code>{chat_id}</code>"
-            )
+            await message.answer(f"✅ Пользователь <code>{user_id}</code> разблокирован в чате <code>{chat_id}</code>")
             logger.info(f"User {user_id} unbanned by admin {admin_id}")
         else:
             await message.answer(f"❌ Не удалось разблокировать пользователя <code>{user_id}</code>")
@@ -850,11 +836,7 @@ async def handle_banned_command(
         for i, log_entry in enumerate(banned_users, 1):
             user_id = log_entry.user_id
             reason = log_entry.reason or "Спам"
-            date_text = (
-                log_entry.created_at.strftime("%d.%m.%Y %H:%M")
-                if log_entry.created_at
-                else "Неизвестно"
-            )
+            date_text = log_entry.created_at.strftime("%d.%m.%Y %H:%M") if log_entry.created_at else "Неизвестно"
             chat_id = log_entry.chat_id
 
             # Получаем информацию о пользователе
@@ -871,13 +853,9 @@ async def handle_banned_command(
 
             # Получаем информацию о чате
             chat_info = (
-                await channel_service.get_channel_info(chat_id)
-                if chat_id
-                else {"title": "Unknown Chat", "username": None}
+                await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
             )
-            chat_display = (
-                f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
-            )
+            chat_display = f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
 
             text += f"{i}. <b>{user_display}</b> <code>({user_id})</code>\n"
             text += f"   Причина: {reason}\n"
@@ -921,22 +899,14 @@ async def handle_ban_history_command(
             user_id = log_entry.user_id
             reason = log_entry.reason or "Спам"
             chat_id = log_entry.chat_id
-            date_text = (
-                log_entry.created_at.strftime("%d.%m.%Y %H:%M")
-                if log_entry.created_at
-                else "Неизвестно"
-            )
+            date_text = log_entry.created_at.strftime("%d.%m.%Y %H:%M") if log_entry.created_at else "Неизвестно"
             is_active = "🟢 Активен" if log_entry.is_active else "🔴 Неактивен"
 
             # Получаем информацию о чате
             chat_info = (
-                await channel_service.get_channel_info(chat_id)
-                if chat_id
-                else {"title": "Unknown Chat", "username": None}
+                await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
             )
-            chat_display = (
-                f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
-            )
+            chat_display = f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
 
             text += f"{i}. <b>User {user_id}</b>\n"
             text += f"   Причина: {reason}\n"
@@ -996,14 +966,10 @@ async def handle_sync_bans_command(
             for i, chat_id in enumerate(chat_ids[:5], 1):
                 # Получаем информацию о чате
                 chat_info = await channel_service.get_channel_info(chat_id)
-                chat_display = (
-                    f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
-                )
+                chat_display = f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
 
                 # Считаем активные баны в этом чате
-                active_bans = len(
-                    [log for log in ban_history if log.chat_id == chat_id and log.is_active]
-                )
+                active_bans = len([log for log in ban_history if log.chat_id == chat_id and log.is_active])
 
                 text += f"{i}. <b>{chat_display}</b>\n"
                 text += f"   ID: <code>{chat_id}</code>\n"
@@ -1077,7 +1043,7 @@ async def handle_help_command(
         # Парсим аргументы команды
         message_text = message.text or ""
         command_args = message_text.split()[1:] if len(message_text.split()) > 1 else []
-        
+
         if command_args:
             # Если есть аргументы, показываем справку по категории
             category = command_args[0]
@@ -1139,7 +1105,7 @@ async def handle_ban_suspicious_callback(
 
             await callback_query.answer("✅ Пользователь забанен")
             try:
-                if callback_query.message and hasattr(callback_query.message, 'edit_text'):
+                if callback_query.message and hasattr(callback_query.message, "edit_text"):
                     await callback_query.message.edit_text(
                         f"🚫 <b>Пользователь забанен</b>\n\n"
                         f"ID: {user_id}\n"
@@ -1177,11 +1143,9 @@ async def handle_watch_suspicious_callback(
 
         await callback_query.answer("👀 Пользователь добавлен в список наблюдения")
         try:
-            if callback_query.message and hasattr(callback_query.message, 'edit_text'):
+            if callback_query.message and hasattr(callback_query.message, "edit_text"):
                 await callback_query.message.edit_text(
-                    f"👀 <b>Пользователь добавлен в наблюдение</b>\n\n"
-                    f"ID: {user_id}\n"
-                    f"Статус: Наблюдение"
+                    f"👀 <b>Пользователь добавлен в наблюдение</b>\n\n" f"ID: {user_id}\n" f"Статус: Наблюдение"
                 )
         except Exception as e:
             logger.warning(f"Could not edit message: {e}")
@@ -1215,11 +1179,9 @@ async def handle_allow_suspicious_callback(
 
         await callback_query.answer("✅ Пользователь разрешен")
         try:
-            if callback_query.message and hasattr(callback_query.message, 'edit_text'):
+            if callback_query.message and hasattr(callback_query.message, "edit_text"):
                 await callback_query.message.edit_text(
-                    f"✅ <b>Пользователь разрешен</b>\n\n"
-                    f"ID: {user_id}\n"
-                    f"Статус: Ложное срабатывание"
+                    f"✅ <b>Пользователь разрешен</b>\n\n" f"ID: {user_id}\n" f"Статус: Ложное срабатывание"
                 )
         except Exception as e:
             logger.warning(f"Could not edit message: {e}")
@@ -1241,57 +1203,46 @@ async def handle_instructions_command(
         logger.info(f"Instructions command from {message.from_user.id}")
 
         # Get bot username for instructions
-        bot_username = getattr(message.bot, 'username', None) or "your_bot"
-        
+        # bot_username = getattr(message.bot, "username", None) or "your_bot"  # Не используется
+
         instructions = (
             "📋 <b>ИНСТРУКЦИЯ ПО НАСТРОЙКЕ ПРАВ БОТА</b>\n\n"
-            
             "🤖 <b>Что получают админы каналов при добавлении бота:</b>\n"
             "• Уведомление о готовности бота к работе\n"
             "• Подробную инструкцию по настройке прав\n"
             "• Контакты для связи с владельцем бота\n\n"
-            
             "🔧 <b>ОБЯЗАТЕЛЬНЫЕ ПРАВА для работы бота:</b>\n\n"
-            
             "1️⃣ <b>Удаление сообщений</b>\n"
             "• Настройки канала → Администраторы → @your_bot\n"
-            "• Включить \"Удалять сообщения\"\n"
+            '• Включить "Удалять сообщения"\n'
             "• Без этого бот не сможет удалять спам\n\n"
-            
             "2️⃣ <b>Блокировка пользователей</b>\n"
-            "• Включить \"Добавлять участников\" или \"Исключать участников\"\n"
+            '• Включить "Добавлять участников" или "Исключать участников"\n'
             "• Без этого бот не сможет банить спамеров\n\n"
-            
             "3️⃣ <b>Просмотр сообщений</b>\n"
             "• Убедиться, что бот может читать сообщения\n"
             "• Нужно для анализа контента\n\n"
-            
             "✅ <b>ДОПОЛНИТЕЛЬНЫЕ ПРАВА (рекомендуется):</b>\n"
             "• Приглашение пользователей (для разбана)\n"
             "• Закрепление сообщений (для уведомлений)\n\n"
-            
             "⚠️ <b>ВАЖНО для админов каналов:</b>\n"
             "• Без прав на удаление и бан бот работать НЕ БУДЕТ!\n"
             "• Настроить права нужно сразу после добавления\n"
             "• Бот начнет работать автоматически после настройки\n\n"
-            
             "🔍 <b>Проверка работы:</b>\n"
             "• Отправить тестовое сообщение с бот-ссылкой\n"
             "• Бот должен удалить его (если права настроены)\n"
             "• Если не удаляет - проверить права\n\n"
-            
             "⚙️ <b>Управление ботом (только для владельца):</b>\n"
             "• <code>/status</code> - статистика работы бота\n"
             "• <code>/settings</code> - настройки антиспама\n"
             "• <code>/suspicious</code> - просмотр подозрительных профилей\n"
             "• <code>/channels</code> - управление каналами\n"
             "• <code>/setlimits</code> - настройка лимитов\n\n"
-            
             "📞 <b>Поддержка:</b>\n"
             "• Владелец бота: [@ncux-ad](https://github.com/ncux-ad)\n"
             "• GitHub: https://github.com/ncux-ad/Flame_Of_Styx_bot\n"
             "• При проблемах с настройкой - обращайтесь к владельцу\n\n"
-            
             "💡 <b>Совет:</b> Админы каналов должны настроить права, а управление остается за владельцем бота!"
         )
 
@@ -1319,18 +1270,14 @@ async def handle_logs_command(
         message_text = message.text or ""
         command_args = message_text.split()[1:] if len(message_text.split()) > 1 else []
         log_level = command_args[0] if command_args else "all"
-        
+
         # Получаем логи из journalctl
-        import subprocess
         import os
-        
+        import subprocess
+
         # Пробуем разные пути к journalctl
-        journalctl_paths = [
-            "/usr/bin/journalctl",
-            "/bin/journalctl", 
-            "journalctl"
-        ]
-        
+        journalctl_paths = ["/usr/bin/journalctl", "/bin/journalctl", "journalctl"]
+
         journalctl_path = None
         for path in journalctl_paths:
             try:
@@ -1338,105 +1285,125 @@ async def handle_logs_command(
                 if os.path.exists(path) or path == "journalctl":
                     journalctl_path = path
                     break
-            except:
+            except Exception:
                 continue
-        
+
         if not journalctl_path:
             # Если journalctl не найден, попробуем получить логи из файлов
             try:
-                log_files = [
-                    "/var/log/antispam-bot.log",
-                    "logs/antispam-bot.log", 
-                    "antispam-bot.log"
-                ]
-                
+                log_files = ["/var/log/antispam-bot.log", "logs/antispam-bot.log", "antispam-bot.log"]
+
                 logs_text = ""
                 for log_file in log_files:
                     if os.path.exists(log_file):
-                        with open(log_file, 'r', encoding='utf-8') as f:
+                        with open(log_file, "r", encoding="utf-8") as f:
                             lines = f.readlines()
                             if log_level == "error":
-                                logs_text = "\n".join([line for line in lines if "ERROR" in line or "CRITICAL" in line])[-2000:]
+                                logs_text = "\n".join([line for line in lines if "ERROR" in line or "CRITICAL" in line])[
+                                    -2000:
+                                ]
                             elif log_level == "warning":
-                                logs_text = "\n".join([line for line in lines if "WARNING" in line or "ERROR" in line or "CRITICAL" in line])[-2000:]
+                                logs_text = "\n".join(
+                                    [line for line in lines if "WARNING" in line or "ERROR" in line or "CRITICAL" in line]
+                                )[-2000:]
                             else:
                                 logs_text = "\n".join(lines[-50:])
                         break
-                
+
                 if logs_text:
                     if len(logs_text) > 3500:
                         logs_text = logs_text[:3500] + "\n... (логи обрезаны)"
                     response = f"📋 <b>Логи из файла ({log_level})</b>\n\n<code>{logs_text}</code>"
                 else:
                     response = "❌ <b>Логи не найдены</b>\n\njournalctl недоступен и файлы логов не найдены"
-                
+
                 await message.answer(response)
                 return
-                
+
             except Exception as e:
                 response = f"❌ <b>Ошибка чтения логов</b>\n\n{str(e)}"
                 await message.answer(response)
                 return
-        
+
         try:
-            
+
             if log_level == "error":
                 # Только ошибки
                 result = subprocess.run(
-                    [journalctl_path, "-u", "antispam-bot.service", "--since", "1 hour ago", 
-                     "--priority", "err", "--no-pager", "-n", "50"],
-                    capture_output=True, text=True, timeout=10, shell=False
+                    [
+                        journalctl_path,
+                        "-u",
+                        "antispam-bot.service",
+                        "--since",
+                        "1 hour ago",
+                        "--priority",
+                        "err",
+                        "--no-pager",
+                        "-n",
+                        "50",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    shell=False,
                 )
             elif log_level == "warning":
                 # Предупреждения и ошибки - используем grep для фильтрации
                 result = subprocess.run(
-                    [journalctl_path, "-u", "antispam-bot.service", "--since", "1 hour ago", 
-                     "--no-pager", "-n", "100"],
-                    capture_output=True, text=True, timeout=10, shell=False
+                    [journalctl_path, "-u", "antispam-bot.service", "--since", "1 hour ago", "--no-pager", "-n", "100"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    shell=False,
                 )
                 if result.returncode == 0 and result.stdout:
                     # Фильтруем только WARNING и ERROR уровни
                     import re
+
                     warning_lines = []
-                    for line in result.stdout.split('\n'):
-                        if re.search(r'(WARNING|ERROR|CRITICAL)', line, re.IGNORECASE):
+                    for line in result.stdout.split("\n"):
+                        if re.search(r"(WARNING|ERROR|CRITICAL)", line, re.IGNORECASE):
                             warning_lines.append(line)
-                    result.stdout = '\n'.join(warning_lines[-50:])  # Последние 50 строк
+                    result.stdout = "\n".join(warning_lines[-50:])  # Последние 50 строк
             else:
                 # Все логи
                 result = subprocess.run(
-                    [journalctl_path, "-u", "antispam-bot.service", "--since", "1 hour ago", 
-                     "--no-pager", "-n", "30"],
-                    capture_output=True, text=True, timeout=10, shell=False
+                    [journalctl_path, "-u", "antispam-bot.service", "--since", "1 hour ago", "--no-pager", "-n", "30"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    shell=False,
                 )
-            
+
             if result.returncode == 0:
                 logs_text = result.stdout.strip() if result.stdout else ""
-                
+
                 if logs_text:
                     # Ограничиваем размер сообщения (Telegram лимит 4096 символов)
                     if len(logs_text) > 3500:
                         logs_text = logs_text[:3500] + "\n... (логи обрезаны)"
-                    
+
                     response = f"📋 <b>Логи системы ({log_level})</b>\n\n<code>{logs_text}</code>"
                 else:
                     # Нет логов указанного уровня
                     if log_level == "error":
                         response = "✅ <b>Ошибок не найдено</b>\n\nЗа последний час ошибок в логах не обнаружено."
                     elif log_level == "warning":
-                        response = "✅ <b>Предупреждений не найдено</b>\n\nЗа последний час предупреждений в логах не обнаружено."
+                        response = (
+                            "✅ <b>Предупреждений не найдено</b>\n\nЗа последний час предупреждений в логах не обнаружено."
+                        )
                     else:
                         response = "📋 <b>Логи системы (all)</b>\n\n<code>-- No entries --</code>"
-                
+
             else:
-                error_msg = result.stderr or 'Неизвестная ошибка'
+                error_msg = result.stderr or "Неизвестная ошибка"
                 response = f"❌ <b>Ошибка получения логов</b>\n\nКод возврата: {result.returncode}\nОшибка: {error_msg}\n\nПроверьте, что бот запущен как systemd сервис на Ubuntu сервере."
-                
+
         except subprocess.TimeoutExpired:
             response = "⏰ <b>Таймаут получения логов</b>\n\nЛоги слишком большие, попробуйте позже"
         except Exception as e:
             response = f"❌ <b>Ошибка выполнения команды</b>\n\n{str(e)}"
-        
+
         await message.answer(response)
         if message.from_user:
             logger.info(f"Logs response sent to {message.from_user.id}")

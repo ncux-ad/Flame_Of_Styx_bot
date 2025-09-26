@@ -8,21 +8,9 @@ def get_channel_decision_keyboard(channel_id: int, message_id: int) -> InlineKey
     """Get keyboard for channel decision."""
     builder = InlineKeyboardBuilder()
 
-    builder.add(
-        InlineKeyboardButton(
-            text="✅ Разрешить", callback_data=f"allow_channel:{channel_id}:{message_id}"
-        )
-    )
-    builder.add(
-        InlineKeyboardButton(
-            text="🚫 Заблокировать", callback_data=f"block_channel:{channel_id}:{message_id}"
-        )
-    )
-    builder.add(
-        InlineKeyboardButton(
-            text="🗑 Удалить сообщение", callback_data=f"delete_message:{message_id}"
-        )
-    )
+    builder.add(InlineKeyboardButton(text="✅ Разрешить", callback_data=f"allow_channel:{channel_id}:{message_id}"))
+    builder.add(InlineKeyboardButton(text="🚫 Заблокировать", callback_data=f"block_channel:{channel_id}:{message_id}"))
+    builder.add(InlineKeyboardButton(text="🗑 Удалить сообщение", callback_data=f"delete_message:{message_id}"))
 
     builder.adjust(2, 1)
     return builder.as_markup()
@@ -33,12 +21,8 @@ def get_suspicious_profile_keyboard(user_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
 
     builder.add(InlineKeyboardButton(text="🚫 Забанить", callback_data=f"ban_suspicious:{user_id}"))
-    builder.add(
-        InlineKeyboardButton(text="👀 Наблюдать", callback_data=f"watch_suspicious:{user_id}")
-    )
-    builder.add(
-        InlineKeyboardButton(text="✅ Разрешить", callback_data=f"allow_suspicious:{user_id}")
-    )
+    builder.add(InlineKeyboardButton(text="👀 Наблюдать", callback_data=f"watch_suspicious:{user_id}"))
+    builder.add(InlineKeyboardButton(text="✅ Разрешить", callback_data=f"allow_suspicious:{user_id}"))
 
     builder.adjust(2, 1)
     return builder.as_markup()

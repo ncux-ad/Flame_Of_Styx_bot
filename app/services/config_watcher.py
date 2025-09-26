@@ -181,24 +181,13 @@ class LimitsHotReload:
 
         # Проверяем типы и значения
         try:
-            if (
-                not isinstance(limits["max_messages_per_minute"], int)
-                or limits["max_messages_per_minute"] <= 0
-            ):
+            if not isinstance(limits["max_messages_per_minute"], int) or limits["max_messages_per_minute"] <= 0:
                 return False
-            if (
-                not isinstance(limits["max_links_per_message"], int)
-                or limits["max_links_per_message"] <= 0
-            ):
+            if not isinstance(limits["max_links_per_message"], int) or limits["max_links_per_message"] <= 0:
                 return False
-            if (
-                not isinstance(limits["ban_duration_hours"], int)
-                or limits["ban_duration_hours"] <= 0
-            ):
+            if not isinstance(limits["ban_duration_hours"], int) or limits["ban_duration_hours"] <= 0:
                 return False
-            if not isinstance(limits["suspicion_threshold"], (int, float)) or not (
-                0 <= limits["suspicion_threshold"] <= 1
-            ):
+            if not isinstance(limits["suspicion_threshold"], (int, float)) or not (0 <= limits["suspicion_threshold"] <= 1):
                 return False
         except (TypeError, ValueError):
             return False

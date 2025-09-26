@@ -216,11 +216,7 @@ def safe_user_operation(user_id: int, operation: str, target_id: Optional[int] =
         auth_service = AuthorizationService()
         return auth_service.validate_action(user_id, operation, target_id)
     except Exception as e:
-        logger.error(
-            safe_format_message(
-                "Error in safe_user_operation: {error}", error=sanitize_for_logging(e)
-            )
-        )
+        logger.error(safe_format_message("Error in safe_user_operation: {error}", error=sanitize_for_logging(e)))
         return False
 
 

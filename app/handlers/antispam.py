@@ -5,7 +5,6 @@
 import logging
 
 from aiogram import Router
-
 from aiogram.types import Message
 
 from app.services.bots import BotService
@@ -160,9 +159,11 @@ async def handle_channel_antispam(
     try:
         # Определяем ID канала
         channel_id = message.sender_chat.id if message.sender_chat else message.chat.id
-        
+
         # Логируем детали сообщения для отладки
-        logger.info(f"Channel antispam debug: chat_id={message.chat.id}, sender_chat={message.sender_chat.id if message.sender_chat else None}, channel_id={channel_id}")
+        logger.info(
+            f"Channel antispam debug: chat_id={message.chat.id}, sender_chat={message.sender_chat.id if message.sender_chat else None}, channel_id={channel_id}"
+        )
 
         # Проверяем, является ли это нативным каналом (где бот админ)
         is_native_channel = await channel_service.is_native_channel(channel_id)
@@ -190,9 +191,7 @@ async def handle_channel_antispam(
             # Если нет бот-ссылок, но есть отправитель - анализируем его профиль
             if message.from_user:
                 try:
-                    suspicious_profile = await profile_service.analyze_user_profile(
-                        user=message.from_user, admin_id=admin_id
-                    )
+                    suspicious_profile = await profile_service.analyze_user_profile(user=message.from_user, admin_id=admin_id)
                     if suspicious_profile:
                         logger.warning(
                             f"Suspicious profile detected in channel: user_id={message.from_user.id}, score={suspicious_profile.suspicion_score}"

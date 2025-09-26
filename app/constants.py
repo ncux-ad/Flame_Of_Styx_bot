@@ -33,8 +33,8 @@ MIN_SUSPICION_SCORE = 0.0
 
 # Размеры файлов (в байтах)
 MAX_DOCUMENT_SIZE = 50 * 1024 * 1024  # 50MB
-MAX_PHOTO_SIZE = 10 * 1024 * 1024      # 10MB
-MAX_VIDEO_SIZE = 100 * 1024 * 1024     # 100MB
+MAX_PHOTO_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_VIDEO_SIZE = 100 * 1024 * 1024  # 100MB
 
 # =============================================================================
 # СТРОКОВЫЕ КОНСТАНТЫ
@@ -93,9 +93,10 @@ PATTERNS = {
 # КОДЫ ОШИБОК
 # =============================================================================
 
+
 class ErrorCodes:
     """Коды ошибок для API"""
-    
+
     # Общие ошибки
     SUCCESS = 0
     UNKNOWN_ERROR = 1
@@ -103,21 +104,22 @@ class ErrorCodes:
     UNAUTHORIZED = 3
     FORBIDDEN = 4
     NOT_FOUND = 5
-    
+
     # Ошибки валидации
     INVALID_TOKEN = 100
     INVALID_ADMIN_ID = 101
     INVALID_CHANNEL = 102
     INVALID_MESSAGE = 103
-    
+
     # Ошибки rate limiting
     RATE_LIMIT_EXCEEDED = 200
     TOO_MANY_REQUESTS = 201
-    
+
     # Ошибки базы данных
     DB_CONNECTION_ERROR = 300
     DB_QUERY_ERROR = 301
     DB_TRANSACTION_ERROR = 302
+
 
 # =============================================================================
 # НАСТРОЙКИ БЕЗОПАСНОСТИ

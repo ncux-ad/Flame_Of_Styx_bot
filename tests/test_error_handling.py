@@ -8,7 +8,7 @@ from aiogram.types import Message, User, Chat, CallbackQuery
 
 from app.utils.error_handling import (
     ErrorHandler, BotError, ValidationError, AuthenticationError,
-    AuthorizationError, RateLimitError, DatabaseError, TelegramAPIError,
+    AuthorizationError, RateLimitError, DatabaseError, BotTelegramAPIError,
     SecurityError, ErrorSeverity, ErrorCategory, handle_errors,
     send_error_message, get_error_summary
 )
@@ -102,8 +102,8 @@ class TestSpecificErrors:
         assert error.user_message == "❌ Произошла ошибка бота. Попробуйте позже."
     
     def test_telegram_api_error(self):
-        """Тест TelegramAPIError"""
-        error = TelegramAPIError("API error")
+        """Тест BotTelegramAPIError"""
+        error = BotTelegramAPIError("API error")
         
         assert error.message == "API error"
         assert error.code == 1  # UNKNOWN_ERROR
@@ -164,14 +164,14 @@ class TestErrorHandler:
         """Тест обработки Telegram ошибки"""
         from aiogram.exceptions import TelegramBadRequest
         
-        error = TelegramBadRequest("Bad request")
+        error = TelegramBadRequest("Bad request", "description")
         
         with patch.object(error_handler, '_log_error') as mock_log:
             await error_handler.handle_error(error, user_id=123)
             
             mock_log.assert_called_once()
             logged_error = mock_log.call_args[0][0]
-            assert isinstance(logged_error, TelegramAPIError)
+            assert isinstance(logged_error, BotTelegramAPIError)
             assert "Telegram Bad Request" in logged_error.message
     
     def test_classify_error_bot_error(self, error_handler):

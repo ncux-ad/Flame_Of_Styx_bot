@@ -24,9 +24,7 @@ class ModerationService:
         self.bot = bot
         self.db = db_session
 
-    async def ban_user(
-        self, user_id: int, chat_id: int, admin_id: int, reason: Optional[str] = None
-    ) -> bool:
+    async def ban_user(self, user_id: int, chat_id: int, admin_id: int, reason: Optional[str] = None) -> bool:
         """Ban user from chat."""
         try:
             # Ban user in Telegram
@@ -99,15 +97,11 @@ class ModerationService:
             )
             return False
 
-    async def mute_user(
-        self, user_id: int, chat_id: int, admin_id: int, reason: Optional[str] = None
-    ) -> bool:
+    async def mute_user(self, user_id: int, chat_id: int, admin_id: int, reason: Optional[str] = None) -> bool:
         """Mute user in chat."""
         try:
             # Mute user in Telegram (restrict permissions)
-            await self.bot.restrict_chat_member(
-                chat_id=chat_id, user_id=user_id, permissions=None  # No permissions = muted
-            )
+            await self.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=None)  # No permissions = muted
 
             # Update user status in database
             await self._update_user_status(user_id, is_muted=True)
@@ -223,17 +217,13 @@ class ModerationService:
 
     async def is_user_banned(self, user_id: int) -> bool:
         """Check if user is banned."""
-        result = await self.db.execute(
-            select(UserModel.is_banned).where(UserModel.telegram_id == user_id)
-        )
+        result = await self.db.execute(select(UserModel.is_banned).where(UserModel.telegram_id == user_id))
         user = result.scalar_one_or_none()
         return user is True if user is not None else False
 
     async def is_user_muted(self, user_id: int) -> bool:
         """Check if user is muted."""
-        result = await self.db.execute(
-            select(UserModel.is_muted).where(UserModel.telegram_id == user_id)
-        )
+        result = await self.db.execute(select(UserModel.is_muted).where(UserModel.telegram_id == user_id))
         user = result.scalar_one_or_none()
         return user is True if user is not None else False
 
@@ -269,9 +259,7 @@ class ModerationService:
 
     async def get_deleted_messages_count(self) -> int:
         """Get total count of deleted messages."""
-        result = await self.db.execute(
-            select(ModerationLog).where(ModerationLog.action == ModerationAction.DELETE_MESSAGE)
-        )
+        result = await self.db.execute(select(ModerationLog).where(ModerationLog.action == ModerationAction.DELETE_MESSAGE))
         return len(result.scalars().all())
 
     async def get_spam_statistics(self) -> dict:
@@ -299,9 +287,7 @@ class ModerationService:
             # Находим дубликаты - записи с одинаковыми user_id, chat_id, action=BAN
             result = await self.db.execute(
                 select(ModerationLog)
-                .where(
-                    ModerationLog.chat_id == chat_id, ModerationLog.action == ModerationAction.BAN
-                )
+                .where(ModerationLog.chat_id == chat_id, ModerationLog.action == ModerationAction.BAN)
                 .order_by(ModerationLog.user_id, ModerationLog.created_at.desc())
             )
             all_bans = result.scalars().all()
@@ -326,9 +312,7 @@ class ModerationService:
                     for ban in bans[1:]:
                         await self.db.delete(ban)
                         removed_count += 1
-                        logger.info(
-                            f"Removed duplicate ban record for user {user_id} in chat {chat_id}"
-                        )
+                        logger.info(f"Removed duplicate ban record for user {user_id} in chat {chat_id}")
 
             await self.db.commit()
             return removed_count
@@ -379,9 +363,7 @@ class ModerationService:
             # Получаем список пользователей из БД, которые были заблокированы в этом чате
             result = await self.db.execute(
                 select(ModerationLog)
-                .where(
-                    ModerationLog.chat_id == chat_id, ModerationLog.action == ModerationAction.BAN
-                )
+                .where(ModerationLog.chat_id == chat_id, ModerationLog.action == ModerationAction.BAN)
                 .order_by(ModerationLog.created_at.desc())
             )
             db_bans = result.scalars().all()
@@ -405,13 +387,11 @@ class ModerationService:
                                 ModerationLog.user_id == user_id,
                                 ModerationLog.chat_id == chat_id,
                                 ModerationLog.action == ModerationAction.BAN,
-                                ModerationLog.is_active == True,
+                                ModerationLog.is_active.is_(True),
                             )
                         )
                         if existing_ban.scalar_one_or_none():
-                            logger.info(
-                                f"User {user_id} already has active ban in chat {chat_id}, skipping"
-                            )
+                            logger.info(f"User {user_id} already has active ban in chat {chat_id}, skipping")
                             continue
 
                         # Проверяем статус пользователя в Telegram
@@ -451,10 +431,7 @@ class ModerationService:
                             logger.info(f"Activated ban for user {user_id} in chat {chat_id}")
 
                         # Если пользователь НЕ забанен в Telegram (member, administrator, creator), но активен в БД - деактивируем
-                        elif (
-                            member.status in ["member", "administrator", "creator"]
-                            and ban_log.is_active
-                        ):
+                        elif member.status in ["member", "administrator", "creator"] and ban_log.is_active:
                             ban_log.is_active = False
                             synced_count += 1
                             logger.info(f"Deactivated ban for user {user_id} in chat {chat_id}")
@@ -512,9 +489,7 @@ class ModerationService:
             update_data["ban_reason"] = ban_reason
 
         if update_data:
-            await self.db.execute(
-                update(UserModel).where(UserModel.telegram_id == user_id).values(**update_data)
-            )
+            await self.db.execute(update(UserModel).where(UserModel.telegram_id == user_id).values(**update_data))
             await self.db.commit()
 
     async def _log_moderation_action(
