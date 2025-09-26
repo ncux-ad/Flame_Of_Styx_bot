@@ -104,14 +104,15 @@ async def handle_status_command(
             except Exception:
                 continue
 
-        # Добавляем известные чаты, где бот активен
-        known_chats = [
-            {
-                "title": "Test_FlameOfStyx_bot",
-                "chat_id": "-1003094131978",
-                "type": "Группа для комментариев",
-            }
-        ]
+        # Получаем группы комментариев из базы данных
+        comment_groups = []
+        for channel in all_channels:
+            if hasattr(channel, 'is_comment_group') and channel.is_comment_group:
+                comment_groups.append({
+                    "title": channel.title or f"Группа {channel.telegram_id}",
+                    "chat_id": str(channel.telegram_id),
+                    "type": "Группа для комментариев",
+                })
 
         # Формируем информацию о чатах
         channel_info = []
@@ -122,8 +123,8 @@ async def handle_status_command(
             channel_info.append("  └ Тип: Канал")
             channel_info.append("  └ Статус: ✅ Антиспам активен")
 
-        # Добавляем известные чаты (группы комментариев)
-        for chat in known_chats:
+        # Добавляем группы комментариев
+        for chat in comment_groups:
             channel_info.append(f"• {chat['title']} <code>({chat['chat_id']})</code>")
             channel_info.append(f"  └ Тип: {chat['type']}")
             channel_info.append("  └ Статус: ✅ Антиспам активен")
@@ -133,7 +134,7 @@ async def handle_status_command(
         bot_id = "7977609078"  # Из логов
 
         # Подсчитываем общее количество чатов
-        total_connected_chats = len(connected_channels) + len(known_chats)
+        total_connected_chats = len(connected_channels) + len(comment_groups)
 
         status_text = (
             "📊 <b>Подробная статистика бота</b>\n\n"
@@ -238,14 +239,15 @@ async def handle_channels_command(
             if len(foreign_channels) > 5:
                 channels_text += f"... и еще {len(foreign_channels) - 5} иностранных каналов\n\n"
         
-        # Добавляем группы комментариев
-        comment_groups = [
-            {
-                "title": "Test_FlameOfStyx_bot",
-                "chat_id": "-1003094131978",
-                "type": "Группа для комментариев"
-            }
-        ]
+        # Получаем группы комментариев из базы данных
+        comment_groups = []
+        for channel in channels:
+            if hasattr(channel, 'is_comment_group') and channel.is_comment_group:
+                comment_groups.append({
+                    "title": channel.title or f"Группа {channel.telegram_id}",
+                    "chat_id": str(channel.telegram_id),
+                    "type": "Группа для комментариев"
+                })
         
         if comment_groups:
             channels_text += f"\n💬 <b>Группы комментариев ({len(comment_groups)})</b>\n"

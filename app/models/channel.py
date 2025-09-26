@@ -39,7 +39,9 @@ class Channel(Base):
     member_count = Column(Integer, nullable=True)
     is_public = Column(Boolean, default=True, nullable=False)
 
-    # Channel type - removed is_comment_group as it's not needed
+    # Channel type and linked chat
+    linked_chat_id = Column(Integer, nullable=True)
+    is_comment_group = Column(Boolean, default=False, nullable=False)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
