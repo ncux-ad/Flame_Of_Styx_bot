@@ -1019,19 +1019,48 @@ async def handle_sync_bans_command(
                 await message.answer("❌ Неверный номер чата")
             return
 
-        # Обработка по chat_id
-        chat_id = int(args[0])
-
-        result = await moderation_service.sync_bans_from_telegram(chat_id)
-
-        if result["status"] == "success":
-            await message.answer(f"✅ {result['message']}")
-        elif result["status"] == "info":
-            await message.answer(f"ℹ️ {result['message']}")
-        elif result["status"] == "error":
-            await message.answer(f"❌ {result['message']}")
+        # Обработка по chat_id или user_id
+        if len(args) == 1:
+            # Только chat_id - синхронизируем все баны в чате
+            chat_id = int(args[0])
+            result = await moderation_service.sync_bans_from_telegram(chat_id)
+            
+            if result["status"] == "success":
+                await message.answer(f"✅ {result['message']}")
+            elif result["status"] == "info":
+                await message.answer(f"ℹ️ {result['message']}")
+            elif result["status"] == "error":
+                await message.answer(f"❌ {result['message']}")
+            else:
+                await message.answer(f"⚠️ {result['message']}")
         else:
-            await message.answer(f"⚠️ {result['message']}")
+            # user_id и chat_id - синхронизируем конкретного пользователя
+            user_id = int(args[0])
+            chat_id = int(args[1])
+            
+            try:
+                # Проверяем статус пользователя в Telegram
+                member = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+                telegram_status = member.status
+                
+                # Проверяем статус в базе данных
+                is_banned_db = await moderation_service.is_user_banned(user_id)
+                
+                # Синхронизируем статус
+                if telegram_status == "kicked" and not is_banned_db:
+                    # Пользователь забанен в Telegram, но не в БД - активируем бан
+                    await moderation_service._update_user_status(user_id, is_banned=True)
+                    await message.answer(f"✅ Пользователь {user_id} синхронизирован: активирован бан в БД")
+                elif telegram_status in ["member", "administrator", "creator"] and is_banned_db:
+                    # Пользователь НЕ забанен в Telegram, но забанен в БД - деактивируем бан
+                    await moderation_service._update_user_status(user_id, is_banned=False)
+                    await moderation_service._deactivate_all_user_bans(user_id)
+                    await message.answer(f"✅ Пользователь {user_id} синхронизирован: деактивирован бан в БД")
+                else:
+                    await message.answer(f"ℹ️ Пользователь {user_id} уже синхронизирован")
+                    
+            except Exception as e:
+                await message.answer(f"❌ Ошибка проверки статуса пользователя: {e}")
 
         logger.info(f"Sync bans response sent to {message.from_user.id}")
 
@@ -1042,63 +1071,7 @@ async def handle_sync_bans_command(
         await message.answer("❌ Ошибка синхронизации банов")
 
 
-@admin_router.message(Command("sync_user_status"))
-async def handle_sync_user_status_command(
-    message: Message,
-    moderation_service: ModerationService,
-    admin_id: int,
-) -> None:
-    """Синхронизировать статус пользователя с Telegram API."""
-    try:
-        if not message.from_user:
-            return
-        logger.info(f"Sync user status command from {message.from_user.id}")
-
-        # Парсим аргументы команды
-        if not message.text:
-            await message.answer("❌ Ошибка: пустое сообщение")
-            return
-        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
-
-        if not args:
-            await message.answer(
-                "❌ Использование: /sync_user_status <user_id> [chat_id]\n"
-                "Пример: /sync_user_status 123456789 -1001234567890"
-            )
-            return
-
-        user_id = int(args[0])
-        chat_id = int(args[1]) if len(args) > 1 else message.chat.id
-
-        # Проверяем статус пользователя в Telegram
-        try:
-            member = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
-            telegram_status = member.status
-            
-            # Проверяем статус в базе данных
-            is_banned_db = await moderation_service.is_user_banned(user_id)
-            
-            # Синхронизируем статус
-            if telegram_status == "kicked" and not is_banned_db:
-                # Пользователь забанен в Telegram, но не в БД - активируем бан
-                await moderation_service._update_user_status(user_id, is_banned=True)
-                await message.answer(f"✅ Пользователь {user_id} синхронизирован: активирован бан в БД")
-            elif telegram_status in ["member", "administrator", "creator"] and is_banned_db:
-                # Пользователь НЕ забанен в Telegram, но забанен в БД - деактивируем бан
-                await moderation_service._update_user_status(user_id, is_banned=False)
-                await moderation_service._deactivate_all_user_bans(user_id)
-                await message.answer(f"✅ Пользователь {user_id} синхронизирован: деактивирован бан в БД")
-            else:
-                await message.answer(f"ℹ️ Пользователь {user_id} уже синхронизирован")
-                
-        except Exception as e:
-            await message.answer(f"❌ Ошибка проверки статуса пользователя: {e}")
-
-    except ValueError:
-        await message.answer("❌ Неверный формат ID пользователя")
-    except Exception as e:
-        logger.error(f"Error in sync_user_status command: {e}")
-        await message.answer("❌ Ошибка синхронизации статуса пользователя")
+# УДАЛЕНО: /sync_user_status - дублирует функциональность /sync_bans
 
 
 @admin_router.message(Command("help"))
