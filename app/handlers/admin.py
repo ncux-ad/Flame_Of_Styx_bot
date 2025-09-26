@@ -17,8 +17,8 @@ from app.services.help import HelpService
 from app.services.limits import LimitsService
 from app.services.moderation import ModerationService
 from app.services.profiles import ProfileService
-
-# from app.utils.security import safe_format_message, sanitize_for_logging
+from app.utils.error_handling import handle_errors, send_error_message, BotError, ValidationError
+from app.utils.security import safe_format_message, sanitize_for_logging
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ admin_router.message.filter(IsAdminOrSilentFilter())
 
 
 @admin_router.message(Command("start"))
+@handle_errors(user_message="❌ Ошибка выполнения команды /start")
 async def handle_start_command(
     message: Message,
     moderation_service: ModerationService,
@@ -39,29 +40,26 @@ async def handle_start_command(
     admin_id: int,
 ) -> None:
     """Главное меню администратора."""
-    try:
-        if not message.from_user:
-            return
-        logger.info(f"Admin start command from {message.from_user.id}")
+    if not message.from_user:
+        raise ValidationError("Отсутствует информация о пользователе")
+    
+    logger.info(f"Admin start command from {message.from_user.id}")
 
-        welcome_text = (
-            "🤖 <b>AntiSpam Bot - Упрощенная версия</b>\n\n"
-            "Доступные команды:\n"
-            "/status - статистика бота\n"
-            "/channels - управление каналами\n"
-            "/bots - управление ботами\n"
-            "/suspicious - подозрительные профили\n"
-            "/unban - разблокировать пользователя\n"
-            "/banned - список заблокированных\n"
-            "/sync_bans - синхронизировать баны с Telegram\n"
-            "/help - помощь"
-        )
+    welcome_text = (
+        "🤖 <b>AntiSpam Bot - Упрощенная версия</b>\n\n"
+        "Доступные команды:\n"
+        "/status - статистика бота\n"
+        "/channels - управление каналами\n"
+        "/bots - управление ботами\n"
+        "/suspicious - подозрительные профили\n"
+        "/unban - разблокировать пользователя\n"
+        "/banned - список заблокированных\n"
+        "/sync_bans - синхронизировать баны с Telegram\n"
+        "/help - помощь"
+    )
 
-        await message.answer(welcome_text)
-        logger.info(f"Start command response sent to {message.from_user.id}")
-
-    except Exception as e:
-        logger.error(f"Error in start command: {e}")
+    await message.answer(welcome_text)
+    logger.info(f"Start command response sent to {message.from_user.id}")
 
 
 @admin_router.message(Command("status"))
