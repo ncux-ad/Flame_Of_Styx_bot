@@ -265,13 +265,15 @@ class ValidationMiddleware(BaseMiddleware):
             event: Telegram событие
             data: Данные события
         """
+        # НЕ ИЗМЕНЯЕМ ЗАМОРОЖЕННЫЕ ОБЪЕКТЫ PYDANTIC
+        # Вместо этого сохраняем санитизированные данные в data
         if isinstance(event, Message) and event.text:
-            # Санитизируем текст сообщения
-            event.text = sanitize_user_input(event.text)
+            # Сохраняем санитизированный текст в data
+            data["sanitized_text"] = sanitize_user_input(event.text)
         
         if isinstance(event, CallbackQuery) and event.data:
-            # Санитизируем callback data
-            event.data = sanitize_user_input(event.data)
+            # Сохраняем санитизированные данные в data
+            data["sanitized_data"] = sanitize_user_input(event.data)
 
     async def _log_event(
         self, 
