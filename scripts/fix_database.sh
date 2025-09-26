@@ -61,8 +61,16 @@ source venv/bin/activate
 
 # Проверяем alembic
 if ! command -v alembic &> /dev/null; then
-    error "Alembic не найден в виртуальном окружении"
-    exit 1
+    warning "Alembic не найден в виртуальном окружении"
+    log "📦 Установка alembic..."
+    pip install alembic
+    
+    if [[ $? -eq 0 ]]; then
+        success "Alembic установлен успешно!"
+    else
+        error "Ошибка при установке alembic"
+        exit 1
+    fi
 fi
 
 log "📊 Применение миграции базы данных..."
