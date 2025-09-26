@@ -17,6 +17,7 @@ from app.middlewares.dependency_injection import DependencyInjectionMiddleware
 from app.middlewares.logging import LoggingMiddleware
 from app.middlewares.ratelimit import RateLimitMiddleware
 from app.middlewares.suspicious_profile import SuspiciousProfileMiddleware
+from app.middlewares.validation import ValidationMiddleware, CommandValidationMiddleware
 from app.services.config_watcher import LimitsHotReload
 from app.services.limits import LimitsService
 
@@ -49,7 +50,9 @@ async def main():
         dp = Dispatcher()
 
         # 5. Register middlewares (order matters!)
-        # Logging -> RateLimit -> DI -> SuspiciousProfile
+        # Validation -> Logging -> RateLimit -> DI -> SuspiciousProfile
+        dp.message.middleware(ValidationMiddleware())
+        dp.message.middleware(CommandValidationMiddleware())
         dp.message.middleware(LoggingMiddleware())
         dp.message.middleware(RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60))
         dp.message.middleware(DependencyInjectionMiddleware())
@@ -81,6 +84,7 @@ async def main():
             dp.edited_message,
             dp.edited_channel_post,
         ]:
+            update_type.middleware(ValidationMiddleware())
             update_type.middleware(LoggingMiddleware())
             update_type.middleware(RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60))
             update_type.middleware(DependencyInjectionMiddleware())
