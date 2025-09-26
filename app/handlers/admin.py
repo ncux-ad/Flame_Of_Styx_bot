@@ -902,6 +902,43 @@ async def handle_force_unban_command(
                 await message.answer(f"❌ Неверный формат ID пользователя: {user_identifier}")
                 return
 
+        # Проверяем, что чат существует и бот может в нем работать
+        try:
+            chat = await moderation_service.bot.get_chat(chat_id)
+            logger.info(f"Chat found: {chat.title} (ID: {chat_id})")
+            
+            # Проверяем, является ли бот администратором
+            try:
+                bot_member = await moderation_service.bot.get_chat_member(chat_id, moderation_service.bot.id)
+                if bot_member.status not in ["administrator", "creator"]:
+                    await message.answer(
+                        f"❌ <b>Бот не является администратором в чате:</b>\n\n"
+                        f"📝 Название: {chat.title}\n"
+                        f"🆔 ID: <code>{chat_id}</code>\n"
+                        f"🤖 Статус бота: {bot_member.status}\n\n"
+                        f"💡 <b>Для разбана необходимо:</b>\n"
+                        f"• Добавить бота как администратора в чат\n"
+                        f"• Или использовать чат где бот уже админ\n\n"
+                        f"🔍 <b>Используйте команду:</b> <code>/my_chats</code>"
+                    )
+                    return
+            except Exception as e:
+                logger.error(f"Error checking bot status: {e}")
+                await message.answer(
+                    f"❌ <b>Не удалось проверить статус бота в чате:</b>\n\n"
+                    f"📝 Название: {chat.title}\n"
+                    f"🆔 ID: <code>{chat_id}</code>\n"
+                    f"❌ Ошибка: {e}\n\n"
+                    f"💡 <b>Возможно бот не является администратором</b>\n"
+                    f"🔍 <b>Используйте команду:</b> <code>/my_chats</code>"
+                )
+                return
+                
+        except Exception as e:
+            logger.error(f"Chat not found: {e}")
+            await message.answer(f"❌ Чат не найден: {e}")
+            return
+
         # Принудительно разблокируем пользователя
         logger.info(f"Force unbanning user {user_id} in chat {chat_id}")
         
