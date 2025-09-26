@@ -1269,32 +1269,41 @@ async def handle_sync_bans_command(
         args = message.text.split()[1:] if len(message.text.split()) > 1 else []
 
         if not args:
-            # Показываем последние чаты с банами для выбора
-            ban_history = await moderation_service.get_ban_history(limit=10)
-
-            if not ban_history:
-                await message.answer("❌ Нет записей в истории банов")
+            # Показываем все каналы где бот может работать
+            channels = await channel_service.get_all_channels()
+            
+            if not channels:
+                await message.answer("❌ Нет каналов в базе данных")
                 return
 
-            # Получаем уникальные chat_id
-            chat_ids = list(set([log.chat_id for log in ban_history if log.chat_id]))
+            # Фильтруем только каналы где бот является администратором
+            native_channels = []
+            for channel in channels:
+                try:
+                    bot_member = await channel_service.bot.get_chat_member(channel.telegram_id, channel_service.bot.id)
+                    if bot_member.status in ["administrator", "creator"]:
+                        native_channels.append(channel)
+                except Exception:
+                    # Если не можем проверить статус, пропускаем
+                    continue
 
-            if not chat_ids:
-                await message.answer("❌ Нет чатов с банами")
+            if not native_channels:
+                await message.answer("❌ Бот не является администратором ни в одном канале")
                 return
 
+            # Получаем историю банов для подсчета активных банов
+            ban_history = await moderation_service.get_ban_history(limit=50)
+            
             text = "🔄 <b>Выберите чат для синхронизации:</b>\n\n"
 
-            for i, chat_id in enumerate(chat_ids[:5], 1):
-                # Получаем информацию о чате
-                chat_info = await channel_service.get_channel_info(chat_id)
-                chat_display = f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
-
+            for i, channel in enumerate(native_channels[:5], 1):
                 # Считаем активные баны в этом чате
-                active_bans = len([log for log in ban_history if log.chat_id == chat_id and log.is_active])
+                active_bans = len([log for log in ban_history if log.chat_id == channel.telegram_id and log.is_active])
+                
+                chat_display = f"@{channel.username}" if channel.username else channel.title
 
                 text += f"{i}. <b>{chat_display}</b>\n"
-                text += f"   ID: <code>{chat_id}</code>\n"
+                text += f"   ID: <code>{channel.telegram_id}</code>\n"
                 text += f"   Активных банов: {active_bans}\n\n"
 
             text += "💡 <b>Использование:</b>\n"
@@ -1307,12 +1316,21 @@ async def handle_sync_bans_command(
 
         # Обработка выбора по номеру
         if args[0].isdigit() and 1 <= int(args[0]) <= 5:
-            ban_history = await moderation_service.get_ban_history(limit=10)
-            chat_ids = list(set([log.chat_id for log in ban_history if log.chat_id]))
+            # Получаем все каналы где бот админ
+            channels = await channel_service.get_all_channels()
+            native_channels = []
+            for channel in channels:
+                try:
+                    bot_member = await channel_service.bot.get_chat_member(channel.telegram_id, channel_service.bot.id)
+                    if bot_member.status in ["administrator", "creator"]:
+                        native_channels.append(channel)
+                except Exception:
+                    continue
+            
             chat_index = int(args[0]) - 1
 
-            if 0 <= chat_index < len(chat_ids):
-                chat_id = chat_ids[chat_index]
+            if 0 <= chat_index < len(native_channels):
+                chat_id = native_channels[chat_index].telegram_id
 
                 result = await moderation_service.sync_bans_from_telegram(chat_id)
 
