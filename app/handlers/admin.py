@@ -544,12 +544,12 @@ async def handle_settings_command(message: Message) -> None:
             "• DI сервисы загружены\n"
             "• База данных подключена\n\n"
             "ℹ️ Для изменения настроек используйте команды:\n"
-            "• /setlimit threshold <значение> - порог подозрительности\n"
-            "• /setlimit media_check <0|1> - проверка медиа без подписи\n"
-            "• /setlimit allow_gifs <0|1> - разрешить GIF без подписи\n"
-            "• /setlimit allow_photos <0|1> - разрешить фото без подписи\n"
-            "• /setlimit allow_videos <0|1> - разрешить видео без подписи\n"
-            "• /setlimit doc_size <байты> - размер документа для подозрения"
+            "• /setlimit threshold &lt;значение&gt; - порог подозрительности\n"
+            "• /setlimit media_check &lt;0|1&gt; - проверка медиа без подписи\n"
+            "• /setlimit allow_gifs &lt;0|1&gt; - разрешить GIF без подписи\n"
+            "• /setlimit allow_photos &lt;0|1&gt; - разрешить фото без подписи\n"
+            "• /setlimit allow_videos &lt;0|1&gt; - разрешить видео без подписи\n"
+            "• /setlimit doc_size &lt;байты&gt; - размер документа для подозрения"
         )
 
         await message.answer(settings_text)
