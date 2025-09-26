@@ -1,7 +1,7 @@
 from typing import List, Optional
 import logging
 
-from pydantic import validator, Field
+from pydantic import field_validator, Field
 from pydantic_settings import BaseSettings
 
 from app.constants import SUSPICION_THRESHOLD, DEFAULT_RATE_LIMIT, RATE_LIMIT_INTERVAL
@@ -31,7 +31,8 @@ class Settings(BaseSettings):
     allow_videos_without_caption: bool = True # Разрешать видео без подписи
     max_document_size_suspicious: int = 50000 # Максимальный размер документа для подозрения (байты)
 
-    @validator("db_path")
+    @field_validator("db_path")
+    @classmethod
     def validate_db_path(cls, v: str) -> str:
         """Validate database path."""
         if not v:
@@ -43,7 +44,8 @@ class Settings(BaseSettings):
 
         return v
 
-    @validator("bot_token")
+    @field_validator("bot_token")
+    @classmethod
     def validate_token(cls, v: str) -> str:
         """Валидация токена бота с использованием утилит безопасности."""
         if not v:
@@ -55,7 +57,8 @@ class Settings(BaseSettings):
         logger.info("Токен бота успешно валидирован")
         return v
 
-    @validator("admin_ids")
+    @field_validator("admin_ids")
+    @classmethod
     def validate_admin_ids(cls, v: str) -> str:
         """Валидация ID администраторов с использованием утилит безопасности."""
         if not v:

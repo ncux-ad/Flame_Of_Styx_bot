@@ -186,7 +186,7 @@ class TestSettingsValidation:
     
     def test_settings_with_invalid_admin_ids(self):
         """Тест настроек с невалидными ID администраторов"""
-        with pytest.raises(ValueError, match="ADMIN_IDS должен содержать только числа"):
+        with pytest.raises(ValueError, match="Некорректный ID администратора"):
             Settings(
                 bot_token="123456789:ABCdefGHIjklMNOpqrsTUVwxyz123456789",
                 admin_ids="123abc,456def",

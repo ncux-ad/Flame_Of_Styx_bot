@@ -130,10 +130,14 @@ MAX_LOG_MESSAGE_LENGTH = 1000
 
 # Паттерны для фильтрации чувствительных данных
 SENSITIVE_PATTERNS = [
-    re.compile(r"token[=:]\s*[a-zA-Z0-9_-]+", re.IGNORECASE),
-    re.compile(r"password[=:]\s*[^\s]+", re.IGNORECASE),
-    re.compile(r"secret[=:]\s*[^\s]+", re.IGNORECASE),
-    re.compile(r"key[=:]\s*[a-zA-Z0-9_-]+", re.IGNORECASE),
+    # Сначала более специфичные паттерны
+    re.compile(r"password\s+is\s+[^\s]+", re.IGNORECASE),
+    re.compile(r"secret\s+key[=:\s]+[^\s]+", re.IGNORECASE),
+    # Затем общие паттерны
+    re.compile(r"token[=:\s]+[a-zA-Z0-9_-]+", re.IGNORECASE),
+    re.compile(r"password[=:\s]+[^\s]+", re.IGNORECASE),
+    re.compile(r"secret[=:\s]+[^\s]+", re.IGNORECASE),
+    re.compile(r"key[=:\s]+[a-zA-Z0-9_-]+", re.IGNORECASE),
 ]
 
 # =============================================================================
