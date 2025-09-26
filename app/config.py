@@ -1,7 +1,13 @@
-from typing import List
+from typing import List, Optional
+import logging
 
-from pydantic import validator
+from pydantic import validator, Field
 from pydantic_settings import BaseSettings
+
+from app.constants import SUSPICION_THRESHOLD, DEFAULT_RATE_LIMIT, RATE_LIMIT_INTERVAL
+from app.utils.security import validate_bot_token, validate_admin_id
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -13,10 +19,10 @@ class Settings(BaseSettings):
     native_channel_ids: str = ""
 
     # Лимиты системы
-    max_messages_per_minute: int = 10
-    max_links_per_message: int = 3
-    ban_duration_hours: int = 24
-    suspicion_threshold: float = 0.4
+    max_messages_per_minute: int = Field(default=10, ge=1, le=100, description="Максимум сообщений в минуту")
+    max_links_per_message: int = Field(default=3, ge=1, le=10, description="Максимум ссылок в сообщении")
+    ban_duration_hours: int = Field(default=24, ge=1, le=168, description="Длительность бана в часах")
+    suspicion_threshold: float = Field(default=SUSPICION_THRESHOLD, ge=0.0, le=1.0, description="Порог подозрительности")
     
     # Настройки антиспама
     check_media_without_caption: bool = True  # Проверять медиа без подписи
@@ -39,31 +45,33 @@ class Settings(BaseSettings):
 
     @validator("bot_token")
     def validate_token(cls, v: str) -> str:
-        if not v or len(v) < 20:
-            raise ValueError("BOT_TOKEN некорректный или отсутствует")
-        # Проверяем формат токена (должен быть в формате 123456789:ABC...)
-        if ":" not in v or len(v.split(":")[0]) < 8:
-            raise ValueError("BOT_TOKEN должен быть в формате 'bot_id:token'")
+        """Валидация токена бота с использованием утилит безопасности."""
+        if not v:
+            raise ValueError("BOT_TOKEN не может быть пустым")
+        
+        if not validate_bot_token(v):
+            raise ValueError("BOT_TOKEN некорректный формат")
+        
+        logger.info("Токен бота успешно валидирован")
         return v
 
     @validator("admin_ids")
     def validate_admin_ids(cls, v: str) -> str:
-        """Validate admin_ids format."""
+        """Валидация ID администраторов с использованием утилит безопасности."""
         if not v:
             raise ValueError("ADMIN_IDS не может быть пустым")
 
         if isinstance(v, str):
-            # Проверяем, что все ID являются числами
+            # Разбиваем по запятым и убираем пробелы
             ids = [x.strip() for x in v.split(",") if x.strip()]
             if not ids:
                 raise ValueError("ADMIN_IDS должен содержать хотя бы один ID")
 
             for admin_id in ids:
-                if not admin_id.isdigit():
-                    raise ValueError(f"ADMIN_ID '{admin_id}' должен быть числом")
-                if len(admin_id) < 6:  # Telegram ID обычно длиннее 6 цифр
-                    raise ValueError(f"ADMIN_ID '{admin_id}' слишком короткий")
+                if not validate_admin_id(admin_id):
+                    raise ValueError(f"Некорректный ID администратора: {admin_id}")
 
+        logger.info(f"Валидировано {len(ids)} ID администраторов")
         return v
 
     @property
