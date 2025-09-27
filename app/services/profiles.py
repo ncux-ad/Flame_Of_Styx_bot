@@ -226,7 +226,9 @@ class ProfileService:
             if analysis["has_bait_channel"]:
                 score += 0.3  # Снижено с 0.4
 
-            if analysis["post_count"] == 0:
+            # Безопасная проверка post_count
+            post_count = analysis.get("post_count", 0)
+            if isinstance(post_count, (int, float)) and post_count == 0:
                 score += 0.1  # Снижено с 0.2
 
         # Pattern analysis - balanced weights for better accuracy
