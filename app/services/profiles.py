@@ -290,7 +290,7 @@ class ProfileService:
                     message += f"<b>Username канала:</b> @{profile.linked_chat_username}\n"
 
             if profile.detected_patterns:
-                patterns = profile.detected_patterns.split(",") if profile.detected_patterns else []
+                patterns = str(profile.detected_patterns).split(",") if profile.detected_patterns else []
                 pattern_names = {
                     "short_first_name": "Короткое имя",
                     "short_last_name": "Короткая фамилия",

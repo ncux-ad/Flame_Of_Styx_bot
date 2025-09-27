@@ -1123,7 +1123,7 @@ async def handle_suspicious_analyze_command(
             text += f"<b>Счет подозрительности:</b> {profile.suspicion_score:.2f}\n"
             
             # Парсим паттерны из строки
-            patterns = profile.detected_patterns.split(',') if profile.detected_patterns else []
+            patterns = str(profile.detected_patterns).split(',') if profile.detected_patterns else []
             text += f"<b>Обнаружено паттернов:</b> {len(patterns)}\n\n"
             
             if patterns:
