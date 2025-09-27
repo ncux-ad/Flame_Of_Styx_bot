@@ -278,16 +278,16 @@ class ProfileService:
             from app.keyboards.inline import get_suspicious_profile_keyboard
 
             message = "⚠️ <b>Подозрительный профиль обнаружен</b>\n\n"
-            message += f"<b>Пользователь:</b> {user.first_name or 'Unknown'}\n"
+            message += "<b>Пользователь:</b> " + str(user.first_name or 'Unknown') + "\n"
             if user.username:
-                message += f"<b>Username:</b> @{user.username}\n"
-            message += f"<b>ID:</b> {user.id}\n"
-            message += f"<b>Счет подозрительности:</b> {profile.suspicion_score:.2f}\n"
+                message += "<b>Username:</b> @" + str(user.username) + "\n"
+            message += "<b>ID:</b> " + str(user.id) + "\n"
+            message += "<b>Счет подозрительности:</b> " + str(profile.suspicion_score) + "\n"
 
             if profile.linked_chat_title:
-                message += f"<b>Связанный канал:</b> {profile.linked_chat_title}\n"
+                message += "<b>Связанный канал:</b> " + str(profile.linked_chat_title) + "\n"
                 if profile.linked_chat_username:
-                    message += f"<b>Username канала:</b> @{profile.linked_chat_username}\n"
+                    message += "<b>Username канала:</b> @" + str(profile.linked_chat_username) + "\n"
 
             if profile.detected_patterns:
                 patterns = str(profile.detected_patterns).split(",") if profile.detected_patterns else []
@@ -301,7 +301,7 @@ class ProfileService:
                     "bot_like_first_name": "Bot-подобное имя",
                 }
                 pattern_text = ", ".join([pattern_names.get(p, p) for p in patterns])
-                message += f"<b>Обнаруженные паттерны:</b> {pattern_text}\n"
+                message += "<b>Обнаруженные паттерны:</b> " + str(pattern_text) + "\n"
 
             # Создаем клавиатуру для модерации
             keyboard = get_suspicious_profile_keyboard(user.id)
