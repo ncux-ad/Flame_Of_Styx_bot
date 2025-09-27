@@ -407,13 +407,13 @@ async def handle_reset_suspicious_command(message: Message, profile_service: Pro
         result = await profile_service.reset_suspicious_profiles()
 
         if result > 0:
-            await message.answer(f"✅ Сброшено статусов подозрительных профилей: {result}")
+            await message.answer(f"✅ Сброшено статусов подозрительных профилей: {sanitize_for_logging(str(result))}")
         else:
             await message.answer("ℹ️ Нет подозрительных профилей для сброса")
 
     except Exception as e:
         logger.error(f"Error resetting suspicious profiles: {e}")
-        await message.answer(f"❌ Ошибка при сбросе статусов: {e}")
+        await message.answer(f"❌ Ошибка при сбросе статусов: {sanitize_for_logging(str(e))}")
 
 
 @admin_router.message(Command("recalculate_suspicious"))
@@ -721,7 +721,7 @@ async def handle_unban_command(
         if not message.text:
             await message.answer("❌ Ошибка: пустое сообщение")
             return
-        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+        args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
 
         if not args:
             # Показываем последних заблокированных для выбора
@@ -863,7 +863,7 @@ async def handle_force_unban_command(
         if not message.text:
             await message.answer("❌ Ошибка: пустое сообщение")
             return
-        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+        args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
 
         if len(args) < 2:
             await message.answer(
@@ -1081,7 +1081,7 @@ async def handle_suspicious_analyze_command(
         if not message.text:
             await message.answer("❌ Ошибка: пустое сообщение")
             return
-        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+        args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
 
         if len(args) < 1:
             await message.answer(
@@ -1178,7 +1178,7 @@ async def handle_suspicious_remove_command(
         if not message.text:
             await message.answer("❌ Ошибка: пустое сообщение")
             return
-        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+        args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
 
         if len(args) < 1:
             await message.answer(
@@ -1230,7 +1230,7 @@ async def handle_find_chat_command(
         if not message.text:
             await message.answer("❌ Ошибка: пустое сообщение")
             return
-        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+        args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
 
         if len(args) < 1:
             await message.answer(
@@ -1491,7 +1491,7 @@ async def handle_sync_bans_command(
         if not message.text:
             await message.answer("❌ Ошибка: пустое сообщение")
             return
-        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+        args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
 
         if not args:
             # Показываем все каналы где бот может работать
