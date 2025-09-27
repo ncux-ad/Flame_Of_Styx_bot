@@ -915,25 +915,40 @@ async def handle_suspicious_analyze_command(
         )
         
         # Анализируем профиль
+        logger.info(f"Starting profile analysis for user {user_id}")
         profile = await profile_service.analyze_user_profile(user, admin_id)
+        logger.info(f"Profile analysis completed, profile: {profile}")
         
         # Формируем ответ
+        logger.info("Starting text formatting")
         text = f"🔍 <b>Анализ профиля пользователя</b>\n\n"
+        logger.info("Added header")
+        
         text += f"<b>Пользователь:</b> {str(user_info['first_name'] or '')} {str(user_info['last_name'] or '')}\n"
+        logger.info("Added user name")
+        
         text += f"<b>ID:</b> <code>{user_id}</code>\n"
+        logger.info("Added user ID")
+        
         text += f"<b>Username:</b> @{str(user_info['username'] or 'Нет')}\n"
+        logger.info("Added username")
         
         if profile:
+            logger.info("Profile exists, processing suspicious user")
             # Пользователь подозрительный
             text += f"<b>Счет подозрительности:</b> {profile.suspicion_score:.2f}\n"
+            logger.info("Added suspicion score")
             
             # Безопасно парсим паттерны
             patterns = []
             if profile.detected_patterns:
                 try:
+                    logger.info(f"Processing patterns: {profile.detected_patterns}")
                     patterns = str(profile.detected_patterns).split(',')
                     patterns = [p.strip() for p in patterns if p.strip()]
-                except Exception:
+                    logger.info(f"Parsed patterns: {patterns}")
+                except Exception as e:
+                    logger.error(f"Error parsing patterns: {e}")
                     patterns = []
             
             text += f"<b>Обнаружено паттернов:</b> {len(patterns)}\n\n"
@@ -979,11 +994,19 @@ async def handle_suspicious_analyze_command(
             
             text += f"<b>Дата анализа:</b> {date_str}"
         else:
+            logger.info("No profile, processing non-suspicious user")
             # Пользователь не подозрительный
             text += f"<b>Счет подозрительности:</b> 0.00\n"
+            logger.info("Added suspicion score 0.00")
+            
             text += f"<b>Обнаружено паттернов:</b> 0\n\n"
+            logger.info("Added patterns count 0")
+            
             text += f"<b>Статус:</b> 🟢 Низкий риск\n"
+            logger.info("Added status")
+            
             text += f"<b>Результат:</b> Пользователь не является подозрительным"
+            logger.info("Added result")
         
         await message.answer(text)
         logger.info(f"Profile analysis completed for user {sanitize_for_logging(str(user_id))}")
