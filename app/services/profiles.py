@@ -186,31 +186,36 @@ class ProfileService:
         """Detect suspicious patterns in user profile."""
         patterns = []
 
+        # Приводим все поля к строке для безопасной работы
+        first_name = str(user.first_name) if user.first_name else None
+        last_name = str(user.last_name) if user.last_name else None
+        username = str(user.username) if user.username else None
+
         # Check for common GPT-bot patterns
-        if user.first_name and len(user.first_name) < 3:
+        if first_name and len(first_name) < 3:
             patterns.append("short_first_name")
 
-        if user.last_name and len(user.last_name) < 3:
+        if last_name and len(last_name) < 3:
             patterns.append("short_last_name")
 
         # More sensitive pattern: no username (common for bots)
-        if not user.username:
+        if not username:
             patterns.append("no_username")
 
         # More sensitive pattern: no last name (common for bots)
-        if not user.last_name:
+        if not last_name:
             patterns.append("no_last_name")
 
         # Check for suspicious username patterns
-        if user.username:
-            username = user.username.lower()
-            if any(pattern in username for pattern in ["bot", "gpt", "ai", "assistant"]):
+        if username:
+            username_lower = username.lower()
+            if any(pattern in username_lower for pattern in ["bot", "gpt", "ai", "assistant"]):
                 patterns.append("bot_like_username")
 
         # Check for suspicious first name patterns
-        if user.first_name:
-            first_name = user.first_name.lower()
-            if any(pattern in first_name for pattern in ["bot", "gpt", "ai", "test", "user"]):
+        if first_name:
+            first_name_lower = first_name.lower()
+            if any(pattern in first_name_lower for pattern in ["bot", "gpt", "ai", "test", "user"]):
                 patterns.append("bot_like_first_name")
 
         return patterns
