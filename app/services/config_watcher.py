@@ -6,6 +6,7 @@
 import asyncio
 import json
 import logging
+import subprocess
 # import os  # Не используется
 # import time  # Не используется
 from pathlib import Path
@@ -207,7 +208,26 @@ class LimitsHotReload:
                 else:
                     message += f"• <b>{key}:</b> {new_value}\n"
 
-            message += "\n✅ Изменения вступили в силу немедленно"
+            message += "\n✅ Изменения вступили в силу немедленно\n\n"
+            
+            # Добавляем информацию о коммите
+            try:
+                result = subprocess.run(
+                    ["git", "rev-parse", "--short", "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    cwd="."
+                )
+                if result.returncode == 0:
+                    commit_hash = result.stdout.strip()
+                    message += f"🤖 <b>Бот запущен</b>\n"
+                    message += f"📝 <b>ID текущего коммита:</b> <code>{commit_hash}</code>"
+                else:
+                    message += f"🤖 <b>Бот запущен</b>\n"
+                    message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>"
+            except Exception:
+                message += f"🤖 <b>Бот запущен</b>\n"
+                message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>"
 
             # Отправляем уведомление всем администраторам
             for admin_id in self.admin_ids:
