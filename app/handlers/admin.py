@@ -41,7 +41,7 @@ async def handle_start_command(
     if not message.from_user:
         raise ValidationError("Отсутствует информация о пользователе")
 
-    logger.info(f"Admin start command from {message.from_user.id}")
+    logger.info(f"Admin start command from {sanitize_for_logging(str(message.from_user.id))}")
 
     welcome_text = (
         "🤖 <b>AntiSpam Bot - Упрощенная версия</b>\n\n"
@@ -58,7 +58,7 @@ async def handle_start_command(
     )
 
     await message.answer(welcome_text)
-    logger.info(f"Start command response sent to {message.from_user.id}")
+    logger.info(f"Start command response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
 
 @admin_router.message(Command("status"))
@@ -73,7 +73,7 @@ async def handle_status_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Status command from {message.from_user.id}")
+        logger.info(f"Status command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Получаем статистику
         # total_bots = await bot_service.get_total_bots_count()
@@ -166,10 +166,10 @@ async def handle_status_command(
         status_text += f"👑 <b>Администратор:</b> <code>{admin_id}</code>"
 
         await message.answer(status_text)
-        logger.info(f"Status response sent to {message.from_user.id}")
+        logger.info(f"Status response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in status command: {e}")
+        logger.error(f"Error in status command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка получения статистики")
 
 
@@ -183,7 +183,7 @@ async def handle_channels_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Channels command from {message.from_user.id}")
+        logger.info(f"Channels command from {sanitize_for_logging(str(message.from_user.id))}")
 
         channels = await channel_service.get_all_channels()
 
@@ -270,10 +270,10 @@ async def handle_channels_command(
         channels_text += f"• Всего чатов: {len(channels) + len(comment_groups)}"
 
         await message.answer(channels_text)
-        logger.info(f"Channels response sent to {message.from_user.id}")
+        logger.info(f"Channels response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in channels command: {e}")
+        logger.error(f"Error in channels command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка получения списка каналов")
 
 
@@ -287,7 +287,7 @@ async def handle_bots_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Bots command from {message.from_user.id}")
+        logger.info(f"Bots command from {sanitize_for_logging(str(message.from_user.id))}")
 
         bots = await bot_service.get_all_bots()
 
@@ -307,210 +307,13 @@ async def handle_bots_command(
             bots_text += f"\n... и еще {len(bots) - 10} ботов"
 
         await message.answer(bots_text)
-        logger.info(f"Bots response sent to {message.from_user.id}")
+        logger.info(f"Bots response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in bots command: {e}")
+        logger.error(f"Error in bots command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка получения списка ботов")
 
 
-@admin_router.message(Command("suspicious"))
-async def handle_suspicious_command(
-    message: Message,
-    profile_service: ProfileService,
-    admin_id: int,
-) -> None:
-    """Подозрительные профили."""
-    try:
-        if not message.from_user:
-            return
-        logger.info(f"Suspicious command from {message.from_user.id}")
-
-        profiles = await profile_service.get_suspicious_profiles()
-
-        if not profiles:
-            await message.answer("👤 Подозрительные профили не найдены")
-            return
-
-        profiles_text = "👤 <b>Подозрительные профили</b>\n\n"
-
-        for i, profile in enumerate(profiles[:10], 1):  # Показываем первые 10
-            # Получаем информацию о пользователе
-            user_id_value = profile.user_id
-            user_id = int(user_id_value)
-            user_info = await profile_service.get_user_info(user_id)
-
-            profiles_text += f"<b>{i}. Пользователь {user_id}</b>\n"
-            profiles_text += f"• <b>Имя:</b> {user_info.get('first_name', 'Неизвестно')}\n"
-            if user_info.get("username"):
-                profiles_text += f"• <b>Username:</b> @{user_info['username']}\n"
-
-            suspicion_score_value = profile.suspicion_score
-            profiles_text += f"• <b>Счет подозрительности:</b> {float(suspicion_score_value):.2f}\n"
-
-            # Проверяем linked_chat_title
-            linked_chat_title_value = profile.linked_chat_title
-            linked_chat_title = str(linked_chat_title_value) if linked_chat_title_value is not None else None
-            if linked_chat_title and linked_chat_title.strip():
-                profiles_text += f"• <b>Связанный канал:</b> {linked_chat_title}\n"
-                # Проверяем linked_chat_username
-                linked_chat_username_value = profile.linked_chat_username
-                linked_chat_username = str(linked_chat_username_value) if linked_chat_username_value is not None else None
-                if linked_chat_username and linked_chat_username.strip():
-                    profiles_text += f"• <b>Username канала:</b> @{linked_chat_username}\n"
-
-            # Проверяем detected_patterns
-            detected_patterns_value = profile.detected_patterns
-            detected_patterns = str(detected_patterns_value) if detected_patterns_value is not None else None
-            if detected_patterns and detected_patterns.strip():
-                patterns = detected_patterns.split(",") if detected_patterns else []
-                pattern_names = {
-                    "short_first_name": "Короткое имя",
-                    "short_last_name": "Короткая фамилия",
-                    "no_identifying_info": "Нет идентификаторов",
-                    "bot_like_username": "Bot-подобный username",
-                    "no_username": "Нет username",
-                    "no_last_name": "Нет фамилии",
-                    "bot_like_first_name": "Bot-подобное имя",
-                }
-                # Фильтруем None значения из patterns
-                valid_patterns = [p for p in patterns if p is not None]
-                pattern_text = ", ".join([pattern_names.get(p, p) for p in valid_patterns])
-                profiles_text += f"• <b>Паттерны:</b> {pattern_text}\n"
-
-            is_reviewed = bool(profile.is_reviewed)
-            if is_reviewed:
-                is_confirmed = bool(profile.is_confirmed_suspicious)
-                status = "✅ Подтвержден" if is_confirmed else "❌ Ложное срабатывание"
-                profiles_text += f"• <b>Статус:</b> {status}\n"
-            else:
-                profiles_text += "• <b>Статус:</b> ⏳ Ожидает проверки\n"
-
-            profiles_text += f"• <b>Дата:</b> {profile.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
-
-        if len(profiles) > 10:
-            profiles_text += f"<i>... и еще {len(profiles) - 10} профилей</i>"
-
-        await message.answer(profiles_text)
-        logger.info(f"Suspicious response sent to {message.from_user.id}")
-
-    except Exception as e:
-        logger.error(f"Error in suspicious command: {e}")
-        await message.answer("❌ Ошибка получения подозрительных профилей")
-
-
-@admin_router.message(Command("reset_suspicious"))
-async def handle_reset_suspicious_command(message: Message, profile_service: ProfileService):
-    """Reset suspicious profile status for testing."""
-    try:
-        # Reset all suspicious profiles to unreviewed status
-        result = await profile_service.reset_suspicious_profiles()
-
-        if result > 0:
-            await message.answer(f"✅ Сброшено статусов подозрительных профилей: {sanitize_for_logging(str(result))}")
-        else:
-            await message.answer("ℹ️ Нет подозрительных профилей для сброса")
-
-    except Exception as e:
-        logger.error(f"Error resetting suspicious profiles: {e}")
-        await message.answer(f"❌ Ошибка при сбросе статусов: {sanitize_for_logging(str(e))}")
-
-
-@admin_router.message(Command("recalculate_suspicious"))
-async def handle_recalculate_suspicious_command(message: Message, profile_service: ProfileService):
-    """Recalculate suspicious profiles with new weights."""
-    try:
-        # Get all suspicious profiles
-        profiles = await profile_service.get_suspicious_profiles(limit=100)
-
-        if not profiles:
-            await message.answer("ℹ️ Нет подозрительных профилей для пересчета")
-            return
-
-        updated_count = 0
-        for profile in profiles:
-            # Get user info and recalculate
-            user_id_value = profile.user_id
-            user_id = int(user_id_value)
-            user_info = await profile_service.get_user_info(user_id)
-            if user_info:
-                # Create a mock User object for recalculation
-                from aiogram.types import User
-
-                mock_user = User(
-                    id=user_id,
-                    is_bot=False,
-                    first_name=user_info.get("first_name", ""),
-                    last_name=user_info.get("last_name"),
-                    username=user_info.get("username"),
-                    language_code="ru",
-                )
-
-                # Recalculate analysis
-                analysis_result = await profile_service._perform_profile_analysis(mock_user)
-
-                # Update profile with new score
-                current_score_value = profile.suspicion_score
-                if analysis_result["suspicion_score"] != float(current_score_value):
-                    profile.suspicion_score = analysis_result["suspicion_score"]
-                    # Обновляем detected_patterns через SQLAlchemy
-                    profile.detected_patterns = ",".join(analysis_result["patterns"])
-                    # is_suspicious не является полем модели, убираем эту строку
-                    updated_count += 1
-
-        if updated_count > 0:
-            await profile_service.db.commit()
-            await message.answer(f"✅ Пересчитано профилей: {updated_count}")
-        else:
-            await message.answer("ℹ️ Нет изменений в профилях")
-
-    except Exception as e:
-        logger.error(f"Error recalculating suspicious profiles: {e}")
-        await message.answer(f"❌ Ошибка при пересчете: {e}")
-
-
-@admin_router.message(Command("cleanup_duplicates"))
-async def handle_cleanup_duplicates_command(message: Message, profile_service: ProfileService):
-    """Clean up duplicate suspicious profiles."""
-    try:
-        from sqlalchemy import func, select
-
-        from app.models.suspicious_profile import SuspiciousProfile
-
-        # Find users with multiple profiles
-        result = await profile_service.db.execute(
-            select(SuspiciousProfile.user_id, func.count(SuspiciousProfile.id).label("count"))
-            .group_by(SuspiciousProfile.user_id)
-            .having(func.count(SuspiciousProfile.id) > 1)
-        )
-
-        duplicates = result.fetchall()
-
-        if not duplicates:
-            await message.answer("ℹ️ Дублирующих профилей не найдено")
-            return
-
-        cleaned_count = 0
-        for user_id, count in duplicates:
-            # Keep the most recent profile, delete others
-            profiles = await profile_service.db.execute(
-                select(SuspiciousProfile)
-                .where(SuspiciousProfile.user_id == user_id)
-                .order_by(SuspiciousProfile.created_at.desc())
-            )
-            profiles_list = profiles.scalars().all()
-
-            # Delete all except the first (most recent)
-            for profile in profiles_list[1:]:
-                await profile_service.db.delete(profile)
-                cleaned_count += 1
-
-        await profile_service.db.commit()
-        await message.answer(f"✅ Удалено дублирующих профилей: {cleaned_count}")
-
-    except Exception as e:
-        logger.error(f"Error cleaning up duplicates: {e}")
-        await message.answer(f"❌ Ошибка при очистке: {e}")
 
 
 @admin_router.message(Command("settings"))
@@ -519,7 +322,7 @@ async def handle_settings_command(message: Message) -> None:
     try:
         if not message.from_user:
             return
-        logger.info(f"Settings command from {message.from_user.id}")
+        logger.info(f"Settings command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Load current configuration
         from app.config import load_config
@@ -554,10 +357,10 @@ async def handle_settings_command(message: Message) -> None:
 
         await message.answer(settings_text)
         if message.from_user:
-            logger.info(f"Settings response sent to {message.from_user.id}")
+            logger.info(f"Settings response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in settings command: {e}")
+        logger.error(f"Error in settings command: {sanitize_for_logging(str(e))}")
 
 
 @admin_router.message(Command("setlimits"))
@@ -566,7 +369,7 @@ async def handle_setlimits_command(message: Message, limits_service: LimitsServi
     try:
         if not message.from_user:
             return
-        logger.info(f"Setlimits command from {message.from_user.id}")
+        logger.info(f"Setlimits command from {sanitize_for_logging(str(message.from_user.id))}")
 
         limits_text = (
             "🔒 <b>Управление лимитами</b>\n\n" "👑 <b>Доступно администраторам</b>\n\n"
@@ -574,10 +377,10 @@ async def handle_setlimits_command(message: Message, limits_service: LimitsServi
 
         await message.answer(limits_text)
         if message.from_user:
-            logger.info(f"Setlimits response sent to {message.from_user.id}")
+            logger.info(f"Setlimits response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in setlimits command: {e}")
+        logger.error(f"Error in setlimits command: {sanitize_for_logging(str(e))}")
 
 
 @admin_router.message(Command("setlimit"))
@@ -586,7 +389,7 @@ async def handle_setlimit_command(message: Message, limits_service: LimitsServic
     try:
         if not message.from_user:
             return
-        logger.info(f"Setlimit command from {message.from_user.id}")
+        logger.info(f"Setlimit command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Парсим команду: /setlimit <тип> <значение>
         text = message.text or ""
@@ -663,10 +466,10 @@ async def handle_setlimit_command(message: Message, limits_service: LimitsServic
             await message.answer("❌ Ошибка при обновлении лимита!")
 
         if message.from_user:
-            logger.info(f"Setlimit response sent to {message.from_user.id}")
+            logger.info(f"Setlimit response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in setlimit command: {e}")
+        logger.error(f"Error in setlimit command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка при обработке команды!")
 
 
@@ -676,7 +479,7 @@ async def handle_reload_limits_command(message: Message, limits_service: LimitsS
     try:
         if not message.from_user:
             return
-        logger.info(f"Reload limits command from {message.from_user.id}")
+        logger.info(f"Reload limits command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Перезагружаем лимиты
         success = limits_service.reload_limits()
@@ -696,10 +499,10 @@ async def handle_reload_limits_command(message: Message, limits_service: LimitsS
             await message.answer("❌ Ошибка при перезагрузке лимитов!")
 
         if message.from_user:
-            logger.info(f"Reload limits response sent to {message.from_user.id}")
+            logger.info(f"Reload limits response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in reload_limits command: {e}")
+        logger.error(f"Error in reload_limits command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка при перезагрузке лимитов!")
 
 
@@ -715,7 +518,7 @@ async def handle_unban_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Unban command from {message.from_user.id}")
+        logger.info(f"Unban command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Парсим аргументы команды
         if not message.text:
@@ -779,10 +582,10 @@ async def handle_unban_command(
                 success = await moderation_service.unban_user(user_id=user_id, chat_id=chat_id, admin_id=admin_id)
 
                 if success:
-                    await message.answer(f"✅ Пользователь <code>{user_id}</code> разблокирован в чате <code>{chat_id}</code>")
-                    logger.info(f"User {user_id} unbanned by admin {admin_id}")
+                    await message.answer(f"✅ Пользователь <code>{sanitize_for_logging(str(user_id))}</code> разблокирован в чате <code>{sanitize_for_logging(str(chat_id))}</code>")
+                    logger.info(f"User {sanitize_for_logging(str(user_id))} unbanned by admin {sanitize_for_logging(str(admin_id))}")
                 else:
-                    await message.answer(f"❌ Не удалось разблокировать пользователя <code>{user_id}</code>")
+                    await message.answer(f"❌ Не удалось разблокировать пользователя <code>{sanitize_for_logging(str(user_id))}</code>")
             else:
                 await message.answer("❌ Неверный номер пользователя")
             return
@@ -817,16 +620,16 @@ async def handle_unban_command(
                 # Пытаемся получить информацию о пользователе через Telegram API
                 user_info = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=username)
                 user_id = user_info.user.id
-                logger.info(f"Found user_id {user_id} for username @{username}")
+                logger.info(f"Found user_id {sanitize_for_logging(str(user_id))} for username @{sanitize_for_logging(username)}")
             except Exception as e:
-                await message.answer(f"❌ Не удалось найти пользователя @{username}: {e}")
+                await message.answer(f"❌ Не удалось найти пользователя @{sanitize_for_logging(username)}: {sanitize_for_logging(str(e))}")
                 return
         else:
             # Это user_id
             try:
                 user_id = int(user_identifier)
             except ValueError:
-                await message.answer(f"❌ Неверный формат ID пользователя: {user_identifier}")
+                await message.answer(f"❌ Неверный формат ID пользователя: {sanitize_for_logging(str(user_identifier))}")
                 return
 
         # Разблокируем пользователя
@@ -834,14 +637,14 @@ async def handle_unban_command(
 
         if success:
             await message.answer(f"✅ Пользователь <code>{user_id}</code> разблокирован в чате <code>{chat_id}</code>")
-            logger.info(f"User {user_id} unbanned by admin {admin_id}")
+            logger.info(f"User {sanitize_for_logging(str(user_id))} unbanned by admin {sanitize_for_logging(str(admin_id))}")
         else:
             await message.answer(f"❌ Не удалось разблокировать пользователя <code>{user_id}</code>")
 
     except ValueError:
         await message.answer("❌ Неверный формат ID пользователя")
     except Exception as e:
-        logger.error(f"Error in unban command: {e}")
+        logger.error(f"Error in unban command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка при разблокировке пользователя")
 
 
@@ -857,7 +660,7 @@ async def handle_force_unban_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Force unban command from {message.from_user.id}")
+        logger.info(f"Force unban command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Парсим аргументы команды
         if not message.text:
@@ -890,22 +693,22 @@ async def handle_force_unban_command(
                 # Пытаемся получить информацию о пользователе через Telegram API
                 user_info = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=username)
                 user_id = user_info.user.id
-                logger.info(f"Found user_id {user_id} for username @{username}")
+                logger.info(f"Found user_id {sanitize_for_logging(str(user_id))} for username @{sanitize_for_logging(username)}")
             except Exception as e:
-                await message.answer(f"❌ Не удалось найти пользователя @{username}: {e}")
+                await message.answer(f"❌ Не удалось найти пользователя @{sanitize_for_logging(username)}: {sanitize_for_logging(str(e))}")
                 return
         else:
             # Это user_id
             try:
                 user_id = int(user_identifier)
             except ValueError:
-                await message.answer(f"❌ Неверный формат ID пользователя: {user_identifier}")
+                await message.answer(f"❌ Неверный формат ID пользователя: {sanitize_for_logging(str(user_identifier))}")
                 return
 
         # Проверяем, что чат существует и бот может в нем работать
         try:
             chat = await moderation_service.bot.get_chat(chat_id)
-            logger.info(f"Chat found: {chat.title} (ID: {chat_id})")
+            logger.info(f"Chat found: {sanitize_for_logging(chat.title)} (ID: {sanitize_for_logging(str(chat_id))})")
             
             # Проверяем, является ли бот администратором
             try:
@@ -923,7 +726,7 @@ async def handle_force_unban_command(
                     )
                     return
             except Exception as e:
-                logger.error(f"Error checking bot status: {e}")
+                logger.error(f"Error checking bot status: {sanitize_for_logging(str(e))}")
                 await message.answer(
                     f"❌ <b>Не удалось проверить статус бота в чате:</b>\n\n"
                     f"📝 Название: {chat.title}\n"
@@ -935,20 +738,20 @@ async def handle_force_unban_command(
                 return
                 
         except Exception as e:
-            logger.error(f"Chat not found: {e}")
-            await message.answer(f"❌ Чат не найден: {e}")
+            logger.error(f"Chat not found: {sanitize_for_logging(str(e))}")
+            await message.answer(f"❌ Чат не найден: {sanitize_for_logging(str(e))}")
             return
 
         # Принудительно разблокируем пользователя
-        logger.info(f"Force unbanning user {user_id} in chat {chat_id}")
+        logger.info(f"Force unbanning user {sanitize_for_logging(str(user_id))} in chat {sanitize_for_logging(str(chat_id))}")
         
         try:
             # Принудительно разблокируем в Telegram
             await moderation_service.bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
-            logger.info(f"Successfully force unbanned user {user_id} in Telegram chat {chat_id}")
+            logger.info(f"Successfully force unbanned user {sanitize_for_logging(str(user_id))} in Telegram chat {sanitize_for_logging(str(chat_id))}")
         except Exception as telegram_error:
-            logger.error(f"Telegram API error during force unban: {telegram_error}")
-            await message.answer(f"⚠️ Ошибка Telegram API: {telegram_error}")
+            logger.error(f"Telegram API error during force unban: {sanitize_for_logging(str(telegram_error))}")
+            await message.answer(f"⚠️ Ошибка Telegram API: {sanitize_for_logging(str(telegram_error))}")
             return
 
         # Обновляем статус в базе данных
@@ -980,12 +783,12 @@ async def handle_force_unban_command(
             f"🔄 Пользователь должен попробовать присоединиться к каналу снова"
         )
         
-        logger.info(f"Force unban completed for user {user_id} in chat {chat_id}")
+        logger.info(f"Force unban completed for user {sanitize_for_logging(str(user_id))} in chat {sanitize_for_logging(str(chat_id))}")
 
     except ValueError as e:
-        await message.answer(f"❌ Неверный формат ID чата: {e}")
+        await message.answer(f"❌ Неверный формат ID чата: {sanitize_for_logging(str(e))}")
     except Exception as e:
-        logger.error(f"Error in force_unban command: {e}")
+        logger.error(f"Error in force_unban command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка при принудительном разбане")
 
 
@@ -999,7 +802,7 @@ async def handle_suspicious_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Suspicious command from {message.from_user.id}")
+        logger.info(f"Suspicious command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Получаем подозрительные профили
         profiles = await profile_service.get_suspicious_profiles(limit=10)
@@ -1031,10 +834,10 @@ async def handle_suspicious_command(
         text += "• /suspicious_remove <user_id> - удалить из подозрительных"
         
         await message.answer(text)
-        logger.info(f"Suspicious profiles response sent to {message.from_user.id}")
+        logger.info(f"Suspicious profiles response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in suspicious command: {e}")
+        logger.error(f"Error in suspicious command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка получения подозрительных профилей")
 
 
@@ -1048,7 +851,7 @@ async def handle_suspicious_reset_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Suspicious reset command from {message.from_user.id}")
+        logger.info(f"Suspicious reset command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Сбрасываем все подозрительные профили
         deleted_count = await profile_service.reset_suspicious_profiles()
@@ -1058,10 +861,10 @@ async def handle_suspicious_reset_command(
             f"🗑️ Удалено записей: {deleted_count}\n"
             f"📊 Система анализа сброшена"
         )
-        logger.info(f"Reset {deleted_count} suspicious profiles for {message.from_user.id}")
+        logger.info(f"Reset {sanitize_for_logging(str(deleted_count))} suspicious profiles for {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in suspicious_reset command: {e}")
+        logger.error(f"Error in suspicious_reset command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка сброса подозрительных профилей")
 
 
@@ -1075,7 +878,7 @@ async def handle_suspicious_analyze_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Suspicious analyze command from {message.from_user.id}")
+        logger.info(f"Suspicious analyze command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Парсим аргументы команды
         if not message.text:
@@ -1155,10 +958,10 @@ async def handle_suspicious_analyze_command(
             text += f"<b>Результат:</b> Пользователь не является подозрительным"
         
         await message.answer(text)
-        logger.info(f"Profile analysis completed for user {user_id}")
+        logger.info(f"Profile analysis completed for user {sanitize_for_logging(str(user_id))}")
 
     except Exception as e:
-        logger.error(f"Error in suspicious_analyze command: {e}")
+        logger.error(f"Error in suspicious_analyze command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка анализа профиля")
 
 
@@ -1172,7 +975,7 @@ async def handle_suspicious_remove_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Suspicious remove command from {message.from_user.id}")
+        logger.info(f"Suspicious remove command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Парсим аргументы команды
         if not message.text:
@@ -1207,10 +1010,10 @@ async def handle_suspicious_remove_command(
             f"👤 ID: <code>{user_id}</code>\n"
             f"🗑️ Запись удалена из базы данных"
         )
-        logger.info(f"Removed user {user_id} from suspicious profiles")
+        logger.info(f"Removed user {sanitize_for_logging(str(user_id))} from suspicious profiles")
 
     except Exception as e:
-        logger.error(f"Error in suspicious_remove command: {e}")
+        logger.error(f"Error in suspicious_remove command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка удаления из подозрительных")
 
 
@@ -1224,7 +1027,7 @@ async def handle_find_chat_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Find chat command from {message.from_user.id}")
+        logger.info(f"Find chat command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Парсим аргументы команды
         if not message.text:
@@ -1282,7 +1085,7 @@ async def handle_find_chat_command(
             )
 
     except Exception as e:
-        logger.error(f"Error in find_chat command: {e}")
+        logger.error(f"Error in find_chat command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка при поиске чата")
 
 
@@ -1296,7 +1099,7 @@ async def handle_my_chats_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"My chats command from {message.from_user.id}")
+        logger.info(f"My chats command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Получаем все каналы из базы данных
         channels = await channel_service.get_all_channels()
@@ -1324,10 +1127,10 @@ async def handle_my_chats_command(
         text += "💡 <b>Используйте ID канала для команд разбана</b>"
         
         await message.answer(text)
-        logger.info(f"My chats response sent to {message.from_user.id}")
+        logger.info(f"My chats response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in my_chats command: {e}")
+        logger.error(f"Error in my_chats command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка получения списка каналов")
 
 
@@ -1343,7 +1146,7 @@ async def handle_banned_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Banned command from {message.from_user.id}")
+        logger.info(f"Banned command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Получаем список заблокированных пользователей
         banned_users = await moderation_service.get_banned_users(limit=10)
@@ -1387,10 +1190,10 @@ async def handle_banned_command(
             text += "💡 Показаны последние 10 пользователей"
 
         await message.answer(text)
-        logger.info(f"Banned list sent to {message.from_user.id}")
+        logger.info(f"Banned list sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in banned command: {e}")
+        logger.error(f"Error in banned command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка получения списка заблокированных")
 
 
@@ -1406,7 +1209,7 @@ async def handle_ban_history_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Ban history command from {message.from_user.id}")
+        logger.info(f"Ban history command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Получаем последние 10 записей из истории банов
         ban_history = await moderation_service.get_ban_history(limit=10)
@@ -1467,10 +1270,10 @@ async def handle_ban_history_command(
         text += "• <code>/sync_bans 1</code> - синхронизировать по номеру"
 
         await message.answer(text)
-        logger.info(f"Ban history sent to {message.from_user.id}")
+        logger.info(f"Ban history sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in ban_history command: {e}")
+        logger.error(f"Error in ban_history command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка получения истории банов")
 
 
@@ -1485,7 +1288,7 @@ async def handle_sync_bans_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Sync bans command from {message.from_user.id}")
+        logger.info(f"Sync bans command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Парсим аргументы команды
         if not message.text:
@@ -1629,12 +1432,12 @@ async def handle_sync_bans_command(
             except Exception as e:
                 await message.answer(f"❌ Ошибка проверки статуса пользователя: {e}")
 
-        logger.info(f"Sync bans response sent to {message.from_user.id}")
+        logger.info(f"Sync bans response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except ValueError:
         await message.answer("❌ Неверный формат ID чата")
     except Exception as e:
-        logger.error(f"Error in sync_bans command: {e}")
+        logger.error(f"Error in sync_bans command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка синхронизации банов")
 
 
@@ -1650,7 +1453,7 @@ async def handle_help_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Help command from {message.from_user.id}")
+        logger.info(f"Help command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Парсим аргументы команды
         message_text = message.text or ""
@@ -1660,7 +1463,7 @@ async def handle_help_command(
             # Если есть аргументы, показываем справку по категории
             category = command_args[0]
             user_id = message.from_user.id if message.from_user else None
-            logger.info(f"Getting help for category: {category}, user_id: {user_id}")
+            logger.info(f"Getting help for category: {sanitize_for_logging(category)}, user_id: {sanitize_for_logging(str(user_id))}")
             help_text = help_service.get_category_help(category, user_id=user_id)
         else:
             # Если аргументов нет, показываем основную справку
@@ -1668,10 +1471,10 @@ async def handle_help_command(
 
         await message.answer(help_text)
         if message.from_user:
-            logger.info(f"Help response sent to {message.from_user.id}")
+            logger.info(f"Help response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in help command: {e}")
+        logger.error(f"Error in help command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка получения справки")
 
 
@@ -1725,12 +1528,12 @@ async def handle_ban_suspicious_callback(
                         f"Причина: Подозрительный профиль"
                     )
             except Exception as e:
-                logger.warning(f"Could not edit message: {e}")
+                logger.warning(f"Could not edit message: {sanitize_for_logging(str(e))}")
         else:
             await callback_query.answer("❌ Ошибка при бане пользователя")
 
     except Exception as e:
-        logger.error(f"Error in ban_suspicious callback: {e}")
+        logger.error(f"Error in ban_suspicious callback: {sanitize_for_logging(str(e))}")
         await callback_query.answer("❌ Ошибка обработки")
 
 
@@ -1760,10 +1563,10 @@ async def handle_watch_suspicious_callback(
                     f"👀 <b>Пользователь добавлен в наблюдение</b>\n\n" f"ID: {user_id}\n" f"Статус: Наблюдение"
                 )
         except Exception as e:
-            logger.warning(f"Could not edit message: {e}")
+            logger.warning(f"Could not edit message: {sanitize_for_logging(str(e))}")
 
     except Exception as e:
-        logger.error(f"Error in watch_suspicious callback: {e}")
+        logger.error(f"Error in watch_suspicious callback: {sanitize_for_logging(str(e))}")
         await callback_query.answer("❌ Ошибка обработки")
 
 
@@ -1796,10 +1599,10 @@ async def handle_allow_suspicious_callback(
                     f"✅ <b>Пользователь разрешен</b>\n\n" f"ID: {user_id}\n" f"Статус: Ложное срабатывание"
                 )
         except Exception as e:
-            logger.warning(f"Could not edit message: {e}")
+            logger.warning(f"Could not edit message: {sanitize_for_logging(str(e))}")
 
     except Exception as e:
-        logger.error(f"Error in allow_suspicious callback: {e}")
+        logger.error(f"Error in allow_suspicious callback: {sanitize_for_logging(str(e))}")
         await callback_query.answer("❌ Ошибка обработки")
 
 
@@ -1812,7 +1615,7 @@ async def handle_instructions_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Instructions command from {message.from_user.id}")
+        logger.info(f"Instructions command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Get bot username for instructions
         # bot_username = getattr(message.bot, "username", None) or "your_bot"  # Не используется
@@ -1860,10 +1663,10 @@ async def handle_instructions_command(
 
         await message.answer(instructions)
         if message.from_user:
-            logger.info(f"Instructions sent to {message.from_user.id}")
+            logger.info(f"Instructions sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in instructions command: {e}")
+        logger.error(f"Error in instructions command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка получения инструкций")
 
 
@@ -1876,7 +1679,7 @@ async def handle_logs_command(
     try:
         if not message.from_user:
             return
-        logger.info(f"Logs command from {message.from_user.id}")
+        logger.info(f"Logs command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Парсим аргументы команды
         message_text = message.text or ""
@@ -2018,8 +1821,8 @@ async def handle_logs_command(
 
         await message.answer(response)
         if message.from_user:
-            logger.info(f"Logs response sent to {message.from_user.id}")
+            logger.info(f"Logs response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
-        logger.error(f"Error in logs command: {e}")
+        logger.error(f"Error in logs command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка получения логов")
