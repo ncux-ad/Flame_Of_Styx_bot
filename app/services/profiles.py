@@ -256,14 +256,14 @@ class ProfileService:
         """Create suspicious profile entry."""
         profile = SuspiciousProfile(
             user_id=user_id,
-            linked_chat_id=(analysis_result["linked_chat"]["id"] if analysis_result["linked_chat"] else None),
-            linked_chat_username=(analysis_result["linked_chat"]["username"] if analysis_result["linked_chat"] else None),
-            linked_chat_title=(analysis_result["linked_chat"]["title"] if analysis_result["linked_chat"] else None),
+            linked_chat_id=(analysis_result["linked_chat"]["id"] if analysis_result.get("linked_chat") else None),
+            linked_chat_username=(analysis_result["linked_chat"]["username"] if analysis_result.get("linked_chat") else None),
+            linked_chat_title=(analysis_result["linked_chat"]["title"] if analysis_result.get("linked_chat") else None),
             post_count=int(analysis_result.get("post_count", 0)),
-            has_bait_channel=analysis_result["has_bait_channel"],
-            suspicion_score=analysis_result["suspicion_score"],
-            detected_patterns=",".join(analysis_result["patterns"]),
-            analysis_reason=f"Suspicion score: {analysis_result['suspicion_score']:.2f}",
+            has_bait_channel=analysis_result.get("has_bait_channel", False),
+            suspicion_score=float(analysis_result.get("suspicion_score", 0.0)),
+            detected_patterns=",".join(analysis_result.get("patterns", []) or []),
+            analysis_reason=f"Suspicion score: {analysis_result.get('suspicion_score', 0.0):.2f}",
         )
 
         self.db.add(profile)
