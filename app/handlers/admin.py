@@ -915,9 +915,13 @@ async def handle_suspicious_analyze_command(
         )
         
         # Анализируем профиль
-        logger.info(f"Starting profile analysis for user {user_id}")
-        profile = await profile_service.analyze_user_profile(user, admin_id)
-        logger.info(f"Profile analysis completed, profile: {profile}")
+        logger.info("Starting profile analysis for user " + str(user_id))
+        try:
+            profile = await profile_service.analyze_user_profile(user, admin_id)
+            logger.info("Profile analysis completed, profile: " + str(profile))
+        except Exception as e:
+            logger.error("Error in analyze_user_profile: " + str(e))
+            raise
         
         # Формируем ответ
         logger.info("Starting text formatting")
@@ -943,12 +947,12 @@ async def handle_suspicious_analyze_command(
             patterns = []
             if profile.detected_patterns:
                 try:
-                    logger.info(f"Processing patterns: {profile.detected_patterns}")
+                    logger.info("Processing patterns: " + str(profile.detected_patterns))
                     patterns = str(profile.detected_patterns).split(',')
                     patterns = [p.strip() for p in patterns if p.strip()]
-                    logger.info(f"Parsed patterns: {patterns}")
+                    logger.info("Parsed patterns: " + str(patterns))
                 except Exception as e:
-                    logger.error(f"Error parsing patterns: {e}")
+                    logger.error("Error parsing patterns: " + str(e))
                     patterns = []
             
             text += f"<b>Обнаружено паттернов:</b> {len(patterns)}\n\n"
@@ -1009,10 +1013,10 @@ async def handle_suspicious_analyze_command(
             logger.info("Added result")
         
         await message.answer(text)
-        logger.info(f"Profile analysis completed for user {sanitize_for_logging(str(user_id))}")
+        logger.info("Profile analysis completed for user " + sanitize_for_logging(str(user_id)))
 
     except Exception as e:
-        logger.error(f"Error in suspicious_analyze command: {sanitize_for_logging(str(e))}")
+        logger.error("Error in suspicious_analyze command: " + sanitize_for_logging(str(e)))
         await message.answer("❌ Ошибка анализа профиля")
 
 
