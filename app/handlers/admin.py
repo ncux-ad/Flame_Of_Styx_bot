@@ -1110,35 +1110,49 @@ async def handle_suspicious_analyze_command(
         )
         
         # Анализируем профиль
-        analysis_result = await profile_service.analyze_user_profile(user, admin_id)
+        profile = await profile_service.analyze_user_profile(user, admin_id)
         
         # Формируем ответ
         text = f"🔍 <b>Анализ профиля пользователя</b>\n\n"
         text += f"<b>Пользователь:</b> {user_info['first_name']} {user_info['last_name'] or ''}\n"
         text += f"<b>ID:</b> <code>{user_id}</code>\n"
         text += f"<b>Username:</b> @{user_info['username'] or 'Нет'}\n"
-        text += f"<b>Счет подозрительности:</b> {analysis_result['suspicion_score']:.2f}\n"
-        text += f"<b>Обнаружено паттернов:</b> {len(analysis_result['patterns'])}\n\n"
         
-        if analysis_result['patterns']:
-            text += "<b>🔍 Обнаруженные паттерны:</b>\n"
-            for pattern in analysis_result['patterns']:
-                text += f"• {pattern}\n"
-            text += "\n"
-        
-        if analysis_result['linked_chat']:
-            text += f"<b>📱 Связанный чат:</b> {analysis_result['linked_chat']['title']}\n"
-            text += f"<b>📊 Постов:</b> {analysis_result['post_count']}\n\n"
-        
-        # Определяем статус
-        if analysis_result['suspicion_score'] >= 0.7:
-            status = "🔴 Высокий риск"
-        elif analysis_result['suspicion_score'] >= 0.4:
-            status = "🟡 Средний риск"
-        else:
-            status = "🟢 Низкий риск"
+        if profile:
+            # Пользователь подозрительный
+            text += f"<b>Счет подозрительности:</b> {profile.suspicion_score:.2f}\n"
             
-        text += f"<b>Статус:</b> {status}"
+            # Парсим паттерны из строки
+            patterns = profile.detected_patterns.split(',') if profile.detected_patterns else []
+            text += f"<b>Обнаружено паттернов:</b> {len(patterns)}\n\n"
+            
+            if patterns:
+                text += "<b>🔍 Обнаруженные паттерны:</b>\n"
+                for pattern in patterns:
+                    if pattern.strip():  # Пропускаем пустые строки
+                        text += f"• {pattern.strip()}\n"
+                text += "\n"
+            
+            if profile.linked_chat_title:
+                text += f"<b>📱 Связанный чат:</b> {profile.linked_chat_title}\n"
+                text += f"<b>📊 Постов:</b> {profile.post_count}\n\n"
+            
+            # Определяем статус
+            if profile.suspicion_score >= 0.7:
+                status = "🔴 Высокий риск"
+            elif profile.suspicion_score >= 0.4:
+                status = "🟡 Средний риск"
+            else:
+                status = "🟢 Низкий риск"
+                
+            text += f"<b>Статус:</b> {status}\n"
+            text += f"<b>Дата анализа:</b> {profile.created_at.strftime('%d.%m.%Y %H:%M')}"
+        else:
+            # Пользователь не подозрительный
+            text += f"<b>Счет подозрительности:</b> 0.00\n"
+            text += f"<b>Обнаружено паттернов:</b> 0\n\n"
+            text += f"<b>Статус:</b> 🟢 Низкий риск\n"
+            text += f"<b>Результат:</b> Пользователь не является подозрительным"
         
         await message.answer(text)
         logger.info(f"Profile analysis completed for user {user_id}")
