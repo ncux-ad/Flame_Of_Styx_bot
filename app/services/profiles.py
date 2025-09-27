@@ -44,7 +44,7 @@ class ProfileService:
                 return {
                     "id": user_id,
                     "username": None,
-                    "first_name": f"User {user_id}",
+                    "first_name": f"User {str(user_id)}",
                     "last_name": None,
                     "is_bot": False,
                 }
@@ -53,7 +53,7 @@ class ProfileService:
             return {
                 "id": user_id,
                 "username": None,
-                "first_name": f"User {user_id}",
+                "first_name": f"User {str(user_id)}",
                 "last_name": None,
                 "is_bot": False,
             }
