@@ -4,6 +4,7 @@ SQLAlchemy==2.0.32
 aiosqlite==0.20.0
 pydantic-settings==2.3.4
 alembic==1.13.1
+punq==0.7.0
 
 # Development dependencies (install with: pip install -e ".[dev]")
 # pytest==8.3.2
