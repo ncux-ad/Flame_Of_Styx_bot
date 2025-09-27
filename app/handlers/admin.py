@@ -15,6 +15,11 @@ from app.services.limits import LimitsService
 from app.services.moderation import ModerationService
 from app.models.moderation_log import ModerationAction
 from app.services.profiles import ProfileService
+from app.services.admin import AdminService
+from app.services.status import StatusService
+from app.services.channels_admin import ChannelsAdminService
+from app.services.bots_admin import BotsAdminService
+from app.services.suspicious_admin import SuspiciousAdminService
 from app.utils.error_handling import ValidationError, handle_errors
 from app.utils.security import sanitize_for_logging, safe_format_message
 
@@ -31,10 +36,7 @@ admin_router.message.filter(IsAdminOrSilentFilter())
 @handle_errors(user_message="❌ Ошибка выполнения команды /start")
 async def handle_start_command(
     message: Message,
-    moderation_service: ModerationService,
-    bot_service: BotService,
-    channel_service: ChannelService,
-    profile_service: ProfileService,
+    admin_service: AdminService,
     admin_id: int,
 ) -> None:
     """Главное меню администратора."""
@@ -43,19 +45,7 @@ async def handle_start_command(
 
     logger.info(f"Admin start command from {sanitize_for_logging(str(message.from_user.id))}")
 
-    welcome_text = (
-        "🤖 <b>AntiSpam Bot - Упрощенная версия</b>\n\n"
-        "Доступные команды:\n"
-        "/status - статистика бота\n"
-        "/channels - управление каналами\n"
-        "/bots - управление ботами\n"
-        "/suspicious - подозрительные профили\n"
-        "/unban - разблокировать пользователя\n"
-        "/banned - список заблокированных\n"
-        "/sync_bans - синхронизировать баны с Telegram\n"
-        "/force_unban - принудительный разбан по ID/username\n"
-        "/help - помощь"
-    )
+    welcome_text = await admin_service.get_welcome_message()
 
     await message.answer(welcome_text)
     logger.info(f"Start command response sent to {sanitize_for_logging(str(message.from_user.id))}")
@@ -64,9 +54,7 @@ async def handle_start_command(
 @admin_router.message(Command("status"))
 async def handle_status_command(
     message: Message,
-    moderation_service: ModerationService,
-    bot_service: BotService,
-    channel_service: ChannelService,
+    status_service: StatusService,
     admin_id: int,
 ) -> None:
     """Подробная статистика бота."""
@@ -75,95 +63,7 @@ async def handle_status_command(
             return
         logger.info(f"Status command from {sanitize_for_logging(str(message.from_user.id))}")
 
-        # Получаем статистику
-        # total_bots = await bot_service.get_total_bots_count()
-        # total_channels = await channel_service.get_total_channels_count()  # Не используется
-        banned_users = await moderation_service.get_banned_users(limit=100)
-        active_bans = len([ban for ban in banned_users if ban.is_active])
-
-        # Получаем статистику спама
-        spam_stats = await moderation_service.get_spam_statistics()
-        deleted_messages = spam_stats["deleted_messages"]
-        total_actions = spam_stats["total_actions"]
-
-        # Получаем информацию о каналах из базы данных
-        try:
-            all_channels = await channel_service.get_all_channels()
-        except Exception:
-            all_channels = []
-
-        # Фильтруем только каналы, где бот является администратором
-        connected_channels = []
-        for channel in all_channels:
-            try:
-                telegram_id = int(channel.telegram_id) if channel.telegram_id is not None else 0 if channel.telegram_id is not None else 0
-                is_native = await channel_service.is_native_channel(telegram_id)
-                if is_native:
-                    connected_channels.append(channel)
-            except Exception:
-                continue
-
-        # Получаем группы комментариев из базы данных
-        comment_groups = []
-        for channel in all_channels:
-            if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
-                comment_groups.append(
-                    {
-                        "title": channel.title or f"Группа {channel.telegram_id}",
-                        "chat_id": str(channel.telegram_id),
-                        "type": "Группа для комментариев",
-                    }
-                )
-
-        # Формируем информацию о чатах
-        channel_info = []
-
-        # Добавляем только подключенные каналы (где бот админ)
-        for channel in connected_channels[:5]:  # Показываем первые 5 подключенных каналов
-            channel_info.append(f"• {channel.title} <code>({channel.telegram_id})</code>")
-            channel_info.append("  └ Тип: Канал")
-            channel_info.append("  └ Статус: ✅ Антиспам активен")
-
-        # Добавляем группы комментариев
-        for chat in comment_groups:
-            channel_info.append(f"• {chat['title']} <code>({chat['chat_id']})</code>")
-            channel_info.append(f"  └ Тип: {chat['type']}")
-            channel_info.append("  └ Статус: ✅ Антиспам активен")
-
-        # Информация о боте (упрощённо)
-        # bot_username = "FlameOfStyx_bot"  # Из конфига - не используется
-        bot_id = "7977609078"  # Из логов
-
-        # Подсчитываем общее количество чатов
-        total_connected_chats = len(connected_channels) + len(comment_groups)
-
-        status_text = (
-            "📊 <b>Подробная статистика бота</b>\n\n"
-            "🤖 <b>Информация о боте:</b>\n"
-            "• Username: @FlameOfStyx_bot\n"
-            f"• ID: <code>{bot_id}</code>\n"
-            "• Статус: ✅ Работает\n\n"
-            f"📢 <b>Подключённые чаты ({total_connected_chats}):</b>\n"
-        )
-
-        if channel_info:
-            status_text += "\n".join(channel_info)
-            if len(connected_channels) > 5:
-                status_text += f"\n• ... и ещё {len(connected_channels) - 5} подключенных каналов"
-        else:
-            status_text += "• Подключенные чаты не обнаружены\n"
-            status_text += "💡 <b>Для добавления новых чатов:</b>\n"
-            status_text += "1. Добавьте бота в канал/группу\n"
-            status_text += "2. Дайте права администратора\n"
-            status_text += "3. Включите комментарии к постам\n"
-            status_text += "4. Используйте /channels для проверки"
-
-        status_text += "\n\n🚫 <b>Модерация:</b>\n"
-        status_text += f"• Активных банов: {active_bans}\n"
-        status_text += f"• Всего записей: {len(banned_users)}\n"
-        status_text += f"• Удалено спам-сообщений: {deleted_messages}\n"
-        status_text += f"• Всего действий модерации: {total_actions}\n\n"
-        status_text += f"👑 <b>Администратор:</b> <code>{admin_id}</code>"
+        status_text = await status_service.get_bot_status(admin_id)
 
         await message.answer(status_text)
         logger.info(f"Status response sent to {sanitize_for_logging(str(message.from_user.id))}")
@@ -176,7 +76,7 @@ async def handle_status_command(
 @admin_router.message(Command("channels"))
 async def handle_channels_command(
     message: Message,
-    channel_service: ChannelService,
+    channels_admin_service: ChannelsAdminService,
     admin_id: int,
 ) -> None:
     """Управление каналами."""
@@ -185,89 +85,7 @@ async def handle_channels_command(
             return
         logger.info(f"Channels command from {sanitize_for_logging(str(message.from_user.id))}")
 
-        channels = await channel_service.get_all_channels()
-
-        if not channels:
-            await message.answer("📢 Каналы не найдены")
-            return
-
-        # Разделяем каналы на нативные и иностранные
-        native_channels = []
-        foreign_channels = []
-
-        for channel in channels:
-            # Проверяем, является ли канал нативным (где бот админ)
-            telegram_id = int(channel.telegram_id) if channel.telegram_id is not None else 0
-            is_native = await channel_service.is_native_channel(telegram_id)
-            if is_native:
-                native_channels.append(channel)
-            else:
-                foreign_channels.append(channel)
-
-        channels_text = "📢 <b>Управление каналами</b>\n\n"
-
-        # Показываем нативные каналы (где бот админ)
-        if native_channels:
-            channels_text += f"✅ <b>Нативные каналы ({len(native_channels)})</b>\n"
-            channels_text += "<i>Каналы где бот является администратором</i>\n\n"
-
-            for channel in native_channels[:5]:  # Показываем первые 5 нативных
-                username = f"@{channel.username}" if channel.username else "Без username"
-                channels_text += f"<b>{channel.title or 'Без названия'}</b>\n"
-                channels_text += f"   ID: <code>{channel.telegram_id}</code> | {username}\n"
-                if channel.member_count:
-                    channels_text += f"   👥 Участников: {channel.member_count}\n"
-                channels_text += "\n"
-
-            if len(native_channels) > 5:
-                channels_text += f"... и еще {len(native_channels) - 5} нативных каналов\n\n"
-            else:
-                channels_text += "\n"
-
-        # Показываем иностранные каналы (откуда приходят сообщения)
-        if foreign_channels:
-            channels_text += f"🔍 <b>Иностранные каналы ({len(foreign_channels)})</b>\n"
-            channels_text += "<i>Каналы откуда приходят сообщения (бот не админ)</i>\n\n"
-
-            for channel in foreign_channels[:5]:  # Показываем первые 5 иностранных
-                username = f"@{channel.username}" if channel.username else "Без username"
-                channels_text += f"<b>{channel.title or 'Без названия'}</b>\n"
-                channels_text += f"   ID: <code>{channel.telegram_id}</code> | {username}\n"
-                if channel.member_count:
-                    channels_text += f"   👥 Участников: {channel.member_count}\n"
-                channels_text += "\n"
-
-            if len(foreign_channels) > 5:
-                channels_text += f"... и еще {len(foreign_channels) - 5} иностранных каналов\n\n"
-
-        # Получаем группы комментариев из базы данных
-        comment_groups = []
-        for channel in channels:
-            if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
-                comment_groups.append(
-                    {
-                        "title": channel.title or f"Группа {channel.telegram_id}",
-                        "chat_id": str(channel.telegram_id),
-                        "type": "Группа для комментариев",
-                    }
-                )
-
-        if comment_groups:
-            channels_text += f"\n💬 <b>Группы комментариев ({len(comment_groups)})</b>\n"
-            channels_text += "<i>Группы для модерации комментариев к постам</i>\n\n"
-
-            for group in comment_groups:
-                channels_text += f"<b>{group['title']}</b>\n"
-                channels_text += f"   ID: <code>{group['chat_id']}</code>\n"
-                channels_text += f"   Тип: {group['type']}\n"
-                channels_text += "   Статус: ✅ Антиспам активен\n\n"
-
-        # Общая статистика
-        channels_text += "📊 <b>Общая статистика:</b>\n"
-        channels_text += f"• Нативных каналов: {len(native_channels)}\n"
-        channels_text += f"• Иностранных каналов: {len(foreign_channels)}\n"
-        channels_text += f"• Групп комментариев: {len(comment_groups)}\n"
-        channels_text += f"• Всего чатов: {len(channels) + len(comment_groups)}"
+        channels_text = await channels_admin_service.get_channels_display()
 
         await message.answer(channels_text)
         logger.info(f"Channels response sent to {sanitize_for_logging(str(message.from_user.id))}")
@@ -280,7 +98,7 @@ async def handle_channels_command(
 @admin_router.message(Command("bots"))
 async def handle_bots_command(
     message: Message,
-    bot_service: BotService,
+    bots_admin_service: BotsAdminService,
     admin_id: int,
 ) -> None:
     """Управление ботами."""
@@ -289,22 +107,7 @@ async def handle_bots_command(
             return
         logger.info(f"Bots command from {sanitize_for_logging(str(message.from_user.id))}")
 
-        bots = await bot_service.get_all_bots()
-
-        if not bots:
-            await message.answer("🤖 Боты не найдены")
-            return
-
-        bots_text = "🤖 <b>Управление ботами</b>\n\n"
-        for bot in bots[:10]:  # Показываем первые 10
-            is_whitelisted = bool(bot.is_whitelisted)
-            status = "✅ Вайтлист" if is_whitelisted else "❌ Блэклист"
-            username_value = bot.username
-            username = str(username_value) if username_value is not None else "Без username"
-            bots_text += f"{status} @{username}\n"
-
-        if len(bots) > 10:
-            bots_text += f"\n... и еще {len(bots) - 10} ботов"
+        bots_text = await bots_admin_service.get_bots_display()
 
         await message.answer(bots_text)
         logger.info(f"Bots response sent to {sanitize_for_logging(str(message.from_user.id))}")
