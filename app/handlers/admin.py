@@ -96,7 +96,7 @@ async def handle_status_command(
         connected_channels = []
         for channel in all_channels:
             try:
-                telegram_id = int(channel.telegram_id)
+                telegram_id = int(channel.telegram_id) if channel.telegram_id is not None else 0 if channel.telegram_id is not None else 0
                 is_native = await channel_service.is_native_channel(telegram_id)
                 if is_native:
                     connected_channels.append(channel)
@@ -106,7 +106,7 @@ async def handle_status_command(
         # Получаем группы комментариев из базы данных
         comment_groups = []
         for channel in all_channels:
-            if hasattr(channel, "is_comment_group") and channel.is_comment_group:
+            if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
                 comment_groups.append(
                     {
                         "title": channel.title or f"Группа {channel.telegram_id}",
@@ -197,7 +197,7 @@ async def handle_channels_command(
 
         for channel in channels:
             # Проверяем, является ли канал нативным (где бот админ)
-            telegram_id = int(channel.telegram_id)
+            telegram_id = int(channel.telegram_id) if channel.telegram_id is not None else 0
             is_native = await channel_service.is_native_channel(telegram_id)
             if is_native:
                 native_channels.append(channel)
@@ -243,7 +243,7 @@ async def handle_channels_command(
         # Получаем группы комментариев из базы данных
         comment_groups = []
         for channel in channels:
-            if hasattr(channel, "is_comment_group") and channel.is_comment_group:
+            if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
                 comment_groups.append(
                     {
                         "title": channel.title or f"Группа {channel.telegram_id}",
@@ -618,7 +618,7 @@ async def handle_unban_command(
             username = user_identifier[1:]  # Убираем @
             try:
                 # Пытаемся получить информацию о пользователе через Telegram API
-                user_info = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=username)
+                user_info = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=int(username))
                 user_id = user_info.user.id
                 logger.info(f"Found user_id {sanitize_for_logging(str(user_id))} for username @{sanitize_for_logging(username)}")
             except Exception as e:
@@ -691,7 +691,7 @@ async def handle_force_unban_command(
             username = user_identifier[1:]  # Убираем @
             try:
                 # Пытаемся получить информацию о пользователе через Telegram API
-                user_info = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=username)
+                user_info = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=int(username))
                 user_id = user_info.user.id
                 logger.info(f"Found user_id {sanitize_for_logging(str(user_id))} for username @{sanitize_for_logging(username)}")
             except Exception as e:
@@ -708,7 +708,7 @@ async def handle_force_unban_command(
         # Проверяем, что чат существует и бот может в нем работать
         try:
             chat = await moderation_service.bot.get_chat(chat_id)
-            logger.info(f"Chat found: {sanitize_for_logging(chat.title)} (ID: {sanitize_for_logging(str(chat_id))})")
+            logger.info(f"Chat found: {sanitize_for_logging(chat.title or 'Unknown')} (ID: {sanitize_for_logging(str(chat_id))})")
             
             # Проверяем, является ли бот администратором
             try:
@@ -815,7 +815,7 @@ async def handle_suspicious_command(
         
         for i, profile in enumerate(profiles, 1):
             # Получаем информацию о пользователе
-            user_info = await profile_service.get_user_info(profile.user_id)
+            user_info = await profile_service.get_user_info(int(profile.user_id))
             username = f"@{user_info['username']}" if user_info['username'] else "Нет username"
             name = f"{user_info['first_name']} {user_info['last_name'] or ''}".strip()
             
@@ -824,7 +824,7 @@ async def handle_suspicious_command(
             text += f"   Username: {username}\n"
             text += f"   Счет подозрительности: {profile.suspicion_score:.2f}\n"
             text += f"   Паттерны: {profile.detected_patterns}\n"
-            if profile.linked_chat_title:
+            if profile.linked_chat_title and str(profile.linked_chat_title).strip():
                 text += f"   Связанный чат: {profile.linked_chat_title}\n"
             text += f"   Дата: {profile.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
 
@@ -936,14 +936,14 @@ async def handle_suspicious_analyze_command(
                         text += f"• {pattern.strip()}\n"
                 text += "\n"
             
-            if profile.linked_chat_title:
+            if profile.linked_chat_title and str(profile.linked_chat_title).strip():
                 text += f"<b>📱 Связанный чат:</b> {profile.linked_chat_title}\n"
                 text += f"<b>📊 Постов:</b> {profile.post_count}\n\n"
             
             # Определяем статус
-            if profile.suspicion_score >= 0.7:
+            if float(profile.suspicion_score) >= 0.7:
                 status = "🔴 Высокий риск"
-            elif profile.suspicion_score >= 0.4:
+            elif float(profile.suspicion_score) >= 0.4:
                 status = "🟡 Средний риск"
             else:
                 status = "🟢 Низкий риск"
@@ -1063,7 +1063,7 @@ async def handle_find_chat_command(
                 f"🆔 ID: <code>{chat.id}</code>\n"
                 f"👤 Username: @{chat.username if chat.username else 'Нет'}\n"
                 f"📊 Тип: {chat.type}\n"
-                f"👥 Участников: {chat.member_count if hasattr(chat, 'member_count') else 'Неизвестно'}\n"
+                f"👥 Участников: {getattr(chat, 'member_count', 'Неизвестно')}\n"
                 f"🤖 Статус бота: {admin_status}\n\n"
                 f"💡 Используйте ID для команд: <code>{chat.id}</code>"
             )
@@ -1113,16 +1113,16 @@ async def handle_my_chats_command(
         for i, channel in enumerate(channels, 1):
             # Проверяем статус бота в канале
             try:
-                bot_member = await channel_service.bot.get_chat_member(channel.telegram_id, channel_service.bot.id)
+                bot_member = await channel_service.bot.get_chat_member(int(channel.telegram_id), channel_service.bot.id)
                 admin_status = "✅ Админ" if bot_member.status in ["administrator", "creator"] else "❌ Не админ"
             except Exception:
                 admin_status = "❓ Неизвестно"
             
             text += f"{i}. <b>{channel.title}</b>\n"
             text += f"   ID: <code>{channel.telegram_id}</code>\n"
-            text += f"   Username: @{channel.username if channel.username else 'Нет'}\n"
+            text += f"   Username: @{channel.username if channel.username and str(channel.username).strip() else 'Нет'}\n"
             text += f"   Статус бота: {admin_status}\n"
-            text += f"   Тип: {'Канал' if not channel.is_comment_group else 'Группа комментариев'}\n\n"
+            text += f"   Тип: {'Канал' if not bool(channel.is_comment_group) else 'Группа комментариев'}\n\n"
 
         text += "💡 <b>Используйте ID канала для команд разбана</b>"
         
@@ -1308,7 +1308,7 @@ async def handle_sync_bans_command(
             native_channels = []
             for channel in channels:
                 try:
-                    bot_member = await channel_service.bot.get_chat_member(channel.telegram_id, channel_service.bot.id)
+                    bot_member = await channel_service.bot.get_chat_member(int(channel.telegram_id), channel_service.bot.id)
                     if bot_member.status in ["administrator", "creator"]:
                         native_channels.append(channel)
                 except Exception:
@@ -1349,7 +1349,7 @@ async def handle_sync_bans_command(
             native_channels = []
             for channel in channels:
                 try:
-                    bot_member = await channel_service.bot.get_chat_member(channel.telegram_id, channel_service.bot.id)
+                    bot_member = await channel_service.bot.get_chat_member(int(channel.telegram_id), channel_service.bot.id)
                     if bot_member.status in ["administrator", "creator"]:
                         native_channels.append(channel)
                 except Exception:
@@ -1520,7 +1520,7 @@ async def handle_ban_suspicious_callback(
 
             await callback_query.answer("✅ Пользователь забанен")
             try:
-                if callback_query.message and hasattr(callback_query.message, "edit_text"):
+                if callback_query.message and hasattr(callback_query.message, "edit_text") and callable(getattr(callback_query.message, "edit_text", None)):
                     await callback_query.message.edit_text(
                         f"🚫 <b>Пользователь забанен</b>\n\n"
                         f"ID: {user_id}\n"
@@ -1558,7 +1558,7 @@ async def handle_watch_suspicious_callback(
 
         await callback_query.answer("👀 Пользователь добавлен в список наблюдения")
         try:
-            if callback_query.message and hasattr(callback_query.message, "edit_text"):
+            if callback_query.message and hasattr(callback_query.message, "edit_text") and callable(getattr(callback_query.message, "edit_text", None)):
                 await callback_query.message.edit_text(
                     f"👀 <b>Пользователь добавлен в наблюдение</b>\n\n" f"ID: {user_id}\n" f"Статус: Наблюдение"
                 )
@@ -1594,7 +1594,7 @@ async def handle_allow_suspicious_callback(
 
         await callback_query.answer("✅ Пользователь разрешен")
         try:
-            if callback_query.message and hasattr(callback_query.message, "edit_text"):
+            if callback_query.message and hasattr(callback_query.message, "edit_text") and callable(getattr(callback_query.message, "edit_text", None)):
                 await callback_query.message.edit_text(
                     f"✅ <b>Пользователь разрешен</b>\n\n" f"ID: {user_id}\n" f"Статус: Ложное срабатывание"
                 )
