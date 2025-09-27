@@ -989,6 +989,217 @@ async def handle_force_unban_command(
         await message.answer("❌ Ошибка при принудительном разбане")
 
 
+@admin_router.message(Command("suspicious"))
+async def handle_suspicious_command(
+    message: Message,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Показать подозрительные профили."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Suspicious command from {message.from_user.id}")
+
+        # Получаем подозрительные профили
+        profiles = await profile_service.get_suspicious_profiles(limit=10)
+        
+        if not profiles:
+            await message.answer("✅ Подозрительных профилей не найдено")
+            return
+
+        text = "🔍 <b>Подозрительные профили:</b>\n\n"
+        
+        for i, profile in enumerate(profiles, 1):
+            # Получаем информацию о пользователе
+            user_info = await profile_service.get_user_info(profile.user_id)
+            username = f"@{user_info['username']}" if user_info['username'] else "Нет username"
+            name = f"{user_info['first_name']} {user_info['last_name'] or ''}".strip()
+            
+            text += f"{i}. <b>{name}</b>\n"
+            text += f"   ID: <code>{profile.user_id}</code>\n"
+            text += f"   Username: {username}\n"
+            text += f"   Счет подозрительности: {profile.suspicion_score:.2f}\n"
+            text += f"   Паттерны: {profile.detected_patterns}\n"
+            if profile.linked_chat_title:
+                text += f"   Связанный чат: {profile.linked_chat_title}\n"
+            text += f"   Дата: {profile.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
+
+        text += "💡 <b>Команды управления:</b>\n"
+        text += "• /suspicious_reset - сбросить все подозрительные профили\n"
+        text += "• /suspicious_analyze <user_id> - проанализировать пользователя\n"
+        text += "• /suspicious_remove <user_id> - удалить из подозрительных"
+        
+        await message.answer(text)
+        logger.info(f"Suspicious profiles response sent to {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in suspicious command: {e}")
+        await message.answer("❌ Ошибка получения подозрительных профилей")
+
+
+@admin_router.message(Command("suspicious_reset"))
+async def handle_suspicious_reset_command(
+    message: Message,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Сбросить все подозрительные профили."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Suspicious reset command from {message.from_user.id}")
+
+        # Сбрасываем все подозрительные профили
+        deleted_count = await profile_service.reset_suspicious_profiles()
+        
+        await message.answer(
+            f"✅ <b>Подозрительные профили сброшены</b>\n\n"
+            f"🗑️ Удалено записей: {deleted_count}\n"
+            f"📊 Система анализа сброшена"
+        )
+        logger.info(f"Reset {deleted_count} suspicious profiles for {message.from_user.id}")
+
+    except Exception as e:
+        logger.error(f"Error in suspicious_reset command: {e}")
+        await message.answer("❌ Ошибка сброса подозрительных профилей")
+
+
+@admin_router.message(Command("suspicious_analyze"))
+async def handle_suspicious_analyze_command(
+    message: Message,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Проанализировать конкретного пользователя."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Suspicious analyze command from {message.from_user.id}")
+
+        # Парсим аргументы команды
+        if not message.text:
+            await message.answer("❌ Ошибка: пустое сообщение")
+            return
+        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+
+        if len(args) < 1:
+            await message.answer(
+                "❌ Использование: /suspicious_analyze <user_id>\n"
+                "Пример: /suspicious_analyze 123456789"
+            )
+            return
+
+        try:
+            user_id = int(args[0])
+        except ValueError:
+            await message.answer("❌ Неверный формат ID пользователя")
+            return
+
+        # Получаем информацию о пользователе
+        user_info = await profile_service.get_user_info(user_id)
+        
+        # Создаем объект User для анализа
+        from aiogram.types import User
+        user = User(
+            id=user_info['id'],
+            is_bot=user_info['is_bot'],
+            first_name=user_info['first_name'],
+            last_name=user_info['last_name'],
+            username=user_info['username']
+        )
+        
+        # Анализируем профиль
+        analysis_result = await profile_service.analyze_user_profile(user)
+        
+        # Формируем ответ
+        text = f"🔍 <b>Анализ профиля пользователя</b>\n\n"
+        text += f"<b>Пользователь:</b> {user_info['first_name']} {user_info['last_name'] or ''}\n"
+        text += f"<b>ID:</b> <code>{user_id}</code>\n"
+        text += f"<b>Username:</b> @{user_info['username'] or 'Нет'}\n"
+        text += f"<b>Счет подозрительности:</b> {analysis_result['suspicion_score']:.2f}\n"
+        text += f"<b>Обнаружено паттернов:</b> {len(analysis_result['patterns'])}\n\n"
+        
+        if analysis_result['patterns']:
+            text += "<b>🔍 Обнаруженные паттерны:</b>\n"
+            for pattern in analysis_result['patterns']:
+                text += f"• {pattern}\n"
+            text += "\n"
+        
+        if analysis_result['linked_chat']:
+            text += f"<b>📱 Связанный чат:</b> {analysis_result['linked_chat']['title']}\n"
+            text += f"<b>📊 Постов:</b> {analysis_result['post_count']}\n\n"
+        
+        # Определяем статус
+        if analysis_result['suspicion_score'] >= 0.7:
+            status = "🔴 Высокий риск"
+        elif analysis_result['suspicion_score'] >= 0.4:
+            status = "🟡 Средний риск"
+        else:
+            status = "🟢 Низкий риск"
+            
+        text += f"<b>Статус:</b> {status}"
+        
+        await message.answer(text)
+        logger.info(f"Profile analysis completed for user {user_id}")
+
+    except Exception as e:
+        logger.error(f"Error in suspicious_analyze command: {e}")
+        await message.answer("❌ Ошибка анализа профиля")
+
+
+@admin_router.message(Command("suspicious_remove"))
+async def handle_suspicious_remove_command(
+    message: Message,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Удалить пользователя из подозрительных."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Suspicious remove command from {message.from_user.id}")
+
+        # Парсим аргументы команды
+        if not message.text:
+            await message.answer("❌ Ошибка: пустое сообщение")
+            return
+        args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+
+        if len(args) < 1:
+            await message.answer(
+                "❌ Использование: /suspicious_remove <user_id>\n"
+                "Пример: /suspicious_remove 123456789"
+            )
+            return
+
+        try:
+            user_id = int(args[0])
+        except ValueError:
+            await message.answer("❌ Неверный формат ID пользователя")
+            return
+
+        # Удаляем из подозрительных профилей
+        profile = await profile_service._get_suspicious_profile(user_id)
+        if not profile:
+            await message.answer("❌ Пользователь не найден в подозрительных профилях")
+            return
+            
+        await profile_service.db.delete(profile)
+        await profile_service.db.commit()
+        
+        await message.answer(
+            f"✅ <b>Пользователь удален из подозрительных</b>\n\n"
+            f"👤 ID: <code>{user_id}</code>\n"
+            f"🗑️ Запись удалена из базы данных"
+        )
+        logger.info(f"Removed user {user_id} from suspicious profiles")
+
+    except Exception as e:
+        logger.error(f"Error in suspicious_remove command: {e}")
+        await message.answer("❌ Ошибка удаления из подозрительных")
+
+
 @admin_router.message(Command("find_chat"))
 async def handle_find_chat_command(
     message: Message,
