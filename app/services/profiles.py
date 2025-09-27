@@ -107,8 +107,8 @@ class ProfileService:
             logger.error(
                 safe_format_message(
                     "Error analyzing profile for user {user_id}: {error}",
-                    user_id=sanitize_for_logging(user.id),
-                    error=sanitize_for_logging(e),
+                    user_id=sanitize_for_logging(str(user.id)),
+                    error=sanitize_for_logging(str(e)),
                 )
             )
             return None
@@ -146,7 +146,7 @@ class ProfileService:
             )
 
         except Exception as e:
-            logger.error(safe_format_message("Error in profile analysis: {error}", error=sanitize_for_logging(e)))
+            logger.error(safe_format_message("Error in profile analysis: {error}", error=sanitize_for_logging(str(e))))
 
         return analysis
 
@@ -175,8 +175,8 @@ class ProfileService:
             logger.error(
                 safe_format_message(
                     "Error analyzing linked chat {chat_id}: {error}",
-                    chat_id=sanitize_for_logging(chat.id),
-                    error=sanitize_for_logging(e),
+                    chat_id=sanitize_for_logging(str(chat.id)),
+                    error=sanitize_for_logging(str(e)),
                 )
             )
 
@@ -186,10 +186,10 @@ class ProfileService:
         """Detect suspicious patterns in user profile."""
         patterns = []
 
-        # Приводим все поля к строке для безопасной работы
-        first_name = str(user.first_name) if user.first_name else None
-        last_name = str(user.last_name) if user.last_name else None
-        username = str(user.username) if user.username else None
+        # Безопасно приводим все поля к строке, проверяя на None
+        first_name = str(user.first_name) if user.first_name is not None else None
+        last_name = str(user.last_name) if user.last_name is not None else None
+        username = str(user.username) if user.username is not None else None
 
         # Check for common GPT-bot patterns
         if first_name and len(first_name) < 3:
@@ -207,13 +207,13 @@ class ProfileService:
             patterns.append("no_last_name")
 
         # Check for suspicious username patterns
-        if username:
+        if username and isinstance(username, str):
             username_lower = username.lower()
             if any(pattern in username_lower for pattern in ["bot", "gpt", "ai", "assistant"]):
                 patterns.append("bot_like_username")
 
         # Check for suspicious first name patterns
-        if first_name:
+        if first_name and isinstance(first_name, str):
             first_name_lower = first_name.lower()
             if any(pattern in first_name_lower for pattern in ["bot", "gpt", "ai", "test", "user"]):
                 patterns.append("bot_like_first_name")
@@ -289,13 +289,16 @@ class ProfileService:
             message += "<b>ID:</b> " + str(user.id) + "\n"
             message += "<b>Счет подозрительности:</b> " + str(profile.suspicion_score) + "\n"
 
-            if profile.linked_chat_title:
+            if profile.linked_chat_title and str(profile.linked_chat_title).strip():
                 message += "<b>Связанный канал:</b> " + str(profile.linked_chat_title) + "\n"
-                if profile.linked_chat_username:
+                if profile.linked_chat_username and str(profile.linked_chat_username).strip():
                     message += "<b>Username канала:</b> @" + str(profile.linked_chat_username) + "\n"
 
-            if profile.detected_patterns:
-                patterns = str(profile.detected_patterns).split(",") if profile.detected_patterns else []
+            if profile.detected_patterns and str(profile.detected_patterns).strip():
+                try:
+                    patterns = str(profile.detected_patterns).split(",") if profile.detected_patterns else []
+                except Exception:
+                    patterns = []
                 pattern_names = {
                     "short_first_name": "Короткое имя",
                     "short_last_name": "Короткая фамилия",
@@ -317,7 +320,7 @@ class ProfileService:
             logger.error(
                 safe_format_message(
                     "Error notifying admin about suspicious profile: {error}",
-                    error=sanitize_for_logging(e),
+                    error=sanitize_for_logging(str(e)),
                 )
             )
 
@@ -347,7 +350,7 @@ class ProfileService:
             return True
 
         except Exception as e:
-            logger.error(safe_format_message("Error marking profile as reviewed: {error}", error=sanitize_for_logging(e)))
+            logger.error(safe_format_message("Error marking profile as reviewed: {error}", error=sanitize_for_logging(str(e))))
             return False
 
     async def get_suspicious_profiles(self, limit: int = 50) -> List[SuspiciousProfile]:
@@ -358,7 +361,7 @@ class ProfileService:
             )
             return result.scalars().all()
         except Exception as e:
-            logger.error(safe_format_message("Error getting suspicious profiles: {error}", error=sanitize_for_logging(e)))
+            logger.error(safe_format_message("Error getting suspicious profiles: {error}", error=sanitize_for_logging(str(e))))
             return []
 
     async def reset_suspicious_profiles(self) -> int:
@@ -374,6 +377,6 @@ class ProfileService:
             await self.db.commit()
             return result.rowcount
         except Exception as e:
-            logger.error("Error resetting suspicious profiles: " + str(e))
+            logger.error("Error resetting suspicious profiles: " + sanitize_for_logging(str(e)))
             await self.db.rollback()
             return 0

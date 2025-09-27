@@ -925,57 +925,61 @@ async def handle_suspicious_analyze_command(
         
         # Формируем ответ
         logger.info("Starting text formatting")
-        text = f"🔍 <b>Анализ профиля пользователя</b>\n\n"
+        text = "🔍 <b>Анализ профиля пользователя</b>\n\n"
         logger.info("Added header")
         
-        text += f"<b>Пользователь:</b> {str(user_info['first_name'] or '')} {str(user_info['last_name'] or '')}\n"
+        text += "<b>Пользователь:</b> " + str(user_info['first_name'] or '') + " " + str(user_info['last_name'] or '') + "\n"
         logger.info("Added user name")
         
-        text += f"<b>ID:</b> <code>{user_id}</code>\n"
+        text += "<b>ID:</b> <code>" + str(user_id) + "</code>\n"
         logger.info("Added user ID")
         
-        text += f"<b>Username:</b> @{str(user_info['username'] or 'Нет')}\n"
+        text += "<b>Username:</b> @" + str(user_info['username'] or 'Нет') + "\n"
         logger.info("Added username")
         
         if profile:
             logger.info("Profile exists, processing suspicious user")
             # Пользователь подозрительный
-            text += f"<b>Счет подозрительности:</b> {profile.suspicion_score:.2f}\n"
+            text += "<b>Счет подозрительности:</b> " + str(profile.suspicion_score) + "\n"
             logger.info("Added suspicion score")
             
             # Безопасно парсим паттерны
             patterns = []
-            if profile.detected_patterns:
+            if profile.detected_patterns and str(profile.detected_patterns).strip():
                 try:
                     logger.info("Processing patterns: " + str(profile.detected_patterns))
-                    patterns = str(profile.detected_patterns).split(',')
-                    patterns = [p.strip() for p in patterns if p.strip()]
+                    # Дополнительная проверка типа
+                    if isinstance(profile.detected_patterns, (str, int, float)):
+                        patterns = str(profile.detected_patterns).split(',')
+                        patterns = [p.strip() for p in patterns if p.strip()]
+                    else:
+                        patterns = []
                     logger.info("Parsed patterns: " + str(patterns))
                 except Exception as e:
                     logger.error("Error parsing patterns: " + str(e))
                     patterns = []
             
-            text += f"<b>Обнаружено паттернов:</b> {len(patterns)}\n\n"
+            text += "<b>Обнаружено паттернов:</b> " + str(len(patterns)) + "\n\n"
             
             if patterns:
                 text += "<b>🔍 Обнаруженные паттерны:</b>\n"
                 for pattern in patterns:
-                    text += f"• {pattern}\n"
+                    text += "• " + str(pattern) + "\n"
                 text += "\n"
             
             # Безопасно проверяем связанный чат
-            if profile.linked_chat_title:
+            if profile.linked_chat_title and str(profile.linked_chat_title).strip():
                 try:
                     chat_title = str(profile.linked_chat_title).strip()
                     if chat_title:
-                        text += f"<b>📱 Связанный чат:</b> {chat_title}\n"
-                        text += f"<b>📊 Постов:</b> {profile.post_count}\n\n"
+                        text += "<b>📱 Связанный чат:</b> " + str(chat_title) + "\n"
+                        text += "<b>📊 Постов:</b> " + str(profile.post_count) + "\n\n"
                 except Exception:
                     pass
             
             # Определяем статус
             try:
-                score = float(profile.suspicion_score)
+                score = float(str(profile.suspicion_score))
                 if score >= 0.7:
                     status = "🔴 Высокий риск"
                 elif score >= 0.4:
@@ -985,31 +989,31 @@ async def handle_suspicious_analyze_command(
             except Exception:
                 status = "🟢 Низкий риск"
                 
-            text += f"<b>Статус:</b> {status}\n"
+            text += "<b>Статус:</b> " + str(status) + "\n"
             
             # Безопасно форматируем дату
             try:
-                if profile.created_at:
+                if profile.created_at and hasattr(profile.created_at, 'strftime'):
                     date_str = profile.created_at.strftime('%d.%m.%Y %H:%M')
                 else:
                     date_str = 'Неизвестно'
             except Exception:
                 date_str = 'Неизвестно'
             
-            text += f"<b>Дата анализа:</b> {date_str}"
+            text += "<b>Дата анализа:</b> " + str(date_str)
         else:
             logger.info("No profile, processing non-suspicious user")
             # Пользователь не подозрительный
-            text += f"<b>Счет подозрительности:</b> 0.00\n"
+            text += "<b>Счет подозрительности:</b> 0.00\n"
             logger.info("Added suspicion score 0.00")
             
-            text += f"<b>Обнаружено паттернов:</b> 0\n\n"
+            text += "<b>Обнаружено паттернов:</b> 0\n\n"
             logger.info("Added patterns count 0")
             
-            text += f"<b>Статус:</b> 🟢 Низкий риск\n"
+            text += "<b>Статус:</b> 🟢 Низкий риск\n"
             logger.info("Added status")
             
-            text += f"<b>Результат:</b> Пользователь не является подозрительным"
+            text += "<b>Результат:</b> Пользователь не является подозрительным"
             logger.info("Added result")
         
         await message.answer(text)
