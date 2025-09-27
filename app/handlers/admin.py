@@ -1110,7 +1110,7 @@ async def handle_suspicious_analyze_command(
         )
         
         # Анализируем профиль
-        analysis_result = await profile_service.analyze_user_profile(user)
+        analysis_result = await profile_service.analyze_user_profile(user, admin_id)
         
         # Формируем ответ
         text = f"🔍 <b>Анализ профиля пользователя</b>\n\n"
