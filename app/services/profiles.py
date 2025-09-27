@@ -49,7 +49,7 @@ class ProfileService:
                     "is_bot": False,
                 }
         except Exception as e:
-            logger.error(f"Error getting user info for {user_id}: {e}")
+            logger.error("Error getting user info for " + str(user_id) + ": " + str(e))
             return {
                 "id": user_id,
                 "username": None,
@@ -73,7 +73,7 @@ class ProfileService:
                     existing_profile.suspicion_score = analysis_result["suspicion_score"]
                     existing_profile.detected_patterns = ",".join(analysis_result["patterns"])
                     existing_profile.is_suspicious = analysis_result["is_suspicious"]
-                    existing_profile.analysis_reason = f"Suspicion score: {analysis_result['suspicion_score']:.2f}"
+                    existing_profile.analysis_reason = "Suspicion score: " + str(analysis_result['suspicion_score'])
                     existing_profile.updated_at = datetime.utcnow()
 
                     await self.db.commit()
@@ -142,7 +142,7 @@ class ProfileService:
             analysis["suspicion_score"] = self._calculate_suspicion_score(analysis)
             analysis["is_suspicious"] = analysis["suspicion_score"] > 0.2
             logger.info(
-                f"Analysis result for user {user.id}: score={analysis['suspicion_score']:.2f}, patterns={analysis['patterns']}, is_suspicious={analysis['is_suspicious']}"
+                "Analysis result for user " + str(user.id) + ": score=" + str(analysis['suspicion_score']) + ", patterns=" + str(analysis['patterns']) + ", is_suspicious=" + str(analysis['is_suspicious'])
             )
 
         except Exception as e:
@@ -263,7 +263,7 @@ class ProfileService:
             has_bait_channel=analysis_result.get("has_bait_channel", False),
             suspicion_score=float(analysis_result.get("suspicion_score", 0.0)),
             detected_patterns=",".join(analysis_result.get("patterns", []) or []),
-            analysis_reason=f"Suspicion score: {analysis_result.get('suspicion_score', 0.0):.2f}",
+            analysis_reason="Suspicion score: " + str(analysis_result.get('suspicion_score', 0.0)),
         )
 
         self.db.add(profile)
@@ -369,6 +369,6 @@ class ProfileService:
             await self.db.commit()
             return result.rowcount
         except Exception as e:
-            logger.error(f"Error resetting suspicious profiles: {e}")
+            logger.error("Error resetting suspicious profiles: " + str(e))
             await self.db.rollback()
             return 0
