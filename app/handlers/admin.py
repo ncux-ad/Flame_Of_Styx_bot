@@ -949,7 +949,7 @@ async def handle_suspicious_analyze_command(
                 status = "🟢 Низкий риск"
                 
             text += f"<b>Статус:</b> {status}\n"
-            text += f"<b>Дата анализа:</b> {profile.created_at.strftime('%d.%m.%Y %H:%M')}"
+            text += f"<b>Дата анализа:</b> {profile.created_at.strftime('%d.%m.%Y %H:%M') if profile.created_at else 'Неизвестно'}"
         else:
             # Пользователь не подозрительный
             text += f"<b>Счет подозрительности:</b> 0.00\n"
