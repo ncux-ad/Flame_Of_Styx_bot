@@ -919,9 +919,9 @@ async def handle_suspicious_analyze_command(
         
         # Формируем ответ
         text = f"🔍 <b>Анализ профиля пользователя</b>\n\n"
-        text += f"<b>Пользователь:</b> {user_info['first_name']} {user_info['last_name'] or ''}\n"
+        text += f"<b>Пользователь:</b> {str(user_info['first_name'] or '')} {str(user_info['last_name'] or '')}\n"
         text += f"<b>ID:</b> <code>{user_id}</code>\n"
-        text += f"<b>Username:</b> @{user_info['username'] or 'Нет'}\n"
+        text += f"<b>Username:</b> @{str(user_info['username'] or 'Нет')}\n"
         
         if profile:
             # Пользователь подозрительный
