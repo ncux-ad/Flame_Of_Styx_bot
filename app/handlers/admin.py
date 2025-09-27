@@ -884,18 +884,20 @@ async def handle_suspicious_analyze_command(
         if not message.text:
             await message.answer("❌ Ошибка: пустое сообщение")
             return
-        args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
-
-        if len(args) < 1:
+        
+        # Безопасное разбиение строки
+        parts = message.text.split()
+        if len(parts) < 2:
             await message.answer(
                 "❌ Использование: /suspicious_analyze <user_id>\n"
                 "Пример: /suspicious_analyze 123456789"
             )
             return
 
+        # Парсим user_id
         try:
-            user_id = int(args[0])
-        except ValueError:
+            user_id = int(parts[1])
+        except (ValueError, IndexError):
             await message.answer("❌ Неверный формат ID пользователя")
             return
 
@@ -925,31 +927,57 @@ async def handle_suspicious_analyze_command(
             # Пользователь подозрительный
             text += f"<b>Счет подозрительности:</b> {profile.suspicion_score:.2f}\n"
             
-            # Парсим паттерны из строки
-            patterns = str(profile.detected_patterns).split(',') if profile.detected_patterns else []
+            # Безопасно парсим паттерны
+            patterns = []
+            if profile.detected_patterns:
+                try:
+                    patterns = str(profile.detected_patterns).split(',')
+                    patterns = [p.strip() for p in patterns if p.strip()]
+                except Exception:
+                    patterns = []
+            
             text += f"<b>Обнаружено паттернов:</b> {len(patterns)}\n\n"
             
             if patterns:
                 text += "<b>🔍 Обнаруженные паттерны:</b>\n"
                 for pattern in patterns:
-                    if pattern.strip():  # Пропускаем пустые строки
-                        text += f"• {pattern.strip()}\n"
+                    text += f"• {pattern}\n"
                 text += "\n"
             
-            if profile.linked_chat_title and str(profile.linked_chat_title).strip():
-                text += f"<b>📱 Связанный чат:</b> {profile.linked_chat_title}\n"
-                text += f"<b>📊 Постов:</b> {profile.post_count}\n\n"
+            # Безопасно проверяем связанный чат
+            if profile.linked_chat_title:
+                try:
+                    chat_title = str(profile.linked_chat_title).strip()
+                    if chat_title:
+                        text += f"<b>📱 Связанный чат:</b> {chat_title}\n"
+                        text += f"<b>📊 Постов:</b> {profile.post_count}\n\n"
+                except Exception:
+                    pass
             
             # Определяем статус
-            if float(profile.suspicion_score) >= 0.7:
-                status = "🔴 Высокий риск"
-            elif float(profile.suspicion_score) >= 0.4:
-                status = "🟡 Средний риск"
-            else:
+            try:
+                score = float(profile.suspicion_score)
+                if score >= 0.7:
+                    status = "🔴 Высокий риск"
+                elif score >= 0.4:
+                    status = "🟡 Средний риск"
+                else:
+                    status = "🟢 Низкий риск"
+            except Exception:
                 status = "🟢 Низкий риск"
                 
             text += f"<b>Статус:</b> {status}\n"
-            text += f"<b>Дата анализа:</b> {profile.created_at.strftime('%d.%m.%Y %H:%M') if profile.created_at else 'Неизвестно'}"
+            
+            # Безопасно форматируем дату
+            try:
+                if profile.created_at:
+                    date_str = profile.created_at.strftime('%d.%m.%Y %H:%M')
+                else:
+                    date_str = 'Неизвестно'
+            except Exception:
+                date_str = 'Неизвестно'
+            
+            text += f"<b>Дата анализа:</b> {date_str}"
         else:
             # Пользователь не подозрительный
             text += f"<b>Счет подозрительности:</b> 0.00\n"
