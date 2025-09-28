@@ -12,10 +12,15 @@ try:
     from aioredis import Redis, ConnectionPool
     AIOREDIS_AVAILABLE = True
 except ImportError:
-    aioredis = None
-    Redis = None
-    ConnectionPool = None
-    AIOREDIS_AVAILABLE = False
+    try:
+        import redis.asyncio as aioredis
+        from redis.asyncio import Redis, ConnectionPool
+        AIOREDIS_AVAILABLE = True
+    except ImportError:
+        aioredis = None
+        Redis = None
+        ConnectionPool = None
+        AIOREDIS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +37,7 @@ class RedisService:
     async def connect(self) -> None:
         """Установить соединение с Redis."""
         if not AIOREDIS_AVAILABLE:
-            raise RuntimeError("aioredis не установлен. Установите: pip install aioredis==2.0.1")
+            raise RuntimeError("Redis не доступен. Установите: pip install redis>=5.0.0")
         
         try:
             if self._is_connected:
@@ -245,7 +250,7 @@ async def get_redis_service() -> RedisService:
     
     if _redis_service is None:
         if not AIOREDIS_AVAILABLE:
-            raise RuntimeError("aioredis не установлен. Установите: pip install aioredis==2.0.1")
+            raise RuntimeError("Redis не доступен. Установите: pip install redis>=5.0.0")
         
         from app.config import load_config
         config = load_config()
