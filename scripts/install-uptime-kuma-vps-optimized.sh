@@ -57,12 +57,17 @@ sudo rm -rf /home/uptime-kuma/uptime-kuma
 # Создаем пользователя
 print_step "Создаем пользователя uptime-kuma..."
 sudo userdel uptime-kuma 2>/dev/null || true
+sudo rm -rf /home/uptime-kuma
 sudo useradd -m -s /bin/bash uptime-kuma
 
 # Создаем директории
 print_step "Создаем директории..."
 sudo mkdir -p /opt/uptime-kuma
 sudo chown -R uptime-kuma:uptime-kuma /opt/uptime-kuma
+
+# Устанавливаем права на домашнюю директорию
+sudo chown -R uptime-kuma:uptime-kuma /home/uptime-kuma
+sudo chmod 755 /home/uptime-kuma
 
 # Клонируем репозиторий
 print_step "Клонируем Uptime Kuma..."

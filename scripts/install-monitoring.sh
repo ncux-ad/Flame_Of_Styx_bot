@@ -57,9 +57,10 @@ print_menu() {
     echo -e "   • Исправляет существующие проблемы"
     echo -e "   • Переустанавливает с нуля"
     echo ""
-    echo -e "${GREEN}4)${NC} 📊 Только Netdata (системный мониторинг)"
+    echo -e "${GREEN}4)${NC} 📊 Только Netdata (САМЫЙ ПРОСТОЙ)"
     echo -e "   • Только мониторинг сервера"
     echo -e "   • Без Uptime Kuma"
+    echo -e "   • Минимальное использование ресурсов"
     echo ""
     echo -e "${GREEN}5)${NC} ❌ Отмена"
     echo ""
@@ -145,9 +146,9 @@ while true; do
             break
             ;;
         4)
-            print_step "Устанавливаем только Netdata..."
-            chmod +x scripts/install-netdata-only.sh
-            ./scripts/install-netdata-only.sh
+            print_step "Устанавливаем только Netdata (САМЫЙ ПРОСТОЙ)..."
+            chmod +x scripts/install-monitoring-netdata-only.sh
+            ./scripts/install-monitoring-netdata-only.sh
             break
             ;;
         5)
