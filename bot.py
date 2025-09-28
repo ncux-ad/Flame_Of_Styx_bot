@@ -16,7 +16,6 @@ from app.database import create_tables
 from app.middlewares.dependency_injection import DependencyInjectionMiddleware
 from app.middlewares.logging import LoggingMiddleware
 from app.middlewares.ratelimit import RateLimitMiddleware
-from app.middlewares.redis_rate_limit import RedisRateLimitMiddleware
 from app.middlewares.suspicious_profile import SuspiciousProfileMiddleware
 from app.middlewares.validation import ValidationMiddleware, CommandValidationMiddleware
 from app.services.config_watcher import LimitsHotReload
@@ -57,15 +56,18 @@ async def main():
         shutdown_manager = await create_graceful_shutdown(bot, dp, config.admin_ids_list)
         
         # 6. Initialize Redis (if enabled)
+        redis_available = False
         if config.redis_enabled:
-            from app.services.redis import get_redis_service
             try:
+                from app.services.redis import get_redis_service
                 redis_service = await get_redis_service()
+                redis_available = True
                 logger.info("Redis подключен успешно")
             except Exception as e:
                 logger.error(f"Ошибка подключения к Redis: {e}")
                 logger.warning("Продолжаем работу без Redis rate limiting")
                 config.redis_enabled = False
+                redis_available = False
 
         # 7. Register middlewares (order matters!)
         # Validation -> Logging -> RateLimit -> DI -> SuspiciousProfile
@@ -74,14 +76,24 @@ async def main():
         dp.message.middleware(LoggingMiddleware())
         
         # Rate limiting middleware (Redis or fallback)
-        if config.redis_enabled:
-            dp.message.middleware(RedisRateLimitMiddleware(
-                user_limit=config.redis_user_limit,
-                admin_limit=config.redis_admin_limit,
-                interval=config.redis_interval,
-                strategy=config.redis_strategy,
-                block_duration=config.redis_block_duration,
-            ))
+        if redis_available:
+            try:
+                from app.middlewares.redis_rate_limit import RedisRateLimitMiddleware
+                dp.message.middleware(RedisRateLimitMiddleware(
+                    user_limit=config.redis_user_limit,
+                    admin_limit=config.redis_admin_limit,
+                    interval=config.redis_interval,
+                    strategy=config.redis_strategy,
+                    block_duration=config.redis_block_duration,
+                ))
+            except ImportError as e:
+                logger.error(f"Не удалось импортировать RedisRateLimitMiddleware: {e}")
+                logger.warning("Используем локальный rate limiting")
+                dp.message.middleware(RateLimitMiddleware(
+                    user_limit=config.redis_user_limit,
+                    admin_limit=config.redis_admin_limit,
+                    interval=config.redis_interval
+                ))
         else:
             dp.message.middleware(RateLimitMiddleware(
                 user_limit=config.redis_user_limit,
@@ -122,14 +134,22 @@ async def main():
             update_type.middleware(LoggingMiddleware())
             
             # Rate limiting for other update types
-            if config.redis_enabled:
-                update_type.middleware(RedisRateLimitMiddleware(
-                    user_limit=config.redis_user_limit,
-                    admin_limit=config.redis_admin_limit,
-                    interval=config.redis_interval,
-                    strategy=config.redis_strategy,
-                    block_duration=config.redis_block_duration,
-                ))
+            if redis_available:
+                try:
+                    from app.middlewares.redis_rate_limit import RedisRateLimitMiddleware
+                    update_type.middleware(RedisRateLimitMiddleware(
+                        user_limit=config.redis_user_limit,
+                        admin_limit=config.redis_admin_limit,
+                        interval=config.redis_interval,
+                        strategy=config.redis_strategy,
+                        block_duration=config.redis_block_duration,
+                    ))
+                except ImportError:
+                    update_type.middleware(RateLimitMiddleware(
+                        user_limit=config.redis_user_limit,
+                        admin_limit=config.redis_admin_limit,
+                        interval=config.redis_interval
+                    ))
             else:
                 update_type.middleware(RateLimitMiddleware(
                     user_limit=config.redis_user_limit,

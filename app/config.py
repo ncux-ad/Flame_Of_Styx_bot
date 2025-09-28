@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     
     # Настройки Redis
     redis_url: str = Field(default="redis://localhost:6379/0", description="URL подключения к Redis")
-    redis_enabled: bool = Field(default=True, description="Включить Redis rate limiting")
+    redis_enabled: bool = Field(default=False, description="Включить Redis rate limiting")
     
     # Настройки Redis Rate Limiting
     redis_user_limit: int = Field(default=10, ge=1, le=100, description="Лимит сообщений для пользователей")
