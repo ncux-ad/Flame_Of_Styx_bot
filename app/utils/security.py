@@ -125,6 +125,45 @@ def validate_bot_token(token: str) -> bool:
     return True
 
 
+def validate_test_bot_token(token: str) -> bool:
+    """
+    Валидирует тестовый токен бота (более мягкие требования).
+
+    Args:
+        token: Токен для проверки
+
+    Returns:
+        True если токен валидный, False иначе
+    """
+    # Проверяем, что это тестовый токен
+    if not token.startswith("test_token_"):
+        return False
+
+    # Проверяем базовую структуру
+    if ":" not in token:
+        return False
+
+    parts = token.split(":")
+    if len(parts) != 2:
+        return False
+
+    bot_id, bot_secret = parts
+
+    # Проверяем ID бота (должен быть числом)
+    if not bot_id.isdigit() or len(bot_id) < 8:
+        return False
+
+    # Для тестовых токенов секрет может быть короче
+    if len(bot_secret) < 10:
+        return False
+
+    # Проверяем что секрет содержит только допустимые символы
+    if not re.match(r"^[A-Za-z0-9_-]+$", bot_secret):
+        return False
+
+    return True
+
+
 def validate_admin_id(admin_id: str | int) -> bool:
     """
     Валидирует ID администратора.

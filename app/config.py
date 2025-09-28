@@ -5,7 +5,7 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 from app.constants import SUSPICION_THRESHOLD
-from app.utils.security import validate_admin_id, validate_bot_token
+from app.utils.security import validate_admin_id, validate_bot_token, validate_test_bot_token
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,8 @@ class Settings(BaseSettings):
         if not v:
             raise ValueError("BOT_TOKEN не может быть пустым")
 
-        if not validate_bot_token(v):
+        # Проверяем обычный токен или тестовый токен
+        if not (validate_bot_token(v) or validate_test_bot_token(v)):
             raise ValueError("BOT_TOKEN некорректный формат")
 
         logger.info("Токен бота успешно валидирован")

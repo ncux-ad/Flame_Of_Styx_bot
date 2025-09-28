@@ -34,7 +34,7 @@ jobs:
     
     - name: Run code quality checks
       env:
-        BOT_TOKEN: "test_token_123456789"
+        BOT_TOKEN: "123456789:test_token_123456789"
         ADMIN_IDS: "123456789"
         DB_PATH: "test.db"
         REDIS_ENABLED: "false"

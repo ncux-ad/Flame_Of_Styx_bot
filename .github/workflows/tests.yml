@@ -50,7 +50,7 @@ jobs:
         export DB_PATH=test.db
         
         # Set up environment variables
-        echo "BOT_TOKEN=test_token_123456789" >> $GITHUB_ENV
+        echo "BOT_TOKEN=123456789:test_token_123456789" >> $GITHUB_ENV
         echo "ADMIN_IDS=123456789" >> $GITHUB_ENV
         echo "DB_PATH=test.db" >> $GITHUB_ENV
         echo "REDIS_ENABLED=false" >> $GITHUB_ENV

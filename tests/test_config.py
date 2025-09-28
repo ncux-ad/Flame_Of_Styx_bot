@@ -16,7 +16,7 @@ class TestConfig:
         """Test loading configuration with default values."""
         # Set test environment variables
         import os
-        os.environ['BOT_TOKEN'] = 'test_token_123456789'
+        os.environ['BOT_TOKEN'] = '123456789:test_token_123456789'
         os.environ['ADMIN_IDS'] = '123456789'
         os.environ['DB_PATH'] = 'test.db'
         os.environ['REDIS_ENABLED'] = 'false'
