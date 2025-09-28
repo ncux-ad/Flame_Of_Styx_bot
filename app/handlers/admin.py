@@ -673,6 +673,18 @@ async def handle_suspicious_command(
         text += "• /suspicious_analyze <user_id> - проанализировать пользователя\n"
         text += "• /suspicious_remove <user_id> - удалить из подозрительных\n"
         
+        # Отладочная информация
+        logger.info(f"Generated text length: {len(text)}")
+        logger.info(f"Text preview: {text[:500]}...")
+        
+        # Проверяем на наличие подозрительных символов
+        if '<user_id' in text:
+            logger.error("Found '<user_id' in text!")
+            text = text.replace('<user_id', '&lt;user_id')
+        if 'user_id>' in text:
+            logger.error("Found 'user_id>' in text!")
+            text = text.replace('user_id>', 'user_id&gt;')
+        
         await message.answer(text)
         logger.info(f"Suspicious profiles response sent to {sanitize_for_logging(str(message.from_user.id))}")
 
