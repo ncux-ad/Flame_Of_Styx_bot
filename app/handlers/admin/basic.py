@@ -111,7 +111,17 @@ async def handle_help_command(
             return
         logger.info(f"Help command from {sanitize_for_logging(str(message.from_user.id))}")
 
-        help_text = await help_service.get_help_text(message.from_user.id)
+        # Получаем аргументы команды
+        command_args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+        
+        if command_args:
+            # Запрошена справка по категории
+            category = command_args[0].lower()
+            help_text = help_service.get_category_help(category, message.from_user.id)
+        else:
+            # Общая справка
+            help_text = await help_service.get_help_text(message.from_user.id)
+        
         await message.answer(help_text)
         logger.info(f"Help sent to {sanitize_for_logging(str(message.from_user.id))}")
 
@@ -152,6 +162,10 @@ async def handle_logs_command(
             return
         logger.info(f"Logs command from {sanitize_for_logging(str(message.from_user.id))}")
 
+        # Получаем аргументы команды
+        command_args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+        log_level = command_args[0].lower() if command_args else "all"
+        
         # Пробуем разные пути к файлу логов
         log_files = ["bot.log", "logs/bot.log", "/var/log/antispam-bot.log"]
         log_text = ""
@@ -161,7 +175,18 @@ async def handle_logs_command(
                 with open(log_file, "r", encoding="utf-8") as f:
                     lines = f.readlines()
                     if lines:
-                        last_lines = lines[-30:] if len(lines) > 30 else lines
+                        # Фильтруем по уровню логирования
+                        if log_level == "error":
+                            filtered_lines = [line for line in lines if "ERROR" in line]
+                        elif log_level == "warning":
+                            filtered_lines = [line for line in lines if "WARNING" in line or "ERROR" in line]
+                        elif log_level == "info":
+                            filtered_lines = [line for line in lines if "INFO" in line]
+                        else:
+                            filtered_lines = lines
+                        
+                        # Берем последние 30 строк
+                        last_lines = filtered_lines[-30:] if len(filtered_lines) > 30 else filtered_lines
                         log_text = "".join(last_lines)
                         break
             except (FileNotFoundError, PermissionError, OSError):
@@ -174,7 +199,17 @@ async def handle_logs_command(
             if len(log_text) > 3500:
                 log_text = "..." + log_text[-3500:]
 
-        await message.answer(f"<b>Последние логи:</b>\n\n<code>{log_text}</code>")
+        # Формируем заголовок в зависимости от уровня
+        if log_level == "error":
+            title = "Логи системы (error)"
+        elif log_level == "warning":
+            title = "Логи системы (warning)"
+        elif log_level == "info":
+            title = "Логи системы (info)"
+        else:
+            title = "Последние логи"
+
+        await message.answer(f"<b>{title}</b>\n\n<code>{log_text}</code>")
         logger.info(f"Logs sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
