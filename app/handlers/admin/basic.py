@@ -152,20 +152,29 @@ async def handle_logs_command(
             return
         logger.info(f"Logs command from {sanitize_for_logging(str(message.from_user.id))}")
 
-        # Простая реализация - показываем последние строки лога
-        try:
-            with open("bot.log", "r", encoding="utf-8") as f:
-                lines = f.readlines()
-                last_lines = lines[-20:] if len(lines) > 20 else lines
-                log_text = "".join(last_lines)
-        except FileNotFoundError:
-            log_text = "Файл логов не найден"
+        # Пробуем разные пути к файлу логов
+        log_files = ["bot.log", "logs/bot.log", "/var/log/antispam-bot.log"]
+        log_text = ""
+        
+        for log_file in log_files:
+            try:
+                with open(log_file, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                    if lines:
+                        last_lines = lines[-30:] if len(lines) > 30 else lines
+                        log_text = "".join(last_lines)
+                        break
+            except (FileNotFoundError, PermissionError, OSError):
+                continue
+        
+        if not log_text:
+            log_text = "Файл логов не найден. Проверьте:\n• bot.log\n• logs/bot.log\n• /var/log/antispam-bot.log"
+        else:
+            # Ограничиваем длину сообщения
+            if len(log_text) > 3500:
+                log_text = "..." + log_text[-3500:]
 
-        # Ограничиваем длину сообщения
-        if len(log_text) > 4000:
-            log_text = log_text[-4000:]
-
-        await message.answer(f"📋 <b>Последние логи:</b>\n\n<code>{log_text}</code>")
+        await message.answer(f"<b>Последние логи:</b>\n\n<code>{log_text}</code>")
         logger.info(f"Logs sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
