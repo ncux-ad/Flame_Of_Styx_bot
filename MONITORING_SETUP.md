@@ -8,7 +8,32 @@
 - **Порты 19999 и 3001** свободны
 - **Права sudo** для управления сервисами
 
-## 🚀 Установка
+## 🚀 **БЫСТРАЯ УСТАНОВКА (рекомендуется)**
+
+### **Linux/macOS:**
+```bash
+# 1. Перейдите в директорию проекта
+cd /path/to/Flame_Of_Styx_bot
+
+# 2. Запустите быстрый скрипт установки
+chmod +x scripts/quick-setup-monitoring.sh
+./scripts/quick-setup-monitoring.sh
+```
+
+### **Windows (PowerShell):**
+```powershell
+# 1. Перейдите в директорию проекта
+cd D:\soft\000_Projects\Flame_Of_Styx_bot
+
+# 2. Запустите PowerShell скрипт
+.\scripts\quick-setup-monitoring.ps1
+```
+
+**Готово!** Мониторинг будет установлен и запущен автоматически.
+
+---
+
+## 🔧 **РУЧНАЯ УСТАНОВКА**
 
 ### Шаг 1: Подключение к серверу
 ```bash
@@ -121,6 +146,45 @@ sudo systemctl status monitoring
 
 - **Netdata**: http://your-server-ip:19999
 - **Uptime Kuma**: http://your-server-ip:3001
+
+## 🔧 **УПРАВЛЕНИЕ МОНИТОРИНГОМ**
+
+### **Автоматическое управление (рекомендуется):**
+```bash
+# Использовать скрипт управления
+chmod +x scripts/monitoring-control.sh
+
+# Команды управления
+./scripts/monitoring-control.sh start     # Запустить
+./scripts/monitoring-control.sh stop      # Остановить
+./scripts/monitoring-control.sh restart   # Перезапустить
+./scripts/monitoring-control.sh status    # Статус
+./scripts/monitoring-control.sh logs      # Логи
+./scripts/monitoring-control.sh check     # Проверка
+./scripts/monitoring-control.sh update    # Обновить
+```
+
+### **Проверка мониторинга:**
+```bash
+# Запустить полную проверку
+chmod +x scripts/check-monitoring.sh
+./scripts/check-monitoring.sh
+```
+
+### **Ручное управление:**
+```bash
+# Запустить мониторинг
+sudo systemctl start monitoring
+
+# Остановить мониторинг
+sudo systemctl stop monitoring
+
+# Перезапустить мониторинг
+sudo systemctl restart monitoring
+
+# Проверить статус
+sudo systemctl status monitoring
+```
 
 ## 🔧 Управление
 
