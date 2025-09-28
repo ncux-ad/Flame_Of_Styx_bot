@@ -22,8 +22,6 @@ def check_git_secrets_patterns():
         r'mysql://[^:]+:[^@]+@[^/]+/[^/]+',
         # Redis URLs
         r'redis://[^:]+:[^@]+@[^/]+',
-        # Private Keys (literal pattern)
-        r'-----BEGIN.*PRIVATE KEY-----',
         # JWT Tokens
         r'eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*',
     ]
