@@ -36,8 +36,19 @@ class TestBot:
         """Запускает тестовый бот."""
         logger.info("Starting test bot...")
         
-        # Создаем фиктивный бот и dispatcher
-        bot = Bot(token="dummy_token")
+        # Создаем фиктивный бот и dispatcher (без инициализации токена)
+        class MockBot:
+            async def send_message(self, chat_id, text):
+                logger.info(f"Mock send_message to {chat_id}: {text}")
+            
+            @property
+            def session(self):
+                return self
+            
+            async def close(self):
+                logger.info("Mock session closed")
+        
+        bot = MockBot()
         dp = Dispatcher()
         
         # Создаем graceful shutdown manager
