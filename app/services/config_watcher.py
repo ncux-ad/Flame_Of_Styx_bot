@@ -125,6 +125,7 @@ class LimitsHotReload:
         self.bot = bot
         self.admin_ids = admin_ids
         self.watcher = ConfigWatcher("limits.json", self._on_limits_changed)
+        self.show_limits_on_startup = True  # Показывать лимиты при запуске
 
     async def start(self) -> None:
         """Запустить hot-reload для лимитов."""
@@ -198,36 +199,52 @@ class LimitsHotReload:
     async def _notify_admins_about_reload(self, old_limits: Dict, new_limits: Dict) -> None:
         """Уведомить администраторов об обновлении лимитов."""
         try:
-            message = "🔄 <b>Лимиты обновлены автоматически!</b>\n\n"
-
-            # Показываем изменения
-            for key, new_value in new_limits.items():
-                old_value = old_limits.get(key, "неизвестно")
-                if old_value != new_value:
-                    message += f"• <b>{key}:</b> {old_value} → {new_value}\n"
-                else:
-                    message += f"• <b>{key}:</b> {new_value}\n"
-
-            message += "\n✅ Изменения вступили в силу немедленно\n\n"
+            # Проверяем, это первый запуск или обновление
+            is_first_start = not hasattr(self, '_first_notification_sent')
             
-            # Добавляем информацию о коммите
-            try:
-                result = subprocess.run(
-                    ["git", "rev-parse", "--short", "HEAD"],
-                    capture_output=True,
-                    text=True,
-                    cwd="."
-                )
-                if result.returncode == 0:
-                    commit_hash = result.stdout.strip()
-                    message += f"🤖 <b>Бот запущен</b>\n"
-                    message += f"📝 <b>ID текущего коммита:</b> <code>{commit_hash}</code>"
-                else:
-                    message += f"🤖 <b>Бот запущен</b>\n"
-                    message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>"
-            except Exception:
-                message += f"🤖 <b>Бот запущен</b>\n"
-                message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>"
+            if is_first_start:
+                # Первый запуск - полное сообщение
+                message = "🤖 <b>AntiSpam Bot запущен</b>\n\n"
+                message += "✅ <b>Бот готов к работе</b>\n"
+                message += "🛡️ <b>Антиспам активен</b>\n"
+                message += "📊 <b>Мониторинг включен</b>\n\n"
+                
+                # Добавляем информацию о коммите
+                try:
+                    result = subprocess.run(
+                        ["git", "rev-parse", "--short", "HEAD"],
+                        capture_output=True,
+                        text=True,
+                        cwd="."
+                    )
+                    if result.returncode == 0:
+                        commit_hash = result.stdout.strip()
+                        message += f"📝 <b>ID текущего коммита:</b> <code>{commit_hash}</code>\n\n"
+                    else:
+                        message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>\n\n"
+                except Exception:
+                    message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>\n\n"
+                
+                # Добавляем информацию о лимитах (если включено)
+                if getattr(self, 'show_limits_on_startup', True):
+                    message += "⚙️ <b>Текущие лимиты:</b>\n"
+                    for key, value in new_limits.items():
+                        message += f"• <b>{key}:</b> {value}\n"
+                
+                self._first_notification_sent = True
+            else:
+                # Обновление лимитов
+                message = "🔄 <b>Лимиты обновлены автоматически!</b>\n\n"
+
+                # Показываем изменения
+                for key, new_value in new_limits.items():
+                    old_value = old_limits.get(key, "неизвестно")
+                    if old_value != new_value:
+                        message += f"• <b>{key}:</b> {old_value} → {new_value}\n"
+                    else:
+                        message += f"• <b>{key}:</b> {new_value}\n"
+
+                message += "\n✅ Изменения вступили в силу немедленно"
 
             # Отправляем уведомление всем администраторам
             for admin_id in self.admin_ids:

@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     allow_photos_without_caption: bool = True  # Разрешать фото без подписи
     allow_videos_without_caption: bool = True  # Разрешать видео без подписи
     max_document_size_suspicious: int = 50000  # Максимальный размер документа для подозрения (байты)
+    
+    # Настройки уведомлений
+    show_limits_on_startup: bool = True  # Показывать лимиты при запуске бота
 
     @field_validator("db_path")
     @classmethod

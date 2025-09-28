@@ -114,14 +114,14 @@ async def main():
         # 8. Initialize hot-reload for limits
         limits_service = LimitsService()
         hot_reload = LimitsHotReload(limits_service, bot, config.admin_ids_list)
+        hot_reload.show_limits_on_startup = config.show_limits_on_startup
         await hot_reload.start()
         logger.info("Hot-reload for limits started")
         
         # 9. Register hot-reload shutdown callback
         shutdown_manager.add_shutdown_callback(hot_reload.stop)
 
-        # 10. Send startup notification
-        await shutdown_manager.startup_notification()
+        # 10. Startup notification will be sent by hot-reload
 
         logger.info("Starting bot...")
 
