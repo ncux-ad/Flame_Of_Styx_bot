@@ -205,7 +205,7 @@ print_step "Устанавливаем Uptime Kuma (оптимизированн
 
 # Создаем пользователя для Uptime Kuma
 if ! id "uptime-kuma" &>/dev/null; then
-    sudo useradd -r -s /bin/false uptime-kuma
+    sudo useradd -r -s /bin/false -m uptime-kuma
     print_success "Пользователь uptime-kuma создан"
 else
     print_info "Пользователь uptime-kuma уже существует"
@@ -213,7 +213,7 @@ fi
 
 # Создаем директорию для Uptime Kuma
 sudo mkdir -p /opt/uptime-kuma
-sudo chown uptime-kuma:uptime-kuma /opt/uptime-kuma
+sudo chown -R uptime-kuma:uptime-kuma /opt/uptime-kuma
 
 # Устанавливаем Node.js (минимальная версия)
 if ! command -v node &> /dev/null; then
@@ -300,6 +300,8 @@ ExecStart=/usr/bin/node server/server.js
 Restart=on-failure
 RestartSec=10
 Environment=NODE_ENV=production
+Environment=PORT=3001
+Environment=HOST=0.0.0.0
 # Ограничения ресурсов для слабого VPS
 MemoryLimit=256M
 CPUQuota=25%
@@ -338,6 +340,26 @@ if systemctl is-active --quiet uptime-kuma; then
     print_success "Uptime Kuma: Запущен (оптимизирован)"
 else
     print_error "Uptime Kuma: Не запущен"
+    print_info "Диагностика Uptime Kuma:"
+    sudo journalctl -u uptime-kuma -n 10 --no-pager
+    
+    # Пытаемся исправить
+    print_info "Пытаемся исправить Uptime Kuma..."
+    
+    # Проверяем права доступа
+    sudo chown -R uptime-kuma:uptime-kuma /opt/uptime-kuma
+    
+    # Перезапускаем
+    sudo systemctl restart uptime-kuma
+    sleep 3
+    
+    if systemctl is-active --quiet uptime-kuma; then
+        print_success "Uptime Kuma: Исправлен и запущен"
+    else
+        print_error "Uptime Kuma: Не удалось исправить"
+        print_info "Попробуйте запустить вручную:"
+        echo "  sudo -u uptime-kuma /usr/bin/node /opt/uptime-kuma/server/server.js"
+    fi
 fi
 
 # Настраиваем firewall
