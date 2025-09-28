@@ -29,6 +29,12 @@ jobs:
         pip install -e ".[dev]"
     
     - name: Run pre-deploy checks
+      env:
+        BOT_TOKEN: "test_token_123456789"
+        ADMIN_IDS: "123456789"
+        DB_PATH: "test.db"
+        REDIS_ENABLED: "false"
+        REDIS_URL: "redis://localhost:6379/0"
       run: |
         # Check code quality
         echo "Running code quality checks..."
@@ -61,7 +67,7 @@ jobs:
           .
     
     - name: Upload deployment package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: deployment-package
         path: antispam-bot-*.tar.gz
