@@ -234,20 +234,28 @@ else
 fi
 
 # Устанавливаем Uptime Kuma (стабильная версия)
-if [[ ! -d "/opt/uptime-kuma" ]]; then
+if [[ ! -f "/opt/uptime-kuma/package.json" ]]; then
     print_info "Скачиваем Uptime Kuma (стабильная версия)..."
     
     cd /tmp
+    # Очищаем старые файлы
+    rm -rf uptime-kuma-1.23.3 1.23.3.tar.gz 2>/dev/null || true
+    
     # Скачиваем стабильный релиз
     wget https://github.com/louislam/uptime-kuma/archive/refs/tags/1.23.3.tar.gz
     tar -xzf 1.23.3.tar.gz
-    sudo mv uptime-kuma-1.23.3/* /opt/uptime-kuma/
+    
+    # Очищаем директорию и копируем файлы
+    sudo rm -rf /opt/uptime-kuma/*
+    sudo cp -r uptime-kuma-1.23.3/* /opt/uptime-kuma/
     sudo chown -R uptime-kuma:uptime-kuma /opt/uptime-kuma
+    
+    # Очищаем временные файлы
     rm -rf uptime-kuma-1.23.3 1.23.3.tar.gz
     
     # Устанавливаем зависимости (только production)
     cd /opt/uptime-kuma
-    sudo -u uptime-kuma npm install --production --no-optional
+    sudo -u uptime-kuma npm install --production --omit=dev
     
     print_success "Uptime Kuma установлен"
 else

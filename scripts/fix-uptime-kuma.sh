@@ -67,20 +67,33 @@ fi
 
 # Проверяем файлы
 print_step "Проверяем файлы..."
-if [[ ! -f "server/server.js" ]]; then
-    print_error "Файл server/server.js не найден!"
+if [[ ! -f "package.json" ]] || [[ ! -f "server/server.js" ]]; then
+    print_error "Файлы Uptime Kuma не найдены!"
     print_info "Переустанавливаем Uptime Kuma..."
     
+    # Очищаем директорию
+    sudo rm -rf /opt/uptime-kuma/*
+    
     cd /tmp
+    # Скачиваем стабильную версию
     wget https://github.com/louislam/uptime-kuma/archive/refs/tags/1.23.3.tar.gz
     tar -xzf 1.23.3.tar.gz
-    sudo rm -rf /opt/uptime-kuma/*
-    sudo mv uptime-kuma-1.23.3/* /opt/uptime-kuma/
+    
+    # Копируем файлы
+    sudo cp -r uptime-kuma-1.23.3/* /opt/uptime-kuma/
     sudo chown -R uptime-kuma:uptime-kuma /opt/uptime-kuma
-    sudo -u uptime-kuma npm install --production
+    
+    # Очищаем временные файлы
     rm -rf uptime-kuma-1.23.3 1.23.3.tar.gz
     
     print_success "Uptime Kuma переустановлен"
+    
+    # Переходим в директорию и устанавливаем зависимости
+    cd /opt/uptime-kuma
+    print_info "Устанавливаем зависимости..."
+    sudo -u uptime-kuma npm install --production --omit=dev
+else
+    print_info "Файлы Uptime Kuma найдены"
 fi
 
 # Тестируем запуск
