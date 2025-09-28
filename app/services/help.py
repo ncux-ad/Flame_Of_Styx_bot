@@ -64,6 +64,13 @@ class HelpService:
                 examples=["/channels"],
                 admin_only=True,
             ),
+            "sync_channels": CommandInfo(
+                command="/sync_channels",
+                description="Синхронизировать статус каналов (нативные/иностранные)",
+                usage="/sync_channels",
+                examples=["/sync_channels"],
+                admin_only=True,
+            ),
             # Управление ботами
             "bots": CommandInfo(
                 command="/bots",
@@ -89,7 +96,7 @@ class HelpService:
             ),
             "suspicious_analyze": CommandInfo(
                 command="/suspicious_analyze",
-                description="Проанализировать конкретного пользователя",
+                description="Проанализировать конкретного пользователя на подозрительность",
                 usage="/suspicious_analyze <user_id>",
                 examples=["/suspicious_analyze 123456789"],
                 admin_only=True,

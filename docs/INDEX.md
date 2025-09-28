@@ -5,8 +5,8 @@
 ## 🚀 Быстрый старт
 
 - **[README.md](../README.md)** - Основная информация о проекте
-- **[QUICK_INSTALL.md](../QUICK_INSTALL.md)** - Быстрая установка
 - **[QUICKSTART.md](../QUICKSTART.md)** - Быстрый старт
+- **[QUICK_START_LETSENCRYPT.md](../QUICK_START_LETSENCRYPT.md)** - Быстрый старт с Let's Encrypt
 - **[SETUP_GUIDE.md](../SETUP_GUIDE.md)** - Подробное руководство по настройке
 
 ## 👑 Администрирование
@@ -28,7 +28,6 @@
 ## ⚙️ Конфигурация и развертывание
 
 - **[CONFIGURATION.md](CONFIGURATION.md)** - Конфигурация системы
-- **[CONFIG.md](CONFIG.md)** - Настройка конфигурации
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Развертывание
 - **[INSTALLATION.md](INSTALLATION.md)** - Установка
 - **[HOT_RELOAD.md](HOT_RELOAD.md)** - Hot-reload настроек
