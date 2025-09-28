@@ -14,6 +14,7 @@ from app.utils.security import (
     sanitize_for_logging,
     sanitize_user_input,
 )
+from app.utils.validation import input_validator, ValidationError, ValidationSeverity
 
 logger = logging.getLogger(__name__)
 
@@ -95,36 +96,21 @@ class ValidationMiddleware(BaseMiddleware):
         Returns:
             Список ошибок валидации
         """
+        # Используем новый валидатор
+        validation_errors = input_validator.validate_message(message)
+        
+        # Конвертируем в старый формат для совместимости
         errors = []
-
-        # Проверяем базовые поля
-        if not message.chat:
-            errors.append("Отсутствует информация о чате")
-            return errors
-
-        if not message.chat.id:
-            errors.append("Отсутствует ID чата")
-            return errors
-
-        # Проверяем пользователя
-        if message.from_user:
-            if not message.from_user.id:
-                errors.append("Отсутствует ID пользователя")
-
-            if message.from_user.is_bot and not message.sender_chat:
-                # Боты не должны отправлять сообщения напрямую
-                errors.append("Сообщение от бота без sender_chat")
-
-        # Проверяем текст сообщения
-        if message.text:
-            if len(message.text) > 4096:  # Telegram limit
-                errors.append("Сообщение слишком длинное")
-
-            # Проверяем на подозрительные паттерны
-            if self._is_suspicious_text(message.text):
-                errors.append("Подозрительное содержимое сообщения")
-
-        # Проверяем медиа
+        for error in validation_errors:
+            # Логируем критические ошибки
+            if error.severity == ValidationSeverity.CRITICAL:
+                logger.critical(f"Critical validation error: {error.field} - {error.message}")
+            elif error.severity == ValidationSeverity.HIGH:
+                logger.warning(f"High severity validation error: {error.field} - {error.message}")
+            
+            errors.append(f"{error.field}: {error.message}")
+        
+        # Дополнительные проверки для медиа
         if message.photo or message.video or message.document:
             if not self._is_safe_media(message):
                 errors.append("Небезопасное медиа")
@@ -141,18 +127,19 @@ class ValidationMiddleware(BaseMiddleware):
         Returns:
             Список ошибок валидации
         """
+        # Используем новый валидатор
+        validation_errors = input_validator.validate_callback_query(callback_query)
+        
+        # Конвертируем в старый формат для совместимости
         errors = []
-
-        if not callback_query.data:
-            errors.append("Отсутствуют данные callback query")
-            return errors
-
-        if len(callback_query.data) > 64:  # Telegram limit
-            errors.append("Callback data слишком длинные")
-
-        # Проверяем на подозрительные паттерны
-        if self._is_suspicious_callback_data(callback_query.data):
-            errors.append("Подозрительные данные callback query")
+        for error in validation_errors:
+            # Логируем критические ошибки
+            if error.severity == ValidationSeverity.CRITICAL:
+                logger.critical(f"Critical validation error: {error.field} - {error.message}")
+            elif error.severity == ValidationSeverity.HIGH:
+                logger.warning(f"High severity validation error: {error.field} - {error.message}")
+            
+            errors.append(f"{error.field}: {error.message}")
 
         return errors
 
@@ -359,28 +346,27 @@ class CommandValidationMiddleware(BaseMiddleware):
         Returns:
             Результат валидации
         """
-        errors = []
-
         if not message.text:
-            errors.append("Отсутствует текст команды")
-            return {"is_valid": False, "errors": errors}
+            return {"is_valid": False, "errors": ["Отсутствует текст команды"]}
 
         # Извлекаем команду и параметры
         parts = message.text.split()
         command = parts[0]
         args = parts[1:] if len(parts) > 1 else []
 
-        # Проверяем длину команды
-        if len(command) > 32:  # Telegram limit
-            errors.append("Команда слишком длинная")
-
-        # Проверяем параметры
-        for arg in args:
-            if len(arg) > 100:  # Разумный лимит
-                errors.append("Параметр команды слишком длинный")
-
-            if self._is_suspicious_text(arg):
-                errors.append("Подозрительный параметр команды")
+        # Используем новый валидатор
+        validation_errors = input_validator.validate_command(command, args)
+        
+        # Конвертируем в старый формат для совместимости
+        errors = []
+        for error in validation_errors:
+            # Логируем критические ошибки
+            if error.severity == ValidationSeverity.CRITICAL:
+                logger.critical(f"Critical command validation error: {error.field} - {error.message}")
+            elif error.severity == ValidationSeverity.HIGH:
+                logger.warning(f"High severity command validation error: {error.field} - {error.message}")
+            
+            errors.append(f"{error.field}: {error.message}")
 
         return {"is_valid": len(errors) == 0, "errors": errors}
 

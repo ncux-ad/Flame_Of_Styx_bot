@@ -70,9 +70,9 @@ class ChannelsAdminService:
                         channels_text += f"   👥 Участников: {channel.get('member_count')}\n"
                     channels_text += "\n"
             
-            # Иностранные каналы
+            # Foreign каналы
             if foreign_channels:
-                channels_text += f"🔍 <b>Иностранные каналы ({len(foreign_channels)})</b>\n"
+                channels_text += f"🔍 <b>Foreign каналы ({len(foreign_channels)})</b>\n"
                 channels_text += "<i>Каналы откуда приходят сообщения (бот не админ)</i>\n\n"
                 
                 for channel in foreign_channels[:5]:  # Показываем первые 5

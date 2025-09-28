@@ -12,6 +12,7 @@ from app.services.channels import ChannelService
 from app.services.links import LinkService
 from app.services.moderation import ModerationService
 from app.services.profiles import ProfileService
+from app.utils.security import sanitize_for_logging
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ async def handle_all_messages(
     try:
         # Пропускаем команды - они обрабатываются админ-роутером
         if message.text and message.text.startswith("/"):
-            logger.info(f"Command message skipped by antispam: {message.text}")
+            logger.info(f"Command message skipped by antispam: {sanitize_for_logging(message.text)}")
             return
 
         # Сохраняем информацию о канале, если сообщение от канала
@@ -121,7 +122,7 @@ async def handle_all_messages(
 
         logger.info(
             f"Anti-spam processing: user_id={message.from_user.id if message.from_user else 'unknown'}, "
-            f"chat_id={message.chat.id}, text='{message.text[:50] if message.text else 'None'}'"
+            f"chat_id={message.chat.id}, text='{sanitize_for_logging(message.text[:50]) if message.text else 'None'}'"
         )
 
         # Определяем тип чата
@@ -141,7 +142,7 @@ async def handle_all_messages(
         else:
             # Для личных сообщений - только rate limiting (уже обработан в middleware)
             if message.from_user:
-                logger.info(f"Private message from {message.from_user.id}: {message.text}")
+                logger.info(f"Private message from {message.from_user.id}: {sanitize_for_logging(message.text) if message.text else 'None'}")
 
     except Exception as e:
         logger.error(f"Error in anti-spam handler: {e}")

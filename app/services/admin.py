@@ -65,7 +65,7 @@ class AdminService:
             # Получаем каналы
             all_channels = await self.channel_service.get_all_channels()
             
-            # Разделяем на нативные и иностранные
+            # Разделяем на нативные и Foreign
             native_channels = []
             foreign_channels = []
             comment_groups = []

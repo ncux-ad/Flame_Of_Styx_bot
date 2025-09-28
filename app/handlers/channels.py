@@ -99,7 +99,7 @@ async def _handle_native_channel_message(
 ) -> None:
     """Handle messages from native channel with basic spam checking."""
     try:
-        logger.info(f"Native channel message: {message.text}")
+        logger.info(f"Native channel message: {sanitize_for_logging(message.text) if message.text else 'None'}")
 
         # Check for bot links in message
         bot_links = await link_service.check_message_for_bot_links(message)
