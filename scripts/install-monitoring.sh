@@ -1,0 +1,160 @@
+#!/bin/bash
+# Мастер-скрипт установки мониторинга с выбором вариантов
+
+set -e
+
+# Цвета для вывода
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+print_header() {
+    echo -e "${BLUE}🚀 Установка мониторинга для AntiSpam Bot${NC}"
+    echo -e "${BLUE}==========================================${NC}"
+}
+
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
+
+print_info() {
+    echo -e "${CYAN}ℹ️ $1${NC}"
+}
+
+print_step() {
+    echo -e "${PURPLE}🔧 $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠️ $1${NC}"
+}
+
+print_menu() {
+    echo -e "${CYAN}📋 Выберите вариант установки:${NC}"
+    echo ""
+    echo -e "${GREEN}1)${NC} 🐳 Docker (рекомендуется)"
+    echo -e "   • Простая установка"
+    echo -e "   • Изолированная среда"
+    echo -e "   • Автоматическая сборка"
+    echo ""
+    echo -e "${GREEN}2)${NC} ⚙️ Systemd (оптимизировано для VPS)"
+    echo -e "   • Минимальное использование ресурсов"
+    echo -e "   • Нет зависимости от Docker"
+    echo -e "   • Полная сборка Uptime Kuma"
+    echo ""
+    echo -e "${GREEN}3)${NC} 🔧 Принудительное исправление"
+    echo -e "   • Исправляет существующие проблемы"
+    echo -e "   • Переустанавливает с нуля"
+    echo ""
+    echo -e "${GREEN}4)${NC} 📊 Только Netdata (системный мониторинг)"
+    echo -e "   • Только мониторинг сервера"
+    echo -e "   • Без Uptime Kuma"
+    echo ""
+    echo -e "${GREEN}5)${NC} ❌ Отмена"
+    echo ""
+}
+
+print_header
+
+# Проверяем права
+if [[ $EUID -eq 0 ]]; then
+    print_error "Не запускайте скрипт от root! Используйте sudo при необходимости."
+    exit 1
+fi
+
+# Проверяем систему
+print_step "Проверяем систему..."
+if [[ -f /etc/os-release ]]; then
+    . /etc/os-release
+    print_info "ОС: $NAME $VERSION"
+else
+    print_warning "Не удалось определить ОС"
+fi
+
+# Проверяем доступные команды
+DOCKER_AVAILABLE=false
+SYSTEMD_AVAILABLE=false
+
+if command -v docker &> /dev/null && command -v docker-compose &> /dev/null; then
+    DOCKER_AVAILABLE=true
+    print_success "Docker доступен"
+else
+    print_info "Docker не установлен"
+fi
+
+if command -v systemctl &> /dev/null; then
+    SYSTEMD_AVAILABLE=true
+    print_success "Systemd доступен"
+else
+    print_warning "Systemd не доступен"
+fi
+
+echo ""
+
+# Показываем меню
+print_menu
+
+# Читаем выбор пользователя
+while true; do
+    read -p "Введите номер варианта (1-5): " choice
+    case $choice in
+        1)
+            if [[ "$DOCKER_AVAILABLE" == "true" ]]; then
+                print_step "Запускаем Docker установку..."
+                chmod +x scripts/install-monitoring-simple.sh
+                ./scripts/install-monitoring-simple.sh
+                break
+            else
+                print_error "Docker не установлен. Установите Docker сначала:"
+                echo "   curl -fsSL https://get.docker.com -o get-docker.sh"
+                echo "   sudo sh get-docker.sh"
+                echo "   sudo usermod -aG docker $USER"
+                echo ""
+                read -p "Нажмите Enter для продолжения..."
+                print_menu
+            fi
+            ;;
+        2)
+            if [[ "$SYSTEMD_AVAILABLE" == "true" ]]; then
+                print_step "Запускаем Systemd установку..."
+                chmod +x scripts/build-uptime-kuma.sh
+                ./scripts/build-uptime-kuma.sh
+                break
+            else
+                print_error "Systemd не доступен на этой системе"
+                echo ""
+                read -p "Нажмите Enter для продолжения..."
+                print_menu
+            fi
+            ;;
+        3)
+            print_step "Запускаем принудительное исправление..."
+            chmod +x scripts/force-fix-uptime-kuma.sh
+            ./scripts/force-fix-uptime-kuma.sh
+            break
+            ;;
+        4)
+            print_step "Устанавливаем только Netdata..."
+            chmod +x scripts/install-netdata-only.sh
+            ./scripts/install-netdata-only.sh
+            break
+            ;;
+        5)
+            print_info "Установка отменена"
+            exit 0
+            ;;
+        *)
+            print_error "Неверный выбор. Введите число от 1 до 5."
+            ;;
+    esac
+done
+
+print_success "🎉 Установка мониторинга завершена!"
