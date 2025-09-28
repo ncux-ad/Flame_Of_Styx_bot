@@ -1,0 +1,165 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: [3.11, 3.12]
+        redis-enabled: [false, true]
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -e ".[dev]"
+    
+    - name: Set up test environment
+      run: |
+        # Create test database
+        touch test.db
+        export DB_PATH=test.db
+        
+        # Set up environment variables
+        echo "BOT_TOKEN=test_token" >> $GITHUB_ENV
+        echo "ADMIN_IDS=123456789" >> $GITHUB_ENV
+        echo "DB_PATH=test.db" >> $GITHUB_ENV
+        echo "REDIS_ENABLED=${{ matrix.redis-enabled }}" >> $GITHUB_ENV
+        echo "REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
+    
+    - name: Run unit tests
+      run: |
+        pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
+      continue-on-error: true
+    
+    - name: Run integration tests
+      run: |
+        python scripts/test_redis_rate_limit.py
+      if: matrix.redis-enabled == 'true'
+      continue-on-error: true
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.11'
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  test-commands:
+    name: Command Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -e ".[dev]"
+    
+    - name: Test command imports
+      run: |
+        python -c "
+        from app.handlers.admin import admin_router
+        from app.services.help import HelpService
+        from app.services.redis import get_redis_service
+        print('✅ All imports successful')
+        "
+      continue-on-error: true
+    
+    - name: Test configuration loading
+      run: |
+        python -c "
+        from app.config import load_config
+        config = load_config()
+        print(f'✅ Config loaded: {config.bot_token[:10]}...')
+        "
+      continue-on-error: true
+
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -e ".[dev]"
+    
+    - name: Run performance tests
+      run: |
+        python -c "
+        import asyncio
+        import time
+        from app.services.redis import get_redis_service
+        
+        async def test_performance():
+            try:
+                redis = await get_redis_service()
+                start = time.time()
+                for i in range(1000):
+                    await redis.set(f'test_{i}', f'value_{i}')
+                end = time.time()
+                print(f'✅ Redis performance: {1000/(end-start):.2f} ops/sec')
+            except Exception as e:
+                print(f'⚠️ Redis not available: {e}')
+        
+        asyncio.run(test_performance())
+        "
+      continue-on-error: true

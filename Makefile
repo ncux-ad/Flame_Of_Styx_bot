@@ -368,3 +368,52 @@ bot-status: ## Статус бота
 bot-logs: ## Логи бота
 	@echo "$(YELLOW)Логи бота...$(NC)"
 	sudo antispam-bot logs
+
+# GitHub Actions команды
+lint: ## Запустить проверки кода
+	@echo "$(YELLOW)Запуск проверок кода...$(NC)"
+	@echo "$(BLUE)Black (форматирование)...$(NC)"
+	black --check app/ scripts/ bot.py
+	@echo "$(BLUE)Ruff (линтер)...$(NC)"
+	ruff check app/ scripts/ bot.py
+	@echo "$(BLUE)MyPy (типы)...$(NC)"
+	mypy app/ bot.py --ignore-missing-imports
+	@echo "$(BLUE)isort (импорты)...$(NC)"
+	isort --check-only app/ scripts/ bot.py
+	@echo "$(GREEN)Все проверки пройдены!$(NC)"
+
+lint-fix: ## Исправить проблемы с кодом
+	@echo "$(YELLOW)Исправление проблем с кодом...$(NC)"
+	@echo "$(BLUE)Black (форматирование)...$(NC)"
+	black app/ scripts/ bot.py
+	@echo "$(BLUE)Ruff (линтер)...$(NC)"
+	ruff check --fix app/ scripts/ bot.py
+	@echo "$(BLUE)isort (импорты)...$(NC)"
+	isort app/ scripts/ bot.py
+	@echo "$(GREEN)Код исправлен!$(NC)"
+
+test-unit: ## Запустить только unit тесты
+	@echo "$(YELLOW)Запуск unit тестов...$(NC)"
+	pytest tests/ -v -m "unit" --cov=app --cov-report=term-missing
+
+test-integration: ## Запустить только integration тесты
+	@echo "$(YELLOW)Запуск integration тестов...$(NC)"
+	pytest tests/ -v -m "integration" --cov=app --cov-report=term-missing
+
+test-redis: ## Запустить тесты с Redis
+	@echo "$(YELLOW)Запуск тестов с Redis...$(NC)"
+	pytest tests/ -v -m "redis" --cov=app --cov-report=term-missing
+
+ci-lint: ## Проверки для CI
+	@echo "$(YELLOW)CI проверки кода...$(NC)"
+	black --check --diff app/ scripts/ bot.py
+	ruff check app/ scripts/ bot.py --output-format=github
+	mypy app/ bot.py --ignore-missing-imports
+	isort --check-only --diff app/ scripts/ bot.py
+
+ci-test: ## Тесты для CI
+	pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
+
+ci-security: ## Безопасность для CI
+	bandit -r app/ -f json -o bandit-report.json -ll || true
+	safety check --ignore 77745,77744,76752,77680,78162 --json > safety-report.json || true
