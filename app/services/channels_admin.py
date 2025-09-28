@@ -91,7 +91,7 @@ class ChannelsAdminService:
                 for group in comment_groups:
                     channels_text += f"<b>{group['title']}</b>\n"
                     channels_text += f"   ID: <code>{group['chat_id']}</code>\n"
-                    channels_text += f"   Тип: {group['type']}\n"
+                    channels_text += f"   Тип: Группа для комментариев\n"
                     channels_text += f"   Статус: ✅ Антиспам активен\n\n"
             
             # Общая статистика
