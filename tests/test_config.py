@@ -14,6 +14,14 @@ class TestConfig:
     
     def test_load_config_default(self):
         """Test loading configuration with default values."""
+        # Set test environment variables
+        import os
+        os.environ['BOT_TOKEN'] = 'test_token_123456789'
+        os.environ['ADMIN_IDS'] = '123456789'
+        os.environ['DB_PATH'] = 'test.db'
+        os.environ['REDIS_ENABLED'] = 'false'
+        os.environ['REDIS_URL'] = 'redis://localhost:6379/0'
+        
         config = load_config()
         assert isinstance(config, Settings)
         assert config.redis_enabled is False  # Default should be False

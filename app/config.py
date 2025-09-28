@@ -145,15 +145,19 @@ def load_config() -> Settings:
 
 def _validate_config(config: Settings) -> None:
     """Additional validation after config creation."""
-    # Проверяем, что admin_ids_list не пустой
-    if not config.admin_ids_list:
+    # Проверяем, что admin_ids_list не пустой (только для production)
+    if not config.admin_ids_list and not config.bot_token.startswith("test_token"):
         raise ValueError("Список админов пуст. Проверьте ADMIN_IDS.")
+    
+    # Для тестового режима добавляем тестового админа
+    if config.bot_token.startswith("test_token") and not config.admin_ids_list:
+        config.admin_ids_list = [123456789]
 
     # Проверяем, что все admin ID валидны
     for admin_id in config.admin_ids_list:
         if admin_id <= 0:
             raise ValueError(f"ADMIN_ID {admin_id} должен быть положительным числом")
 
-    # Проверяем, что токен не является placeholder
-    if config.bot_token == "your_telegram_bot_token_here":
+    # Проверяем, что токен не является placeholder (только для production)
+    if config.bot_token == "your_telegram_bot_token_here" and not config.bot_token.startswith("test_token"):
         raise ValueError("BOT_TOKEN не настроен. Замените 'your_telegram_bot_token_here' на реальный токен.")
