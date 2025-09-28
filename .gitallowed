@@ -51,3 +51,16 @@ config\.bot_token
 config\.admin_ids
 config\.db_path
 config\.redis_url
+
+# Git Secrets workflow patterns
+git secrets --add 'postgresql://[^:]+:[^@]+@[^/]+/[^/]+'
+git secrets --add 'mysql://[^:]+:[^@]+@[^/]+/[^/]+'
+git secrets --add 'redis://[^:]+:[^@]+@[^/]+'
+git secrets --add '-----BEGIN.*PRIVATE KEY-----'
+git secrets --add 'eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*'
+
+# Git Secrets command patterns
+git secrets --add 'postgresql://[^:]+:[^@]+@[^/]+/[^/]+'  # PostgreSQL URLs
+git secrets --add 'mysql://[^:]+:[^@]+@[^/]+/[^/]+'  # MySQL URLs
+git secrets --add 'redis://[^:]+:[^@]+@[^/]+'  # Redis URLs
+git secrets --add '-----BEGIN.*PRIVATE KEY-----'  # Private keys

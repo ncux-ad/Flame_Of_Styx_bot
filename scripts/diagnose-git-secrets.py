@@ -13,35 +13,19 @@ def check_git_secrets_patterns():
     """Проверяем, какие паттерны Git Secrets срабатывают."""
     print("=== GIT SECRETS DIAGNOSTIC ===")
     
-    # Паттерны из .gitsecrets
+    # Паттерны из Git Secrets (только те, что реально используются)
     patterns = [
         # Telegram Bot Tokens
         r'[0-9]{8,10}:[A-Za-z0-9_-]{35}',
         # Database URLs
         r'postgresql://[^:]+:[^@]+@[^/]+/[^/]+',
         r'mysql://[^:]+:[^@]+@[^/]+/[^/]+',
-        r'sqlite://[^/]+',
         # Redis URLs
         r'redis://[^:]+:[^@]+@[^/]+',
-        r'rediss://[^:]+:[^@]+@[^/]+',
-        # API Keys
-        r'api[_-]?key[_-]?[A-Za-z0-9]{20,}',
-        r'secret[_-]?key[_-]?[A-Za-z0-9]{20,}',
-        r'access[_-]?token[_-]?[A-Za-z0-9]{20,}',
+        # Private Keys
+        r'-----BEGIN.*PRIVATE KEY-----',
         # JWT Tokens
         r'eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*',
-        # Passwords
-        r'password[_-]?[=:]\s*[A-Za-z0-9!@#$%^&*()_+-=]{8,}',
-        r'passwd[_-]?[=:]\s*[A-Za-z0-9!@#$%^&*()_+-=]{8,}',
-        # Admin IDs
-        r'admin[_-]?id[_-]?[=:]\s*[0-9]{8,12}',
-        # Database passwords
-        r'db[_-]?password[_-]?[=:]\s*[A-Za-z0-9!@#$%^&*()_+-=]{8,}',
-        # Generic secrets (very specific patterns - only real secrets)
-        # Note: These patterns are disabled for test values
-        # r'secret[_-]?[=:]\s*[A-Za-z0-9!@#$%^&*()_+-=]{30,}',
-        # r'token[_-]?[=:]\s*[A-Za-z0-9!@#$%^&*()_+-=]{30,}',
-        r'key[_-]?[=:]\s*[A-Za-z0-9!@#$%^&*()_+-=]{16,}',
     ]
     
     # Файлы для проверки
