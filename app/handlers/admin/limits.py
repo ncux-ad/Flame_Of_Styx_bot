@@ -10,6 +10,7 @@ from aiogram.types import Message
 from app.services.limits import LimitsService
 from app.utils.error_handling import handle_errors
 from app.utils.security import sanitize_for_logging
+from app.middlewares.silent_logging import send_silent_response
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ async def handle_setlimits_command(message: Message, limits_service: LimitsServi
             return
         logger.info(f"Setlimits command from {sanitize_for_logging(str(message.from_user.id))}")
 
-        limits = limits_service.get_limits()
+        limits = limits_service.get_current_limits()
         
         text = "⚙️ <b>Текущие лимиты системы</b>\n\n"
         text += f"📊 <b>Сообщения:</b> {limits.get('max_messages_per_minute', 'N/A')} в минуту\n"
@@ -38,12 +39,12 @@ async def handle_setlimits_command(message: Message, limits_service: LimitsServi
         text += f"📄 <b>Размер документа:</b> {limits.get('max_document_size_suspicious', 'N/A')} байт\n\n"
         text += "💡 <b>Для изменения используйте:</b> /setlimit"
 
-        await message.answer(text)
+        await send_silent_response(message, text)
         logger.info(f"Limits sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
         logger.error(f"Error in setlimits command: {sanitize_for_logging(str(e))}")
-        await message.answer("❌ Ошибка получения лимитов")
+        await send_silent_response(message, "❌ Ошибка получения лимитов")
 
 
 @limits_router.message(Command("reload_limits"))
@@ -58,16 +59,16 @@ async def handle_reload_limits_command(message: Message, limits_service: LimitsS
         success = limits_service.reload_limits()
         
         if success:
-            await message.answer(
+            await send_silent_response(message,
                 "✅ <b>Лимиты перезагружены!</b>\n\n"
                 "🔄 Все настройки обновлены из файла конфигурации\n"
                 "📊 Изменения применены немедленно"
             )
         else:
-            await message.answer("❌ Ошибка при перезагрузке лимитов!")
+            await send_silent_response(message, "❌ Ошибка при перезагрузке лимитов!")
 
         logger.info(f"Reload limits completed for {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
         logger.error(f"Error in reload_limits command: {sanitize_for_logging(str(e))}")
-        await message.answer("❌ Ошибка перезагрузки лимитов")
+        await send_silent_response(message, "❌ Ошибка перезагрузки лимитов")

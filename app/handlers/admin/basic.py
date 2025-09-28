@@ -113,7 +113,7 @@ async def handle_help_command(
         logger.info(f"Help command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Получаем аргументы команды
-        command_args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+        command_args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
         
         if command_args:
             # Запрошена справка по категории
@@ -164,7 +164,7 @@ async def handle_logs_command(
         logger.info(f"Logs command from {sanitize_for_logging(str(message.from_user.id))}")
 
         # Получаем аргументы команды
-        command_args = message.text.split()[1:] if len(message.text.split()) > 1 else []
+        command_args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
         log_level = command_args[0].lower() if command_args else "all"
         
         # Пробуем разные пути к файлу логов
@@ -210,9 +210,9 @@ async def handle_logs_command(
         else:
             title = "Последние логи"
 
-        await message.answer(f"<b>{title}</b>\n\n<code>{log_text}</code>")
+        await send_silent_response(message, f"<b>{title}</b>\n\n<code>{log_text}</code>")
         logger.info(f"Logs sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
         logger.error(f"Error in logs command: {sanitize_for_logging(str(e))}")
-        await message.answer("❌ Ошибка получения логов")
+        await send_silent_response(message, "❌ Ошибка получения логов")
