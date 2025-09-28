@@ -24,7 +24,9 @@ from app.utils.graceful_shutdown import create_graceful_shutdown
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+Доступ к мониторингу:
+Netdata: http://your-server:19999
+Uptime Kuma: http://your-server:3001    level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),  # Console output
