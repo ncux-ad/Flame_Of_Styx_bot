@@ -209,13 +209,16 @@ async def main():
             logger.info("Closing bot session...")
             await bot.session.close()
         
-        # 13. Close Redis connection
-        try:
-            from app.services.redis import close_redis_service
-            await close_redis_service()
-            logger.info("Redis connection closed")
-        except Exception as e:
-            logger.error(f"Error closing Redis connection: {e}")
+        # 13. Close Redis connection (only if it was initialized)
+        if 'redis_available' in locals() and redis_available:
+            try:
+                from app.services.redis import close_redis_service
+                await close_redis_service()
+                logger.info("Redis connection closed")
+            except Exception as e:
+                logger.error(f"Error closing Redis connection: {e}")
+        else:
+            logger.info("Redis was not initialized, skipping connection close")
 
 
 if __name__ == "__main__":

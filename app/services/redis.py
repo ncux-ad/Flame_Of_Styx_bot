@@ -267,5 +267,12 @@ async def close_redis_service() -> None:
     global _redis_service
     
     if _redis_service:
-        await _redis_service.disconnect()
-        _redis_service = None
+        try:
+            await _redis_service.disconnect()
+            logger.info("Redis service closed successfully")
+        except Exception as e:
+            logger.error(f"Error closing Redis service: {e}")
+        finally:
+            _redis_service = None
+    else:
+        logger.info("Redis service was not initialized, nothing to close")
