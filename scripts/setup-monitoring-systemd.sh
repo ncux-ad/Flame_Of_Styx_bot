@@ -66,8 +66,22 @@ print_step "Устанавливаем Netdata..."
 if ! command -v netdata &> /dev/null; then
     print_info "Устанавливаем Netdata..."
     
-    # Установка Netdata через официальный скрипт
-    bash <(curl -Ss https://my-netdata.io/kickstart.sh) --dont-wait --stable-channel
+    # Установка Netdata через пакетный менеджер
+    if command -v apt &> /dev/null; then
+        # Ubuntu/Debian
+        sudo apt update
+        sudo apt install -y netdata
+    elif command -v yum &> /dev/null; then
+        # CentOS/RHEL
+        sudo yum install -y epel-release
+        sudo yum install -y netdata
+    elif command -v dnf &> /dev/null; then
+        # Fedora
+        sudo dnf install -y netdata
+    else
+        print_error "Неподдерживаемый дистрибутив Linux"
+        exit 1
+    fi
     
     if command -v netdata &> /dev/null; then
         print_success "Netdata установлен"
@@ -113,15 +127,16 @@ else
 fi
 
 # Устанавливаем Uptime Kuma
-if [[ ! -d "/opt/uptime-kuma/app" ]]; then
+if [[ ! -d "/opt/uptime-kuma" ]]; then
     print_info "Скачиваем Uptime Kuma..."
     
     cd /tmp
-    wget https://github.com/louislam/uptime-kuma/archive/refs/heads/master.zip
-    unzip master.zip
-    sudo mv uptime-kuma-master/* /opt/uptime-kuma/
+    # Скачиваем релиз вместо master ветки
+    wget https://github.com/louislam/uptime-kuma/archive/refs/tags/1.23.3.tar.gz
+    tar -xzf 1.23.3.tar.gz
+    sudo mv uptime-kuma-1.23.3/* /opt/uptime-kuma/
     sudo chown -R uptime-kuma:uptime-kuma /opt/uptime-kuma
-    rm -rf uptime-kuma-master master.zip
+    rm -rf uptime-kuma-1.23.3 1.23.3.tar.gz
     
     # Устанавливаем зависимости
     cd /opt/uptime-kuma
