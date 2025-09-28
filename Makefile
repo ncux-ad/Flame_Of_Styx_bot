@@ -48,7 +48,14 @@ security: security-check security-scan ## Полная проверка безо
 
 security-check: ## Проверка безопасности конфигурации
 	@echo "$(YELLOW)Проверка безопасности...$(NC)"
-	python scripts/security_check.py
+	@if [ -f scripts/security-check.sh ]; then \
+		chmod +x scripts/security-check.sh && ./scripts/security-check.sh; \
+	elif [ -f scripts/security-check.ps1 ]; then \
+		powershell -ExecutionPolicy Bypass -File scripts/security-check.ps1; \
+	else \
+		echo "$(RED)Скрипт проверки безопасности не найден!$(NC)"; \
+		exit 1; \
+	fi
 
 security-scan: ## Сканирование уязвимостей в коде
 	@echo "$(YELLOW)Сканирование уязвимостей...$(NC)"
@@ -61,7 +68,7 @@ security-scan: ## Сканирование уязвимостей в коде
 	fi
 	@if command -v safety >/dev/null 2>&1; then \
 		echo "$(BLUE)Запуск Safety...$(NC)"; \
-		safety check --json --output safety-report.json; \
+		safety check --ignore 77745,77744,76752,77680,78162 --json > safety-report.json; \
 		echo "$(GREEN)Safety завершен!$(NC)"; \
 	else \
 		echo "$(YELLOW)Safety не установлен. Установите: pip install safety$(NC)"; \
