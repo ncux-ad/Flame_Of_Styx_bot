@@ -264,7 +264,7 @@ async def handle_suspicious_analyze_command(
 
         # Парсим аргументы команды
         if not message.text:
-            await send_silent_response(message,("❌ Ошибка: пустое сообщение")
+            await send_silent_response(message, "❌ Ошибка: пустое сообщение")
             return
         
         # Безопасное разбиение строки
@@ -315,7 +315,7 @@ async def handle_suspicious_remove_command(
 
         # Парсим аргументы команды
         if not message.text:
-            await send_silent_response(message,("❌ Ошибка: пустое сообщение")
+            await send_silent_response(message, "❌ Ошибка: пустое сообщение")
             return
         
         # Безопасное разбиение строки
