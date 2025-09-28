@@ -665,7 +665,7 @@ async def handle_suspicious_command(
         text += "💡 <b>Команды управления:</b>\n"
         text += "• /suspicious_reset - сбросить все подозрительные профили\n"
         text += "• /suspicious_analyze <user_id> - проанализировать пользователя\n"
-        text += "• /suspicious_remove <user_id> - удалить из подозрительных"
+        text += "• /suspicious_remove <user_id> - удалить из подозрительных\n"
         
         await message.answer(text)
         logger.info(f"Suspicious profiles response sent to {sanitize_for_logging(str(message.from_user.id))}")
@@ -834,7 +834,7 @@ async def handle_suspicious_analyze_command(
             except Exception:
                 date_str = 'Неизвестно'
             
-            text += "<b>Дата анализа:</b> " + str(date_str)
+            text += "<b>Дата анализа:</b> " + str(date_str) + "\n"
         else:
             logger.info("No profile, processing non-suspicious user")
             # Пользователь не подозрительный
@@ -847,7 +847,7 @@ async def handle_suspicious_analyze_command(
             text += "<b>Статус:</b> 🟢 Низкий риск\n"
             logger.info("Added status")
             
-            text += "<b>Результат:</b> Пользователь не является подозрительным"
+            text += "<b>Результат:</b> Пользователь не является подозрительным\n"
             logger.info("Added result")
         
         await message.answer(text)
