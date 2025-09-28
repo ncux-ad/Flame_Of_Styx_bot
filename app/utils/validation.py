@@ -364,7 +364,8 @@ class InputValidator:
                 ))
             
             # Проверка на подозрительные символы в названии
-            if not re.match(r'^[a-zA-Zа-яА-Я0-9\s\-\.\']+$', chat.title):
+            # Разрешаем больше символов для названий чатов
+            if not re.match(r'^[a-zA-Zа-яА-Я0-9\s\-\.\',:;!?()\[\]{}@#$%^&*+=|\\/<>~`]+$', chat.title):
                 errors.append(ValidationError(
                     field="chat_title",
                     message="Название чата содержит недопустимые символы",

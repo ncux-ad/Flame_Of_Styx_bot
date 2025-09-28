@@ -451,8 +451,8 @@ class CommandValidationMiddleware(BaseMiddleware):
             },
         )
 
-        # Отправляем ответ пользователю
-        try:
-            await message.answer(ERROR_MESSAGES["INVALID_INPUT"])
-        except Exception as e:
-            logger.error(f"Ошибка отправки ответа об ошибке валидации команды: {e}")
+        # Не отправляем ответ - это делает основной ValidationMiddleware
+        # try:
+        #     await message.answer(ERROR_MESSAGES["INVALID_INPUT"])
+        # except Exception as e:
+        #     logger.error(f"Ошибка отправки ответа об ошибке валидации команды: {e}")
