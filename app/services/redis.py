@@ -70,12 +70,20 @@ class RedisService:
         """Закрыть соединение с Redis."""
         try:
             if self._redis:
-                await self._redis.close()
-                self._redis = None
+                try:
+                    await self._redis.close()
+                except Exception as e:
+                    logger.warning(f"Ошибка при закрытии Redis клиента: {e}")
+                finally:
+                    self._redis = None
             
             if self._pool:
-                await self._pool.disconnect()
-                self._pool = None
+                try:
+                    await self._pool.disconnect()
+                except Exception as e:
+                    logger.warning(f"Ошибка при закрытии Redis pool: {e}")
+                finally:
+                    self._pool = None
             
             self._is_connected = False
             logger.info("Redis соединение закрыто")

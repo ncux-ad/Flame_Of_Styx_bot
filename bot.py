@@ -38,6 +38,7 @@ async def main():
     """Main function to start the simplified bot with graceful shutdown."""
     bot = None
     shutdown_manager = None
+    redis_available = False
     
     try:
         # 1. Load configuration
@@ -210,7 +211,7 @@ async def main():
             await bot.session.close()
         
         # 13. Close Redis connection (only if it was initialized)
-        if 'redis_available' in locals() and redis_available:
+        if redis_available:
             try:
                 from app.services.redis import close_redis_service
                 await close_redis_service()

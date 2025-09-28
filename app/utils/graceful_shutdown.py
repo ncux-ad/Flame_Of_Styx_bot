@@ -92,8 +92,16 @@ class GracefulShutdown:
             # Останавливаем dispatcher (если polling запущен)
             logger.info("Stopping dispatcher...")
             try:
-                if self.dispatcher._polling:
+                # Проверяем различные способы определения состояния polling
+                polling_active = (
+                    hasattr(self.dispatcher, '_polling') and self.dispatcher._polling or
+                    hasattr(self.dispatcher, '_running') and self.dispatcher._running or
+                    hasattr(self.dispatcher, 'running') and self.dispatcher.running
+                )
+                
+                if polling_active:
                     await self.dispatcher.stop_polling()
+                    logger.info("Polling stopped successfully")
                 else:
                     logger.info("Polling was not started, skipping stop_polling")
             except Exception as e:
