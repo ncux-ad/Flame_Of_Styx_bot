@@ -108,6 +108,25 @@ class ValidationMiddleware(BaseMiddleware):
                         errors.append(f"{error.field}: {error.message}")
             return errors
         
+        # Проверяем, является ли это ответом в интерактивном режиме
+        if message.from_user and message.text:
+            # Импортируем словарь состояния (избегаем циклического импорта)
+            try:
+                from app.handlers.admin import waiting_for_user_input
+                if message.from_user.id in waiting_for_user_input:
+                    # Это ответ в интерактивном режиме - применяем только базовую валидацию
+                    errors = []
+                    if message.text:
+                        text_errors = input_validator._validate_text_content(message.text, "message_text")
+                        for error in text_errors:
+                            if error.severity in [ValidationSeverity.CRITICAL, ValidationSeverity.HIGH]:
+                                logger.warning(f"Interactive input validation error: {error.field} - {error.message}")
+                                errors.append(f"{error.field}: {error.message}")
+                    return errors
+            except ImportError:
+                # Если не можем импортировать, продолжаем с обычной валидацией
+                pass
+        
         # Для обычных сообщений применяем полную валидацию
         validation_errors = input_validator.validate_message(message)
         
