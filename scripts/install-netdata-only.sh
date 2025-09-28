@@ -13,8 +13,8 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 print_header() {
-    echo -e "${BLUE}📊 Netdata Only Setup${NC}"
-    echo -e "${BLUE}===================${NC}"
+    echo -e "${BLUE}📊 Netdata Only Setup (VPS Optimized)${NC}"
+    echo -e "${BLUE}=====================================${NC}"
 }
 
 print_success() {

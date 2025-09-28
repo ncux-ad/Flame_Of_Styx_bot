@@ -111,9 +111,9 @@ while true; do
     case $choice in
         1)
             if [[ "$SYSTEMD_AVAILABLE" == "true" ]]; then
-                print_step "Запускаем Systemd установку (ОСНОВНОЙ)..."
-                chmod +x scripts/build-uptime-kuma.sh
-                ./scripts/build-uptime-kuma.sh
+                print_step "Запускаем Systemd установку (ОСНОВНОЙ - VPS оптимизация)..."
+                chmod +x scripts/install-uptime-kuma-vps-optimized.sh
+                ./scripts/install-uptime-kuma-vps-optimized.sh
                 break
             else
                 print_error "Systemd не доступен на этой системе"
