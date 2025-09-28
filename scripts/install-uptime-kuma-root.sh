@@ -1,5 +1,5 @@
 #!/bin/bash
-# Простая установка Uptime Kuma
+# Установка Uptime Kuma с root правами (альтернативный способ)
 
 set -e
 
@@ -13,8 +13,8 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 print_header() {
-    echo -e "${BLUE}🔧 Uptime Kuma Installation${NC}"
-    echo -e "${BLUE}============================${NC}"
+    echo -e "${BLUE}🔧 Uptime Kuma Installation (Root Method)${NC}"
+    echo -e "${BLUE}==========================================${NC}"
 }
 
 print_success() {
@@ -46,9 +46,6 @@ if ! id "uptime-kuma" &>/dev/null; then
     print_success "Пользователь создан"
 else
     print_info "Пользователь уже существует"
-    # Исправляем права на домашний каталог
-    sudo chown -R uptime-kuma:uptime-kuma /home/uptime-kuma
-    sudo chmod 755 /home/uptime-kuma
 fi
 
 # Создаем директорию
@@ -73,16 +70,13 @@ sudo chown -R uptime-kuma:uptime-kuma /opt/uptime-kuma
 # Очищаем
 rm -rf uptime-kuma-1.23.3 1.23.3.tar.gz
 
-# Устанавливаем зависимости
-print_step "Устанавливаем зависимости..."
+# Устанавливаем зависимости с root правами
+print_step "Устанавливаем зависимости (root метод)..."
 cd /opt/uptime-kuma
 
-# Создаем .npm каталог с правильными правами
-sudo -u uptime-kuma mkdir -p /home/uptime-kuma/.npm
-sudo chown -R uptime-kuma:uptime-kuma /home/uptime-kuma/.npm
-
-# Устанавливаем зависимости
-sudo -u uptime-kuma npm install --production --omit=dev --cache /home/uptime-kuma/.npm
+# Устанавливаем как root, потом меняем владельца
+sudo npm install --production --omit=dev
+sudo chown -R uptime-kuma:uptime-kuma /opt/uptime-kuma
 
 # Создаем systemd сервис
 print_step "Создаем systemd сервис..."

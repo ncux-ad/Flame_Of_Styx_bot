@@ -255,7 +255,13 @@ if [[ ! -f "/opt/uptime-kuma/package.json" ]]; then
     
     # Устанавливаем зависимости (только production)
     cd /opt/uptime-kuma
-    sudo -u uptime-kuma npm install --production --omit=dev
+    
+    # Создаем .npm каталог с правильными правами
+    sudo -u uptime-kuma mkdir -p /home/uptime-kuma/.npm
+    sudo chown -R uptime-kuma:uptime-kuma /home/uptime-kuma/.npm
+    
+    # Устанавливаем зависимости
+    sudo -u uptime-kuma npm install --production --omit=dev --cache /home/uptime-kuma/.npm
     
     print_success "Uptime Kuma установлен"
 else
