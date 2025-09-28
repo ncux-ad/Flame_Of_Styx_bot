@@ -1,0 +1,94 @@
+name: Simple Deploy
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  simple-deploy:
+    name: Simple Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Test basic functionality
+      env:
+        BOT_TOKEN: "123456789:test_token_123456789"
+        ADMIN_IDS: "123456789"
+        DB_PATH: "test.db"
+        REDIS_ENABLED: "false"
+        REDIS_URL: "redis://localhost:6379/0"
+      run: |
+        python -c "
+        print('=== SIMPLE DEPLOY TEST ===')
+        
+        # Test basic imports
+        from app.config import load_config, Settings
+        print('OK: Settings imported')
+        
+        # Test config loading
+        config = load_config()
+        print(f'OK: Config loaded, Redis enabled = {config.redis_enabled}')
+        
+        # Test Redis service
+        from app.services.redis import RedisService
+        service = RedisService('redis://localhost:6379/0')
+        print('OK: RedisService created')
+        
+        # Test handlers
+        from app.handlers.admin import admin_router
+        print('OK: Handlers imported')
+        
+        print('=== SIMPLE DEPLOY SUCCESS ===')
+        "
+    
+    - name: Create deployment package
+      run: |
+        echo "Creating deployment package..."
+        tar -czf antispam-bot-$(date +%Y%m%d-%H%M%S).tar.gz \
+          --exclude='.git' \
+          --exclude='__pycache__' \
+          --exclude='*.pyc' \
+          --exclude='.pytest_cache' \
+          --exclude='tests' \
+          --exclude='.github' \
+          --exclude='docs' \
+          --exclude='*.md' \
+          --exclude='venv' \
+          --exclude='.venv' \
+          --exclude='env' \
+          --exclude='.env*' \
+          --exclude='*.db' \
+          --exclude='*.sqlite3' \
+          --exclude='logs' \
+          --exclude='data' \
+          .
+        echo "Deployment package created successfully!"
+    
+    - name: Upload deployment package
+      uses: actions/upload-artifact@v4
+      with:
+        name: simple-deployment-package
+        path: antispam-bot-*.tar.gz
+        retention-days: 30
+    
+    - name: Deploy success notification
+      run: |
+        echo "✅ Simple deployment completed successfully!"
+        echo "Repository: ${{ github.repository }}"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
