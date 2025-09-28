@@ -38,13 +38,13 @@ class SimpleGracefulShutdown:
                 
     async def startup_notification(self):
         """Уведомление о запуске бота."""
-        message = "🤖 AntiSpam Bot запущен - тестовый режим"
+        message = "AntiSpam Bot запущен - тестовый режим"
         await self.notify_admins(message)
         logger.info("Startup notification sent to admins")
         
     async def shutdown_notification(self):
         """Уведомление об остановке бота."""
-        message = "🛑 AntiSpam Bot остановлен - тестовый режим"
+        message = "AntiSpam Bot остановлен - тестовый режим"
         await self.notify_admins(message)
         logger.info("Shutdown notification sent to admins")
         
@@ -167,9 +167,9 @@ async def main():
 
 
 if __name__ == "__main__":
-    print("🧪 Тестирование graceful shutdown (простая версия)")
-    print("📝 Нажмите Ctrl+C для тестирования graceful shutdown")
-    print("⏰ Timeout: 30 секунд")
+    print("Тестирование graceful shutdown (простая версия)")
+    print("Нажмите Ctrl+C для тестирования graceful shutdown")
+    print("Timeout: 30 секунд")
     print("-" * 50)
     
     try:
@@ -181,4 +181,4 @@ if __name__ == "__main__":
         sys.exit(1)
     
     print("-" * 50)
-    print("✅ Тест graceful shutdown завершен")
+    print("Тест graceful shutdown завершен")
