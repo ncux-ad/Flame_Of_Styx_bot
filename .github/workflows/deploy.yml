@@ -56,8 +56,13 @@ jobs:
     - name: Create deployment package
       run: |
         # Create deployment archive
-        tar -czf antispam-bot-$(date +%Y%m%d-%H%M%S).tar.gz \
-          --exclude='.git' \
+        echo "Creating deployment package..."
+        
+        # Create a temporary directory for packaging
+        mkdir -p temp_deploy
+        
+        # Copy files to temp directory (excluding problematic files)
+        rsync -av --exclude='.git' \
           --exclude='__pycache__' \
           --exclude='*.pyc' \
           --exclude='.pytest_cache' \
@@ -65,7 +70,24 @@ jobs:
           --exclude='.github' \
           --exclude='docs' \
           --exclude='*.md' \
-          .
+          --exclude='venv' \
+          --exclude='.venv' \
+          --exclude='env' \
+          --exclude='.env*' \
+          --exclude='*.db' \
+          --exclude='*.sqlite3' \
+          --exclude='logs' \
+          --exclude='data' \
+          --exclude='temp_deploy' \
+          . temp_deploy/
+        
+        # Create archive from temp directory
+        tar -czf antispam-bot-$(date +%Y%m%d-%H%M%S).tar.gz -C temp_deploy .
+        
+        # Clean up temp directory
+        rm -rf temp_deploy
+        
+        echo "Deployment package created successfully!"
     
     - name: Upload deployment package
       uses: actions/upload-artifact@v4

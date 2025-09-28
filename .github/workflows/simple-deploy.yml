@@ -59,8 +59,12 @@ jobs:
     - name: Create deployment package
       run: |
         echo "Creating deployment package..."
-        tar -czf antispam-bot-$(date +%Y%m%d-%H%M%S).tar.gz \
-          --exclude='.git' \
+        
+        # Create a temporary directory for packaging
+        mkdir -p temp_deploy
+        
+        # Copy files to temp directory (excluding problematic files)
+        rsync -av --exclude='.git' \
           --exclude='__pycache__' \
           --exclude='*.pyc' \
           --exclude='.pytest_cache' \
@@ -76,7 +80,15 @@ jobs:
           --exclude='*.sqlite3' \
           --exclude='logs' \
           --exclude='data' \
-          .
+          --exclude='temp_deploy' \
+          . temp_deploy/
+        
+        # Create archive from temp directory
+        tar -czf antispam-bot-$(date +%Y%m%d-%H%M%S).tar.gz -C temp_deploy .
+        
+        # Clean up temp directory
+        rm -rf temp_deploy
+        
         echo "Deployment package created successfully!"
     
     - name: Upload deployment package
