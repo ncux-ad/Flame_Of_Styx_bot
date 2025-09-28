@@ -1,115 +1,58 @@
 version: '3.8'
 
 services:
-  # Prometheus - сбор метрик
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: antispam-prometheus
-    restart: unless-stopped
+  # Netdata - мониторинг сервера (CPU, RAM, диск, сеть)
+  netdata:
+    image: netdata/netdata:latest
+    container_name: netdata
+    hostname: antispam-bot-monitor
     ports:
-      - "9090:9090"
+      - "19999:19999"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./monitoring/antispam_rules.yml:/etc/prometheus/antispam_rules.yml
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-    networks:
-      - antispam-network
-
-  # Grafana - визуализация метрик
-  grafana:
-    image: grafana/grafana:latest
-    container_name: antispam-grafana
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
-    networks:
-      - antispam-network
-
-  # Node Exporter - системные метрики
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: antispam-node-exporter
-    restart: unless-stopped
-    ports:
-      - "9100:9100"
-    volumes:
+      - netdataconfig:/etc/netdata
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    networks:
-      - antispam-network
-
-  # Redis Exporter - метрики Redis
-  redis-exporter:
-    image: oliver006/redis_exporter:latest
-    container_name: antispam-redis-exporter
-    restart: unless-stopped
-    ports:
-      - "9121:9121"
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
     environment:
-      - REDIS_ADDR=redis://redis:6379
-    networks:
-      - antispam-network
-
-  # cAdvisor - метрики Docker контейнеров
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    container_name: antispam-cadvisor
+      - NETDATA_CLAIM_TOKEN=${NETDATA_CLAIM_TOKEN:-}
+      - NETDATA_CLAIM_URL=${NETDATA_CLAIM_URL:-https://app.netdata.cloud}
+      - NETDATA_CLAIM_ROOMS=${NETDATA_CLAIM_ROOMS:-}
     restart: unless-stopped
-    ports:
-      - "8080:8080"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    privileged: true
-    devices:
-      - /dev/kmsg
-    networks:
-      - antispam-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:19999/api/v1/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Alertmanager - уведомления
-  alertmanager:
-    image: prom/alertmanager:latest
-    container_name: antispam-alertmanager
-    restart: unless-stopped
+  # Uptime Kuma - мониторинг доступности бота
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
     ports:
-      - "9093:9093"
+      - "3001:3001"
     volumes:
-      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
-      - alertmanager-data:/alertmanager
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-    networks:
-      - antispam-network
+      - uptime-kuma-data:/app/data
+    environment:
+      - UPTIME_KUMA_DISABLE_FRAME_SAMEORIGIN=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
-  prometheus-data:
-  grafana-data:
-  alertmanager-data:
-
-networks:
-  antispam-network:
-    external: true
+  netdataconfig:
+  netdatalib:
+  netdatacache:
+  uptime-kuma-data:
