@@ -37,7 +37,7 @@ class TestImports:
     
     def test_middlewares_import(self):
         """Test middlewares import."""
-        from app.middlewares.rate_limit import RateLimitMiddleware
+        from app.middlewares.ratelimit import RateLimitMiddleware
         from app.middlewares.validation import ValidationMiddleware
         assert RateLimitMiddleware is not None
         assert ValidationMiddleware is not None

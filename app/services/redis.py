@@ -7,8 +7,15 @@ import logging
 from typing import Optional, Dict, Any, Union
 from contextlib import asynccontextmanager
 
-import aioredis
-from aioredis import Redis, ConnectionPool
+try:
+    import aioredis
+    from aioredis import Redis, ConnectionPool
+    AIOREDIS_AVAILABLE = True
+except ImportError:
+    aioredis = None
+    Redis = None
+    ConnectionPool = None
+    AIOREDIS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +31,9 @@ class RedisService:
     
     async def connect(self) -> None:
         """Установить соединение с Redis."""
+        if not AIOREDIS_AVAILABLE:
+            raise RuntimeError("aioredis не установлен. Установите: pip install aioredis==2.0.1")
+        
         try:
             if self._is_connected:
                 return
@@ -234,6 +244,9 @@ async def get_redis_service() -> RedisService:
     global _redis_service
     
     if _redis_service is None:
+        if not AIOREDIS_AVAILABLE:
+            raise RuntimeError("aioredis не установлен. Установите: pip install aioredis==2.0.1")
+        
         from app.config import load_config
         config = load_config()
         
