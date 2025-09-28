@@ -96,7 +96,19 @@ class ValidationMiddleware(BaseMiddleware):
         Returns:
             Список ошибок валидации
         """
-        # Используем новый валидатор
+        # Для команд применяем только базовую валидацию
+        if message.text and message.text.startswith("/"):
+            # Для команд валидируем только текст сообщения, не профиль пользователя
+            errors = []
+            if message.text:
+                text_errors = input_validator._validate_text_content(message.text, "message_text")
+                for error in text_errors:
+                    if error.severity in [ValidationSeverity.CRITICAL, ValidationSeverity.HIGH]:
+                        logger.warning(f"Command validation error: {error.field} - {error.message}")
+                        errors.append(f"{error.field}: {error.message}")
+            return errors
+        
+        # Для обычных сообщений применяем полную валидацию
         validation_errors = input_validator.validate_message(message)
         
         # Конвертируем в старый формат для совместимости
