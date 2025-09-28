@@ -720,39 +720,12 @@ async def handle_suspicious_reset_command(
         await message.answer("❌ Ошибка сброса подозрительных профилей")
 
 
-@admin_router.message(Command("suspicious_analyze"))
-async def handle_suspicious_analyze_command(
-    message: Message,
-    profile_service: ProfileService,
-    admin_id: int,
-) -> None:
-    """Проанализировать конкретного пользователя."""
+# Словарь для отслеживания состояния ожидания ввода
+waiting_for_user_input = {}
+
+async def analyze_user_by_id(message: Message, profile_service: ProfileService, admin_id: int, user_id: int) -> None:
+    """Анализирует пользователя по ID."""
     try:
-        if not message.from_user:
-            return
-        logger.info(f"Suspicious analyze command from {sanitize_for_logging(str(message.from_user.id))}")
-
-        # Парсим аргументы команды
-        if not message.text:
-            await message.answer("❌ Ошибка: пустое сообщение")
-            return
-        
-        # Безопасное разбиение строки
-        parts = message.text.split()
-        if len(parts) < 2:
-            await message.answer(
-                "❌ Использование: /suspicious_analyze <user_id>\n"
-                "Пример: /suspicious_analyze 123456789"
-            )
-            return
-
-        # Парсим user_id
-        try:
-            user_id = int(parts[1])
-        except (ValueError, IndexError):
-            await message.answer("❌ Неверный формат ID пользователя")
-            return
-
         # Получаем информацию о пользователе
         user_info = await profile_service.get_user_info(user_id)
         
@@ -763,7 +736,7 @@ async def handle_suspicious_analyze_command(
             is_bot=user_info['is_bot'],
             first_name=user_info['first_name'],
             last_name=user_info['last_name'],
-            username=user_info['username']
+            username=user_info.get('username')
         )
         
         # Анализируем профиль
@@ -882,8 +855,137 @@ async def handle_suspicious_analyze_command(
         logger.info("Profile analysis completed for user " + sanitize_for_logging(str(user_id)))
 
     except Exception as e:
-        logger.error("Error in suspicious_analyze command: " + sanitize_for_logging(str(e)))
+        logger.error("Error in analyze_user_by_id: " + sanitize_for_logging(str(e)))
         await message.answer("❌ Ошибка анализа профиля")
+
+@admin_router.message(Command("suspicious_analyze"))
+async def handle_suspicious_analyze_command(
+    message: Message,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Проанализировать конкретного пользователя (интерактивная версия)."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Suspicious analyze command from {sanitize_for_logging(str(message.from_user.id))}")
+
+        # Парсим аргументы команды
+        if not message.text:
+            await message.answer("❌ Ошибка: пустое сообщение")
+            return
+        
+        # Безопасное разбиение строки
+        parts = message.text.split()
+        
+        # Если есть аргументы, используем старый способ
+        if len(parts) >= 2:
+            try:
+                user_id = int(parts[1])
+                await analyze_user_by_id(message, profile_service, admin_id, user_id)
+                return
+            except (ValueError, IndexError):
+                await message.answer("❌ Неверный формат ID пользователя")
+                return
+        
+        # Интерактивный режим - запрашиваем ввод
+        user_id = message.from_user.id
+        waiting_for_user_input[user_id] = "suspicious_analyze"
+        
+        await message.answer(
+            "🔍 <b>Анализ подозрительного профиля</b>\n\n"
+            "📝 <b>Введите ID пользователя или username:</b>\n\n"
+            "• <b>ID:</b> <code>123456789</code>\n"
+            "• <b>Username:</b> <code>@username</code>\n\n"
+            "💡 <b>Примеры:</b>\n"
+            "• <code>6157876046</code>\n"
+            "• <code>@vvvvvmiyyyyy</code>\n\n"
+            "❌ <b>Для отмены:</b> /cancel"
+        )
+        logger.info(f"Waiting for user input for suspicious_analyze from {sanitize_for_logging(str(user_id))}")
+
+    except Exception as e:
+        logger.error(f"Error in suspicious_analyze command: {sanitize_for_logging(str(e))}")
+        await message.answer("❌ Ошибка анализа профиля")
+
+
+@admin_router.message(Command("cancel"))
+async def handle_cancel_command(
+    message: Message,
+    admin_id: int,
+) -> None:
+    """Отменить текущую операцию."""
+    try:
+        if not message.from_user:
+            return
+        
+        user_id = message.from_user.id
+        if user_id in waiting_for_user_input:
+            del waiting_for_user_input[user_id]
+            await message.answer("❌ Операция отменена")
+            logger.info(f"Operation cancelled for user {sanitize_for_logging(str(user_id))}")
+        else:
+            await message.answer("ℹ️ Нет активных операций для отмены")
+            
+    except Exception as e:
+        logger.error(f"Error in cancel command: {sanitize_for_logging(str(e))}")
+        await message.answer("❌ Ошибка отмены операции")
+
+
+@admin_router.message()
+async def handle_user_input(
+    message: Message,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Обрабатывает ввод пользователя для интерактивных команд."""
+    try:
+        if not message.from_user or not message.text:
+            return
+        
+        user_id = message.from_user.id
+        
+        # Проверяем, ожидает ли пользователь ввода
+        if user_id not in waiting_for_user_input:
+            return
+        
+        command = waiting_for_user_input[user_id]
+        
+        if command == "suspicious_analyze":
+            # Обрабатываем ввод для анализа профиля
+            input_text = message.text.strip()
+            
+            # Парсим ввод
+            user_id_to_analyze = None
+            
+            if input_text.startswith("@"):
+                # Это username
+                username = input_text[1:]  # Убираем @
+                try:
+                    # Пытаемся найти пользователя по username
+                    # Для простоты пока что не реализуем поиск по username
+                    await message.answer("❌ Поиск по username пока не поддерживается. Используйте ID пользователя.")
+                    return
+                except Exception as e:
+                    await message.answer(f"❌ Ошибка поиска пользователя: {sanitize_for_logging(str(e))}")
+                    return
+            else:
+                # Это ID
+                try:
+                    user_id_to_analyze = int(input_text)
+                except ValueError:
+                    await message.answer("❌ Неверный формат ID пользователя")
+                    return
+            
+            # Убираем из ожидания
+            del waiting_for_user_input[user_id]
+            
+            # Анализируем пользователя
+            await analyze_user_by_id(message, profile_service, admin_id, user_id_to_analyze)
+            
+    except Exception as e:
+        logger.error(f"Error in handle_user_input: {sanitize_for_logging(str(e))}")
+        await message.answer("❌ Ошибка обработки ввода")
 
 
 @admin_router.message(Command("suspicious_remove"))
