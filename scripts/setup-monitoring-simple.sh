@@ -220,6 +220,30 @@ echo ""
 sudo systemctl status monitoring --no-pager -l
 echo ""
 
+# Настраиваем firewall
+print_step "Настраиваем firewall..."
+
+# Проверяем, какой firewall используется
+if command -v ufw &> /dev/null; then
+    print_info "Настраиваем UFW firewall..."
+    sudo ufw allow 19999/tcp comment "Netdata monitoring"
+    sudo ufw allow 3001/tcp comment "Uptime Kuma monitoring"
+    print_success "UFW firewall настроен"
+elif command -v firewall-cmd &> /dev/null; then
+    print_info "Настраиваем firewalld..."
+    sudo firewall-cmd --permanent --add-port=19999/tcp
+    sudo firewall-cmd --permanent --add-port=3001/tcp
+    sudo firewall-cmd --reload
+    print_success "Firewalld настроен"
+elif command -v iptables &> /dev/null; then
+    print_info "Настраиваем iptables..."
+    sudo iptables -A INPUT -p tcp --dport 19999 -j ACCEPT
+    sudo iptables -A INPUT -p tcp --dport 3001 -j ACCEPT
+    print_success "iptables настроен"
+else
+    print_warning "Firewall не найден. Настройте вручную порты 19999 и 3001"
+fi
+
 # Проверяем порты
 echo -e "${BLUE}=== ПРОВЕРКА ПОРТОВ ===${NC}"
 SERVER_IP=$(hostname -I | awk '{print $1}')

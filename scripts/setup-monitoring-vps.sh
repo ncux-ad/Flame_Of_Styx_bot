@@ -340,6 +340,55 @@ else
     print_error "Uptime Kuma: Не запущен"
 fi
 
+# Настраиваем firewall
+print_step "Настраиваем firewall..."
+
+# Проверяем, какой firewall используется
+if command -v ufw &> /dev/null; then
+    print_info "Настраиваем UFW firewall..."
+    
+    # Открываем порты для мониторинга
+    sudo ufw allow 19999/tcp comment "Netdata monitoring"
+    sudo ufw allow 3001/tcp comment "Uptime Kuma monitoring"
+    
+    # Включаем UFW если не включен
+    if ! sudo ufw status | grep -q "Status: active"; then
+        print_info "Включаем UFW firewall..."
+        sudo ufw --force enable
+    fi
+    
+    print_success "UFW firewall настроен"
+    
+elif command -v firewall-cmd &> /dev/null; then
+    print_info "Настраиваем firewalld..."
+    
+    # Открываем порты
+    sudo firewall-cmd --permanent --add-port=19999/tcp
+    sudo firewall-cmd --permanent --add-port=3001/tcp
+    sudo firewall-cmd --reload
+    
+    print_success "Firewalld настроен"
+    
+elif command -v iptables &> /dev/null; then
+    print_info "Настраиваем iptables..."
+    
+    # Открываем порты
+    sudo iptables -A INPUT -p tcp --dport 19999 -j ACCEPT
+    sudo iptables -A INPUT -p tcp --dport 3001 -j ACCEPT
+    
+    # Сохраняем правила
+    if command -v iptables-save &> /dev/null; then
+        sudo iptables-save > /etc/iptables/rules.v4 2>/dev/null || true
+    fi
+    
+    print_success "iptables настроен"
+    
+else
+    print_warning "Firewall не найден. Настройте вручную:"
+    echo "  • Откройте порты 19999 и 3001"
+    echo "  • Настройте правила безопасности"
+fi
+
 # Проверяем порты
 print_step "Проверяем порты..."
 SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -406,6 +455,21 @@ case "${1:-help}" in
         echo "Uptime Kuma:"
         sudo systemctl show uptime-kuma --property=MemoryCurrent,CPUUsageNSec
         ;;
+    firewall)
+        echo "=== Статус Firewall ==="
+        if command -v ufw &> /dev/null; then
+            echo "UFW Status:"
+            sudo ufw status
+        elif command -v firewall-cmd &> /dev/null; then
+            echo "Firewalld Status:"
+            sudo firewall-cmd --list-ports
+        elif command -v iptables &> /dev/null; then
+            echo "iptables Status:"
+            sudo iptables -L | grep -E "(19999|3001)"
+        else
+            echo "Firewall не найден"
+        fi
+        ;;
     help|--help|-h)
         echo "Использование: $0 [команда]"
         echo ""
@@ -418,6 +482,7 @@ case "${1:-help}" in
         echo "  enable    - Включить автозапуск"
         echo "  disable   - Отключить автозапуск"
         echo "  resources - Показать использование ресурсов"
+        echo "  firewall  - Показать статус firewall"
         echo "  help      - Показать эту справку"
         ;;
     *)
