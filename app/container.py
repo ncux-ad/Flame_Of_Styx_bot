@@ -23,6 +23,7 @@ from app.services.status import StatusService
 from app.services.channels_admin import ChannelsAdminService
 from app.services.bots_admin import BotsAdminService
 from app.services.suspicious_admin import SuspiciousAdminService
+from app.services.callbacks import CallbacksService
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,7 @@ class DIContainer:
         self.container.register(ChannelsAdminService, factory=self._create_channels_admin_service)
         self.container.register(BotsAdminService, factory=self._create_bots_admin_service)
         self.container.register(SuspiciousAdminService, factory=self._create_suspicious_admin_service)
+        self.container.register(CallbacksService, factory=self._create_callbacks_service)
         
         logger.info("DI Container setup completed")
     
@@ -141,6 +143,17 @@ class DIContainer:
         """Создать SuspiciousAdminService."""
         return SuspiciousAdminService(profile_service)
     
+    def _create_callbacks_service(
+        self,
+        moderation_service: ModerationService,
+        profile_service: ProfileService,
+    ) -> CallbacksService:
+        """Создать CallbacksService."""
+        return CallbacksService(
+            moderation_service=moderation_service,
+            profile_service=profile_service,
+        )
+    
     def get(self, service_type: Type[T], **kwargs) -> T:
         """Получить сервис из контейнера."""
         return self.container.resolve(service_type, **kwargs)
@@ -177,6 +190,10 @@ class DIContainer:
         channels_admin_service = ChannelsAdminService(channel_service)
         bots_admin_service = BotsAdminService(bot_service)
         suspicious_admin_service = SuspiciousAdminService(profile_service)
+        callbacks_service = CallbacksService(
+            moderation_service=moderation_service,
+            profile_service=profile_service,
+        )
         
         return {
             # Основные сервисы для антиспама
@@ -193,6 +210,7 @@ class DIContainer:
             "channels_admin_service": channels_admin_service,
             "bots_admin_service": bots_admin_service,
             "suspicious_admin_service": suspicious_admin_service,
+            "callbacks_service": callbacks_service,
             # Метаданные
             "admin_id": admin_id,
             "admin_ids": admin_ids,

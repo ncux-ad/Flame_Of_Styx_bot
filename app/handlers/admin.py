@@ -20,6 +20,7 @@ from app.services.status import StatusService
 from app.services.channels_admin import ChannelsAdminService
 from app.services.bots_admin import BotsAdminService
 from app.services.suspicious_admin import SuspiciousAdminService
+from app.services.callbacks import CallbacksService
 from app.utils.error_handling import ValidationError, handle_errors
 from app.utils.security import sanitize_for_logging, safe_format_message
 
@@ -1344,8 +1345,7 @@ async def handle_help_command(
 @admin_router.callback_query(lambda c: c.data and c.data.startswith("ban_suspicious:"))
 async def handle_ban_suspicious_callback(
     callback_query: CallbackQuery,
-    moderation_service: ModerationService,
-    profile_service: ProfileService,
+    callbacks_service: CallbacksService,
     admin_id: int,
 ) -> None:
     """Забанить подозрительного пользователя."""
@@ -1356,43 +1356,20 @@ async def handle_ban_suspicious_callback(
         callback_data = callback_query.data or ""
         user_id = int(callback_data.split(":")[1]) if callback_data and ":" in callback_data else 0
 
-        # Получаем информацию о пользователе
-        user_info = await profile_service.get_user_info(user_id)
+        # Обрабатываем через сервис
+        result = await callbacks_service.handle_ban_suspicious_user(callback_query, user_id, admin_id)
 
-        # Получаем профиль для получения счета подозрительности
-        profile = await profile_service._get_suspicious_profile(user_id)
-        suspicion_score = profile.suspicion_score if profile else 0.0
-
-        # Баним пользователя
-        success = await moderation_service.ban_user(
-            user_id=user_id,
-            chat_id=callback_query.message.chat.id if callback_query.message else 0,
-            reason=f"Подозрительный профиль (счет: {suspicion_score:.2f})",
-            admin_id=admin_id,
-        )
-
-        if success:
-            # Отмечаем профиль как проверенный и подтвержденный
-            await profile_service.mark_profile_as_reviewed(
-                user_id=user_id,
-                admin_id=admin_id,
-                is_confirmed=True,
-                notes="Забанен за подозрительный профиль",
-            )
-
+        if result["success"]:
             await callback_query.answer("✅ Пользователь забанен")
             try:
                 if callback_query.message and hasattr(callback_query.message, "edit_text") and callable(getattr(callback_query.message, "edit_text", None)):
-                    await callback_query.message.edit_text(
-                        f"🚫 <b>Пользователь забанен</b>\n\n"
-                        f"ID: {user_id}\n"
-                        f"Имя: {user_info.get('first_name', 'Неизвестно')}\n"
-                        f"Причина: Подозрительный профиль"
-                    )
+                    message_text = callbacks_service.get_ban_success_message(result["user_info"], user_id)
+                    await callback_query.message.edit_text(message_text)
             except Exception as e:
                 logger.warning(f"Could not edit message: {sanitize_for_logging(str(e))}")
         else:
-            await callback_query.answer("❌ Ошибка при бане пользователя")
+            error_message = callbacks_service.get_error_message("ban")
+            await callback_query.answer(error_message)
 
     except Exception as e:
         logger.error(f"Error in ban_suspicious callback: {sanitize_for_logging(str(e))}")
@@ -1402,7 +1379,7 @@ async def handle_ban_suspicious_callback(
 @admin_router.callback_query(lambda c: c.data and c.data.startswith("watch_suspicious:"))
 async def handle_watch_suspicious_callback(
     callback_query: CallbackQuery,
-    profile_service: ProfileService,
+    callbacks_service: CallbacksService,
     admin_id: int,
 ) -> None:
     """Пометить подозрительного пользователя для наблюдения."""
@@ -1413,19 +1390,20 @@ async def handle_watch_suspicious_callback(
         callback_data = callback_query.data or ""
         user_id = int(callback_data.split(":")[1]) if callback_data and ":" in callback_data else 0
 
-        # Отмечаем профиль как проверенный, но не подтвержденный
-        await profile_service.mark_profile_as_reviewed(
-            user_id=user_id, admin_id=admin_id, is_confirmed=False, notes="Помечен для наблюдения"
-        )
+        # Обрабатываем через сервис
+        result = await callbacks_service.handle_watch_suspicious_user(callback_query, user_id, admin_id)
 
-        await callback_query.answer("👀 Пользователь добавлен в список наблюдения")
-        try:
-            if callback_query.message and hasattr(callback_query.message, "edit_text") and callable(getattr(callback_query.message, "edit_text", None)):
-                await callback_query.message.edit_text(
-                    f"👀 <b>Пользователь добавлен в наблюдение</b>\n\n" f"ID: {user_id}\n" f"Статус: Наблюдение"
-                )
-        except Exception as e:
-            logger.warning(f"Could not edit message: {sanitize_for_logging(str(e))}")
+        if result["success"]:
+            await callback_query.answer("👀 Пользователь добавлен в список наблюдения")
+            try:
+                if callback_query.message and hasattr(callback_query.message, "edit_text") and callable(getattr(callback_query.message, "edit_text", None)):
+                    message_text = callbacks_service.get_watch_success_message(user_id)
+                    await callback_query.message.edit_text(message_text)
+            except Exception as e:
+                logger.warning(f"Could not edit message: {sanitize_for_logging(str(e))}")
+        else:
+            error_message = callbacks_service.get_error_message("watch")
+            await callback_query.answer(error_message)
 
     except Exception as e:
         logger.error(f"Error in watch_suspicious callback: {sanitize_for_logging(str(e))}")
@@ -1435,7 +1413,7 @@ async def handle_watch_suspicious_callback(
 @admin_router.callback_query(lambda c: c.data and c.data.startswith("allow_suspicious:"))
 async def handle_allow_suspicious_callback(
     callback_query: CallbackQuery,
-    profile_service: ProfileService,
+    callbacks_service: CallbacksService,
     admin_id: int,
 ) -> None:
     """Разрешить подозрительному пользователю (ложное срабатывание)."""
@@ -1446,22 +1424,20 @@ async def handle_allow_suspicious_callback(
         callback_data = callback_query.data or ""
         user_id = int(callback_data.split(":")[1]) if callback_data and ":" in callback_data else 0
 
-        # Отмечаем профиль как проверенный и ложное срабатывание
-        await profile_service.mark_profile_as_reviewed(
-            user_id=user_id,
-            admin_id=admin_id,
-            is_confirmed=False,
-            notes="Ложное срабатывание - разрешен",
-        )
+        # Обрабатываем через сервис
+        result = await callbacks_service.handle_allow_suspicious_user(callback_query, user_id, admin_id)
 
-        await callback_query.answer("✅ Пользователь разрешен")
-        try:
-            if callback_query.message and hasattr(callback_query.message, "edit_text") and callable(getattr(callback_query.message, "edit_text", None)):
-                await callback_query.message.edit_text(
-                    f"✅ <b>Пользователь разрешен</b>\n\n" f"ID: {user_id}\n" f"Статус: Ложное срабатывание"
-                )
-        except Exception as e:
-            logger.warning(f"Could not edit message: {sanitize_for_logging(str(e))}")
+        if result["success"]:
+            await callback_query.answer("✅ Пользователь разрешен")
+            try:
+                if callback_query.message and hasattr(callback_query.message, "edit_text") and callable(getattr(callback_query.message, "edit_text", None)):
+                    message_text = callbacks_service.get_allow_success_message(user_id)
+                    await callback_query.message.edit_text(message_text)
+            except Exception as e:
+                logger.warning(f"Could not edit message: {sanitize_for_logging(str(e))}")
+        else:
+            error_message = callbacks_service.get_error_message("allow")
+            await callback_query.answer(error_message)
 
     except Exception as e:
         logger.error(f"Error in allow_suspicious callback: {sanitize_for_logging(str(e))}")
