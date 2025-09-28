@@ -53,7 +53,7 @@ async def handle_status_command(
             return
         logger.info(f"Status command from {sanitize_for_logging(str(message.from_user.id))}")
 
-        status_text = await status_service.get_status()
+        status_text = await status_service.get_bot_status(admin_id)
         await message.answer(status_text)
         logger.info(f"Status sent to {sanitize_for_logging(str(message.from_user.id))}")
 
@@ -111,7 +111,7 @@ async def handle_help_command(
             return
         logger.info(f"Help command from {sanitize_for_logging(str(message.from_user.id))}")
 
-        help_text = await help_service.get_help_text()
+        help_text = await help_service.get_help_text(message.from_user.id)
         await message.answer(help_text)
         logger.info(f"Help sent to {sanitize_for_logging(str(message.from_user.id))}")
 
@@ -132,7 +132,7 @@ async def handle_instructions_command(
             return
         logger.info(f"Instructions command from {sanitize_for_logging(str(message.from_user.id))}")
 
-        instructions_text = await help_service.get_instructions_text()
+        instructions_text = await help_service.get_instructions_text(message.from_user.id)
         await message.answer(instructions_text)
         logger.info(f"Instructions sent to {sanitize_for_logging(str(message.from_user.id))}")
 
