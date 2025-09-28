@@ -15,6 +15,9 @@ NC='\033[0m' # No Color
 print_header() {
     echo -e "${BLUE}🚀 Установка мониторинга для AntiSpam Bot${NC}"
     echo -e "${BLUE}==========================================${NC}"
+    echo -e "${YELLOW}💡 Systemd - ОСНОВНОЙ вариант (оптимизировано для VPS)${NC}"
+    echo -e "${YELLOW}💡 Docker - альтернативный вариант${NC}"
+    echo ""
 }
 
 print_success() {
@@ -40,15 +43,15 @@ print_warning() {
 print_menu() {
     echo -e "${CYAN}📋 Выберите вариант установки:${NC}"
     echo ""
-    echo -e "${GREEN}1)${NC} 🐳 Docker (рекомендуется)"
-    echo -e "   • Простая установка"
-    echo -e "   • Изолированная среда"
-    echo -e "   • Автоматическая сборка"
-    echo ""
-    echo -e "${GREEN}2)${NC} ⚙️ Systemd (оптимизировано для VPS)"
+    echo -e "${GREEN}1)${NC} ⚙️ Systemd (ОСНОВНОЙ - оптимизировано для VPS)"
     echo -e "   • Минимальное использование ресурсов"
     echo -e "   • Нет зависимости от Docker"
     echo -e "   • Полная сборка Uptime Kuma"
+    echo ""
+    echo -e "${GREEN}2)${NC} 🐳 Docker (альтернатива)"
+    echo -e "   • Простая установка"
+    echo -e "   • Изолированная среда"
+    echo -e "   • Автоматическая сборка"
     echo ""
     echo -e "${GREEN}3)${NC} 🔧 Принудительное исправление"
     echo -e "   • Исправляет существующие проблемы"
@@ -107,8 +110,21 @@ while true; do
     read -p "Введите номер варианта (1-5): " choice
     case $choice in
         1)
+            if [[ "$SYSTEMD_AVAILABLE" == "true" ]]; then
+                print_step "Запускаем Systemd установку (ОСНОВНОЙ)..."
+                chmod +x scripts/build-uptime-kuma.sh
+                ./scripts/build-uptime-kuma.sh
+                break
+            else
+                print_error "Systemd не доступен на этой системе"
+                echo ""
+                read -p "Нажмите Enter для продолжения..."
+                print_menu
+            fi
+            ;;
+        2)
             if [[ "$DOCKER_AVAILABLE" == "true" ]]; then
-                print_step "Запускаем Docker установку..."
+                print_step "Запускаем Docker установку (альтернатива)..."
                 chmod +x scripts/install-monitoring-simple.sh
                 ./scripts/install-monitoring-simple.sh
                 break
@@ -117,19 +133,6 @@ while true; do
                 echo "   curl -fsSL https://get.docker.com -o get-docker.sh"
                 echo "   sudo sh get-docker.sh"
                 echo "   sudo usermod -aG docker $USER"
-                echo ""
-                read -p "Нажмите Enter для продолжения..."
-                print_menu
-            fi
-            ;;
-        2)
-            if [[ "$SYSTEMD_AVAILABLE" == "true" ]]; then
-                print_step "Запускаем Systemd установку..."
-                chmod +x scripts/build-uptime-kuma.sh
-                ./scripts/build-uptime-kuma.sh
-                break
-            else
-                print_error "Systemd не доступен на этой системе"
                 echo ""
                 read -p "Нажмите Enter для продолжения..."
                 print_menu
