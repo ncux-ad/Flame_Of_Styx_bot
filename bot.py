@@ -20,6 +20,7 @@ from app.middlewares.suspicious_profile import SuspiciousProfileMiddleware
 from app.middlewares.validation import ValidationMiddleware, CommandValidationMiddleware
 from app.services.config_watcher import LimitsHotReload
 from app.services.limits import LimitsService
+from app.utils.graceful_shutdown import create_graceful_shutdown
 
 # Configure logging
 logging.basicConfig(
@@ -29,8 +30,10 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
-    """Main function to start the simplified bot."""
+    """Main function to start the simplified bot with graceful shutdown."""
     bot = None
+    shutdown_manager = None
+    
     try:
         # 1. Load configuration
         config = load_config()
@@ -49,7 +52,10 @@ async def main():
         # 4. Create dispatcher
         dp = Dispatcher()
 
-        # 5. Register middlewares (order matters!)
+        # 5. Setup graceful shutdown
+        shutdown_manager = await create_graceful_shutdown(bot, dp, config.admin_ids_list)
+
+        # 6. Register middlewares (order matters!)
         # Validation -> Logging -> RateLimit -> DI -> SuspiciousProfile
         dp.message.middleware(ValidationMiddleware())
         dp.message.middleware(CommandValidationMiddleware())
@@ -91,7 +97,7 @@ async def main():
 
         logger.info("Middlewares registered successfully")
 
-        # 6. Register routers in correct order
+        # 7. Register routers in correct order
         from app.handlers import admin, antispam, channels
 
         # Admin router first (handles admin commands)
@@ -105,22 +111,33 @@ async def main():
 
         logger.info("Routers registered successfully")
 
-        # 7. Initialize hot-reload for limits
+        # 8. Initialize hot-reload for limits
         limits_service = LimitsService()
         hot_reload = LimitsHotReload(limits_service, bot, config.admin_ids_list)
         await hot_reload.start()
         logger.info("Hot-reload for limits started")
+        
+        # 9. Register hot-reload shutdown callback
+        shutdown_manager.add_shutdown_callback(hot_reload.stop)
+
+        # 10. Send startup notification
+        await shutdown_manager.startup_notification()
 
         logger.info("Starting bot...")
 
-        # 8. Start polling
+        # 11. Start polling
         await dp.start_polling(bot)
 
     except Exception as e:
         logger.error(f"Error starting bot: {e}")
         raise
     finally:
-        if bot:
+        # 12. Graceful shutdown
+        if shutdown_manager and not shutdown_manager.is_shutdown_requested():
+            logger.info("Performing graceful shutdown...")
+            await shutdown_manager.graceful_shutdown()
+        elif bot:
+            logger.info("Closing bot session...")
             await bot.session.close()
 
 

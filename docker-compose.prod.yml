@@ -6,6 +6,8 @@ services:
     build: .
     container_name: antispam-bot-prod
     restart: unless-stopped
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
     secrets:
       - bot_token
       - admin_ids

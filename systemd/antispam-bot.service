@@ -8,9 +8,13 @@ Type=simple
 WorkingDirectory=/home/ncux11/bots/Flame_Of_Styx_bot
 ExecStart=/home/ncux11/bots/Flame_Of_Styx_bot/venv/bin/python bot.py
 ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill -TERM $MAINPID
 Restart=always
 RestartSec=10
 TimeoutStartSec=30
+TimeoutStopSec=30
+KillMode=mixed
+KillSignal=SIGTERM
 
 # Безопасность
 User=ncux11
