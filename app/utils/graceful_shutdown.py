@@ -40,10 +40,10 @@ class GracefulShutdown:
     async def startup_notification(self) -> None:
         """Уведомление о запуске бота."""
         message = (
-            "BOT <b>AntiSpam Bot запущен</b>\n\n"
-            "OK Бот готов к работе\n"
-            "SHIELD Антиспам активен\n"
-            "STATS Мониторинг включен"
+            "🤖 <b>AntiSpam Bot запущен</b>\n\n"
+            "✅ Бот готов к работе\n"
+            "🛡️ Антиспам активен\n"
+            "📊 Мониторинг включен"
         )
         await self.notify_admins(message)
         logger.info("Startup notification sent to admins")
@@ -51,10 +51,10 @@ class GracefulShutdown:
     async def shutdown_notification(self) -> None:
         """Уведомление об остановке бота."""
         message = (
-            "STOP <b>AntiSpam Bot остановлен</b>\n\n"
-            "WARNING Бот завершает работу\n"
-            "RELOAD Graceful shutdown в процессе\n"
-            "TIME Ожидайте завершения..."
+            "🛑 <b>AntiSpam Bot остановлен</b>\n\n"
+            "⚠️ Бот завершает работу\n"
+            "🔄 Graceful shutdown в процессе\n"
+            "⏰ Ожидайте завершения..."
         )
         await self.notify_admins(message)
         logger.info("Shutdown notification sent to admins")
