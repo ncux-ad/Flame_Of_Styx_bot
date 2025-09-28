@@ -6,6 +6,9 @@ import pytest
 from app.config import load_config, Settings
 
 
+@pytest.mark.unit
+
+
 class TestConfig:
     """Test configuration loading and validation."""
     

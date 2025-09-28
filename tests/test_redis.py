@@ -8,6 +8,9 @@ from unittest.mock import AsyncMock, MagicMock
 from app.services.redis import RedisService
 
 
+@pytest.mark.unit
+
+
 class TestRedisService:
     """Test Redis service functionality."""
     
