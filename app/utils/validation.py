@@ -132,15 +132,30 @@ class InputValidator:
                 code="missing_command"
             ))
         else:
-            errors.extend(self._validate_text_content(command, "command"))
-            
-            if len(command) > self.MAX_COMMAND_LENGTH:
+            # Для команд не применяем подозрительные паттерны, только базовые проверки
+            if not isinstance(command, str):
+                errors.append(ValidationError(
+                    field="command",
+                    message="Команда должна быть строкой",
+                    severity=ValidationSeverity.HIGH,
+                    code="invalid_command_type",
+                    value=type(command).__name__
+                ))
+            elif len(command) > self.MAX_COMMAND_LENGTH:
                 errors.append(ValidationError(
                     field="command",
                     message=f"Команда слишком длинная (максимум {self.MAX_COMMAND_LENGTH} символов)",
                     severity=ValidationSeverity.HIGH,
                     code="command_too_long",
                     value=len(command)
+                ))
+            elif not command.startswith('/'):
+                errors.append(ValidationError(
+                    field="command",
+                    message="Команда должна начинаться с '/'",
+                    severity=ValidationSeverity.HIGH,
+                    code="invalid_command_format",
+                    value=command
                 ))
         
         # Проверка параметров
