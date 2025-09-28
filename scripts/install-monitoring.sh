@@ -65,15 +65,20 @@ print_menu() {
     echo -e "   • Только мониторинг сервера"
     echo -e "   • Без Uptime Kuma"
     echo ""
-    echo -e "${GREEN}6)${NC} 🚀 Простой мониторинг (РЕКОМЕНДУЕТСЯ)"
+    echo -e "${GREEN}6)${NC} 👁️ Glances (САМЫЙ ЛЕГКИЙ)"
+    echo -e "   • Python-утилита"
+    echo -e "   • Веб-интерфейс + REST API"
+    echo -e "   • Telegram-алерты"
+    echo ""
+    echo -e "${GREEN}7)${NC} 🚀 Простой мониторинг"
     echo -e "   • Netdata + встроенный healthcheck"
     echo -e "   • Без сложных зависимостей"
     echo ""
-    echo -e "${GREEN}7)${NC} 🌐 Внешний мониторинг"
+    echo -e "${GREEN}8)${NC} 🌐 Внешний мониторинг"
     echo -e "   • Netdata + внешние сервисы"
     echo -e "   • Uptime Robot, Healthcheck.io"
     echo ""
-    echo -e "${GREEN}8)${NC} ❌ Отмена"
+    echo -e "${GREEN}9)${NC} ❌ Отмена"
     echo ""
 }
 
@@ -169,23 +174,29 @@ while true; do
             break
             ;;
         6)
+            print_step "Запускаем Glances мониторинг..."
+            chmod +x scripts/install-glances-monitoring.sh
+            ./scripts/install-glances-monitoring.sh
+            break
+            ;;
+        7)
             print_step "Запускаем простой мониторинг..."
             chmod +x scripts/install-simple-monitoring.sh
             ./scripts/install-simple-monitoring.sh
             break
             ;;
-        7)
+        8)
             print_step "Запускаем внешний мониторинг..."
             chmod +x scripts/install-external-monitoring.sh
             ./scripts/install-external-monitoring.sh
             break
             ;;
-        8)
+        9)
             print_info "Установка отменена"
             exit 0
             ;;
         *)
-            print_error "Неверный выбор. Введите число от 1 до 8."
+            print_error "Неверный выбор. Введите число от 1 до 9."
             ;;
     esac
 done
