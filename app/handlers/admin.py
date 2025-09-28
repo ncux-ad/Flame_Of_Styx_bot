@@ -346,11 +346,11 @@ async def handle_unban_command(
                 chat_id = log_entry.chat_id
 
                 # Получаем информацию о пользователе
-                user_info = await profile_service.get_user_info(user_id)
+                user_info = await profile_service.get_user_info(int(str(user_id)))
                 user_display = (
-                    f"@{user_info['username']}"
-                    if user_info["username"]
-                    else f"{user_info['first_name']} {user_info['last_name'] or ''}".strip()
+                    f"@{user_info.get('username')}"
+                    if user_info.get("username")
+                    else f"{user_info.get('first_name', '')} {user_info.get('last_name', '')}".strip()
                 )
                 if not user_display or user_display == "Unknown User":
                     user_display = f"User {user_id}"
@@ -359,7 +359,7 @@ async def handle_unban_command(
                 chat_info = (
                     await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
                 )
-                chat_display = f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
+                chat_display = f"@{chat_info.get('username')}" if chat_info.get("username") else chat_info.get("title", "Unknown Chat")
 
                 text += f"{i}. <b>{user_display}</b> <code>({user_id})</code>\n"
                 text += f"   Причина: {reason}\n"
@@ -619,9 +619,9 @@ async def handle_suspicious_command(
         
         for i, profile in enumerate(profiles, 1):
             # Получаем информацию о пользователе
-            user_info = await profile_service.get_user_info(int(profile.user_id))
-            username = f"@{user_info['username']}" if user_info['username'] else "Нет username"
-            name = f"{user_info['first_name']} {user_info['last_name'] or ''}".strip()
+            user_info = await profile_service.get_user_info(int(str(profile.user_id)))
+            username = f"@{user_info.get('username')}" if user_info.get('username') else "Нет username"
+            name = f"{user_info.get('first_name', '')} {user_info.get('last_name', '')}".strip()
             
             text += f"{i}. <b>{name}</b>\n"
             text += f"   ID: <code>{profile.user_id}</code>\n"
@@ -1027,14 +1027,14 @@ async def handle_banned_command(
             chat_id = log_entry.chat_id
 
             # Получаем информацию о пользователе
-            user_info = await profile_service.get_user_info(user_id)
+            user_info = await profile_service.get_user_info(int(str(user_id)))
 
             # Формируем отображение пользователя
-            if user_info["username"]:
-                user_display = f"@{user_info['username']}"
+            if user_info.get("username"):
+                user_display = f"@{user_info.get('username')}"
             else:
-                first_name = user_info["first_name"] or ""
-                last_name = user_info["last_name"] or ""
+                first_name = user_info.get("first_name", "")
+                last_name = user_info.get("last_name", "")
                 full_name = f"{first_name} {last_name}".strip()
                 user_display = full_name if full_name else f"User {user_id}"
 
@@ -1042,7 +1042,7 @@ async def handle_banned_command(
             chat_info = (
                 await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
             )
-            chat_display = f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
+            chat_display = f"@{chat_info.get('username')}" if chat_info.get("username") else chat_info.get("title", "Unknown Chat")
 
             text += f"{i}. <b>{user_display}</b> <code>({user_id})</code>\n"
             text += f"   Причина: {reason}\n"
@@ -1097,7 +1097,7 @@ async def handle_ban_history_command(
             chat_info = (
                 await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
             )
-            chat_display = f"@{chat_info['username']}" if chat_info["username"] else chat_info["title"]
+            chat_display = f"@{chat_info.get('username')}" if chat_info.get("username") else chat_info.get("title", "Unknown Chat")
             
             text += f"<b>💬 {chat_display}</b> <code>({chat_id})</code>\n"
             
@@ -1108,14 +1108,14 @@ async def handle_ban_history_command(
                 is_active = "🟢 Активен" if log_entry.is_active else "🔴 Неактивен"
 
                 # Получаем информацию о пользователе
-                user_info = await profile_service.get_user_info(user_id)
+                user_info = await profile_service.get_user_info(int(str(user_id)))
                 
                 # Формируем отображение пользователя
-                if user_info["username"]:
-                    user_display = f"@{user_info['username']}"
+                if user_info.get("username"):
+                    user_display = f"@{user_info.get('username')}"
                 else:
-                    first_name = user_info["first_name"] or ""
-                    last_name = user_info["last_name"] or ""
+                    first_name = user_info.get("first_name", "")
+                    last_name = user_info.get("last_name", "")
                     full_name = f"{first_name} {last_name}".strip()
                     user_display = full_name if full_name else f"User {user_id}"
 

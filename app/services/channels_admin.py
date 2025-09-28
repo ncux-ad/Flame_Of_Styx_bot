@@ -63,11 +63,11 @@ class ChannelsAdminService:
                 channels_text += "<i>Каналы где бот является администратором</i>\n\n"
                 
                 for channel in native_channels[:5]:  # Показываем первые 5
-                    username = f"@{channel['username']}" if channel['username'] else "Без username"
-                    channels_text += f"<b>{channel['title'] or 'Без названия'}</b>\n"
-                    channels_text += f"   ID: <code>{channel['chat_id']}</code> | {username}\n"
-                    if channel['member_count']:
-                        channels_text += f"   👥 Участников: {channel['member_count']}\n"
+                    username = f"@{channel['username']}" if channel.get('username') else "Без username"
+                    channels_text += f"<b>{channel.get('title') or 'Без названия'}</b>\n"
+                    channels_text += f"   ID: <code>{channel.get('chat_id')}</code> | {username}\n"
+                    if channel.get('member_count'):
+                        channels_text += f"   👥 Участников: {channel.get('member_count')}\n"
                     channels_text += "\n"
             
             # Иностранные каналы
@@ -76,11 +76,11 @@ class ChannelsAdminService:
                 channels_text += "<i>Каналы откуда приходят сообщения (бот не админ)</i>\n\n"
                 
                 for channel in foreign_channels[:5]:  # Показываем первые 5
-                    username = f"@{channel['username']}" if channel['username'] else "Без username"
-                    channels_text += f"<b>{channel['title'] or 'Без названия'}</b>\n"
-                    channels_text += f"   ID: <code>{channel['chat_id']}</code> | {username}\n"
-                    if channel['member_count']:
-                        channels_text += f"   👥 Участников: {channel['member_count']}\n"
+                    username = f"@{channel['username']}" if channel.get('username') else "Без username"
+                    channels_text += f"<b>{channel.get('title') or 'Без названия'}</b>\n"
+                    channels_text += f"   ID: <code>{channel.get('chat_id')}</code> | {username}\n"
+                    if channel.get('member_count'):
+                        channels_text += f"   👥 Участников: {channel.get('member_count')}\n"
                     channels_text += "\n"
             
             # Группы комментариев
