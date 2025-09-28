@@ -325,12 +325,17 @@ class ValidationMiddleware(BaseMiddleware):
                 },
             )
 
-        # Отправляем ответ пользователю (если это сообщение)
+        # Отправляем ответ пользователю только в личных сообщениях
         if isinstance(event, Message):
-            try:
-                await event.answer(ERROR_MESSAGES["INVALID_INPUT"])
-            except Exception as e:
-                logger.error(f"Ошибка отправки ответа об ошибке валидации: {e}")
+            # Проверяем тип чата - отвечаем только в личных сообщениях
+            if event.chat.type == "private":
+                try:
+                    await event.answer(ERROR_MESSAGES["INVALID_INPUT"])
+                except Exception as e:
+                    logger.error(f"Ошибка отправки ответа об ошибке валидации: {e}")
+            else:
+                # В каналах и группах только логируем, не отвечаем
+                logger.info(f"Тихое логирование: ошибка валидации в {event.chat.type} {event.chat.id}")
 
 
 class CommandValidationMiddleware(BaseMiddleware):

@@ -12,6 +12,7 @@ from app.services.status import StatusService
 from app.services.help import HelpService
 from app.utils.error_handling import handle_errors
 from app.utils.security import sanitize_for_logging
+from app.middlewares.silent_logging import send_silent_response
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ async def handle_start_command(
         logger.info(f"Start command from {sanitize_for_logging(str(message.from_user.id))}")
 
         welcome_message = await admin_service.get_welcome_message()
-        await message.answer(welcome_message)
+        await send_silent_response(message, welcome_message)
         logger.info(f"Welcome message sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
@@ -54,12 +55,12 @@ async def handle_status_command(
         logger.info(f"Status command from {sanitize_for_logging(str(message.from_user.id))}")
 
         status_text = await status_service.get_bot_status(admin_id)
-        await message.answer(status_text)
+        await send_silent_response(message, status_text)
         logger.info(f"Status sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
         logger.error(f"Error in status command: {sanitize_for_logging(str(e))}")
-        await message.answer("❌ Ошибка получения статуса")
+        await send_silent_response(message, "❌ Ошибка получения статуса")
 
 
 @basic_router.message(Command("settings"))
@@ -91,12 +92,12 @@ async def handle_settings_command(message: Message) -> None:
             "❓ <b>Помощь:</b> /help"
         )
 
-        await message.answer(settings_text)
+        await send_silent_response(message, settings_text)
         logger.info(f"Settings sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
         logger.error(f"Error in settings command: {sanitize_for_logging(str(e))}")
-        await message.answer("❌ Ошибка получения настроек")
+        await send_silent_response(message, "❌ Ошибка получения настроек")
 
 
 @basic_router.message(Command("help"))
@@ -122,12 +123,12 @@ async def handle_help_command(
             # Общая справка
             help_text = await help_service.get_help_text(message.from_user.id)
         
-        await message.answer(help_text)
+        await send_silent_response(message, help_text)
         logger.info(f"Help sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
         logger.error(f"Error in help command: {sanitize_for_logging(str(e))}")
-        await message.answer("❌ Ошибка получения справки")
+        await send_silent_response(message, "❌ Ошибка получения справки")
 
 
 @basic_router.message(Command("instructions"))
@@ -143,12 +144,12 @@ async def handle_instructions_command(
         logger.info(f"Instructions command from {sanitize_for_logging(str(message.from_user.id))}")
 
         instructions_text = await help_service.get_instructions_text(message.from_user.id)
-        await message.answer(instructions_text)
+        await send_silent_response(message, instructions_text)
         logger.info(f"Instructions sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
         logger.error(f"Error in instructions command: {sanitize_for_logging(str(e))}")
-        await message.answer("❌ Ошибка получения инструкций")
+        await send_silent_response(message, "❌ Ошибка получения инструкций")
 
 
 @basic_router.message(Command("logs"))
