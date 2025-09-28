@@ -195,14 +195,6 @@ class HelpService:
                 examples=["/logs", "/logs error", "/logs warning"],
                 admin_only=True,
             ),
-            # Инструкции
-            "instructions": CommandInfo(
-                command="/instructions",
-                description="Инструкция по настройке бота для админов каналов",
-                usage="/instructions",
-                examples=["/instructions"],
-                admin_only=True,
-            ),
         }
 
     def get_main_help(self, is_admin: bool = False) -> str:
