@@ -653,13 +653,19 @@ async def handle_suspicious_command(
             username = f"@{user_info.get('username')}" if user_info.get('username') else "Нет username"
             name = f"{user_info.get('first_name', '')} {user_info.get('last_name', '')}".strip()
             
-            text += f"{i}. <b>{name}</b>\n"
+            # Экранируем HTML символы
+            def escape_html(text):
+                if not text:
+                    return ""
+                return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            
+            text += f"{i}. <b>{escape_html(name)}</b>\n"
             text += f"   ID: <code>{profile.user_id}</code>\n"
-            text += f"   Username: {username}\n"
+            text += f"   Username: {escape_html(username)}\n"
             text += f"   Счет подозрительности: {profile.suspicion_score:.2f}\n"
-            text += f"   Паттерны: {profile.detected_patterns}\n"
+            text += f"   Паттерны: {escape_html(str(profile.detected_patterns))}\n"
             if profile.linked_chat_title and str(profile.linked_chat_title).strip():
-                text += f"   Связанный чат: {profile.linked_chat_title}\n"
+                text += f"   Связанный чат: {escape_html(str(profile.linked_chat_title))}\n"
             text += f"   Дата: {profile.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
 
         text += "💡 <b>Команды управления:</b>\n"
@@ -762,13 +768,23 @@ async def handle_suspicious_analyze_command(
         text = "🔍 <b>Анализ профиля пользователя</b>\n\n"
         logger.info("Added header")
         
-        text += "<b>Пользователь:</b> " + str(user_info['first_name'] or '') + " " + str(user_info['last_name'] or '') + "\n"
+        # Экранируем HTML символы
+        def escape_html(text):
+            if not text:
+                return ""
+            return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        
+        first_name = escape_html(str(user_info['first_name'] or ''))
+        last_name = escape_html(str(user_info['last_name'] or ''))
+        username = escape_html(str(user_info['username'] or 'Нет'))
+        
+        text += "<b>Пользователь:</b> " + first_name + " " + last_name + "\n"
         logger.info("Added user name")
         
         text += "<b>ID:</b> <code>" + str(user_id) + "</code>\n"
         logger.info("Added user ID")
         
-        text += "<b>Username:</b> @" + str(user_info['username'] or 'Нет') + "\n"
+        text += "<b>Username:</b> @" + username + "\n"
         logger.info("Added username")
         
         if profile:
@@ -798,7 +814,7 @@ async def handle_suspicious_analyze_command(
             if patterns:
                 text += "<b>🔍 Обнаруженные паттерны:</b>\n"
                 for pattern in patterns:
-                    text += "• " + str(pattern) + "\n"
+                    text += "• " + escape_html(str(pattern)) + "\n"
                 text += "\n"
             
             # Безопасно проверяем связанный чат
@@ -806,7 +822,7 @@ async def handle_suspicious_analyze_command(
                 try:
                     chat_title = str(profile.linked_chat_title).strip()
                     if chat_title:
-                        text += "<b>📱 Связанный чат:</b> " + str(chat_title) + "\n"
+                        text += "<b>📱 Связанный чат:</b> " + escape_html(chat_title) + "\n"
                         text += "<b>📊 Постов:</b> " + str(profile.post_count) + "\n\n"
                 except Exception:
                     pass
