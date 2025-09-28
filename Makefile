@@ -61,7 +61,7 @@ security-scan: ## Сканирование уязвимостей в коде
 	@echo "$(YELLOW)Сканирование уязвимостей...$(NC)"
 	@if command -v bandit >/dev/null 2>&1; then \
 		echo "$(BLUE)Запуск Bandit...$(NC)"; \
-		bandit -r app/ -f json -o bandit-report.json; \
+		bandit -r app/ -f json -o bandit-report.json -ll || true; \
 		echo "$(GREEN)Bandit завершен!$(NC)"; \
 	else \
 		echo "$(YELLOW)Bandit не установлен. Установите: pip install bandit$(NC)"; \

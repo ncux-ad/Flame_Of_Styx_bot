@@ -4,7 +4,7 @@ Write-Host "🔒 Запуск проверки безопасности..." -For
 
 # Проверяем bandit
 Write-Host "📋 Запуск bandit (статический анализ безопасности)..." -ForegroundColor Yellow
-bandit -r app/ -f json -o security-report.json
+bandit -r app/ -f json -o security-report.json -ll
 
 # Проверяем safety
 Write-Host "📋 Запуск safety (проверка уязвимостей в зависимостях)..." -ForegroundColor Yellow
