@@ -96,6 +96,36 @@ async def handle_channels_command(
         await message.answer("❌ Ошибка получения списка каналов")
 
 
+@admin_router.message(Command("sync_channels"))
+async def handle_sync_channels_command(
+    message: Message,
+    channel_service: ChannelService,
+    admin_id: int,
+) -> None:
+    """Синхронизация статуса каналов."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Sync channels command from {sanitize_for_logging(str(message.from_user.id))}")
+
+        # Показываем сообщение о начале синхронизации
+        await message.answer("🔄 Синхронизация статуса каналов...")
+
+        # Синхронизируем все каналы
+        updated_count = await channel_service.sync_all_channels_native_status()
+
+        if updated_count > 0:
+            await message.answer(f"✅ Синхронизация завершена! Обновлено каналов: {updated_count}")
+        else:
+            await message.answer("✅ Синхронизация завершена! Изменений не требуется.")
+
+        logger.info(f"Sync channels completed: {updated_count} channels updated")
+
+    except Exception as e:
+        logger.error(f"Error in sync channels command: {sanitize_for_logging(str(e))}")
+        await message.answer("❌ Ошибка синхронизации каналов")
+
+
 @admin_router.message(Command("bots"))
 async def handle_bots_command(
     message: Message,

@@ -190,7 +190,16 @@ class ChannelService:
         self, channel_id: int, username: Optional[str], title: str, status: ChannelStatus
     ) -> ChannelModel:
         """Create new channel entry."""
-        channel = ChannelModel(telegram_id=channel_id, username=username, title=title, status=status)
+        # Check if channel is native (bot has admin rights)
+        is_native = await self.is_native_channel(channel_id)
+        
+        channel = ChannelModel(
+            telegram_id=channel_id, 
+            username=username, 
+            title=title, 
+            status=status,
+            is_native=is_native
+        )
 
         self.db.add(channel)
         await self.db.commit()
@@ -326,6 +335,45 @@ class ChannelService:
             return len(result.scalars().all())
         except Exception as e:
             logger.error(f"Error getting channels count: {e}")
+            return 0
+
+    async def sync_channel_native_status(self, channel_id: int) -> bool:
+        """Sync channel native status based on bot admin rights."""
+        try:
+            channel = await self._get_channel_by_id(channel_id)
+            if not channel:
+                logger.warning(f"Channel {channel_id} not found for sync")
+                return False
+
+            # Check current native status
+            is_native = await self.is_native_channel(channel_id)
+            
+            # Update if status changed
+            if channel.is_native != is_native:
+                channel.is_native = is_native
+                await self.db.commit()
+                logger.info(f"Updated channel {channel_id} native status to {is_native}")
+                return True
+            
+            return False
+        except Exception as e:
+            logger.error(f"Error syncing channel {channel_id} native status: {e}")
+            return False
+
+    async def sync_all_channels_native_status(self) -> int:
+        """Sync native status for all channels."""
+        try:
+            channels = await self.get_all_channels()
+            updated_count = 0
+            
+            for channel in channels:
+                if await self.sync_channel_native_status(channel.telegram_id):
+                    updated_count += 1
+            
+            logger.info(f"Synced native status for {updated_count} channels")
+            return updated_count
+        except Exception as e:
+            logger.error(f"Error syncing all channels native status: {e}")
             return 0
 
     async def get_channel_info(self, chat_id: int) -> dict:
