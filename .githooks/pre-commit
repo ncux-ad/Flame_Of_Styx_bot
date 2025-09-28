@@ -1,0 +1,19 @@
+#!/bin/bash
+# Pre-commit hook for Git Secrets
+
+echo "🔐 Running Git Secrets scan..."
+
+# Run git-secrets scan on staged files
+if ! git secrets --scan; then
+    echo "❌ Git Secrets scan failed!"
+    echo "Please remove any secrets before committing."
+    echo ""
+    echo "To see what was detected, run:"
+    echo "  git secrets --scan"
+    echo ""
+    echo "To see the scan history, run:"
+    echo "  git secrets --scan-history"
+    exit 1
+fi
+
+echo "✅ Git Secrets scan passed!"

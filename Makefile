@@ -46,6 +46,27 @@ test: ## Запустить тесты
 security: security-check security-scan ## Полная проверка безопасности
 	@echo "$(GREEN)Проверка безопасности завершена!$(NC)"
 
+git-secrets: ## Установка и настройка Git Secrets
+	@echo "$(YELLOW)Установка Git Secrets...$(NC)"
+	@if [ -f scripts/install-git-secrets.sh ]; then \
+		chmod +x scripts/install-git-secrets.sh && ./scripts/install-git-secrets.sh; \
+	elif [ -f scripts/install-git-secrets.ps1 ]; then \
+		powershell -ExecutionPolicy Bypass -File scripts/install-git-secrets.ps1; \
+	else \
+		echo "$(RED)Скрипт установки Git Secrets не найден!$(NC)"; \
+		exit 1; \
+	fi
+
+scan-secrets: ## Сканирование репозитория на наличие секретов
+	@echo "$(YELLOW)Сканирование секретов...$(NC)"
+	@git secrets --scan
+	@echo "$(GREEN)Сканирование секретов завершено!$(NC)"
+
+scan-history: ## Сканирование истории коммитов на наличие секретов
+	@echo "$(YELLOW)Сканирование истории коммитов...$(NC)"
+	@git secrets --scan-history
+	@echo "$(GREEN)Сканирование истории завершено!$(NC)"
+
 security-check: ## Проверка безопасности конфигурации
 	@echo "$(YELLOW)Проверка безопасности...$(NC)"
 	@if [ -f scripts/security-check.sh ]; then \

@@ -177,3 +177,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Git Secrets
+.git/hooks/commit-msg
+.git/hooks/pre-commit
+.git/hooks/pre-push
