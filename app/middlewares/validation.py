@@ -128,6 +128,14 @@ class ValidationMiddleware(BaseMiddleware):
                 pass
         
         # Для обычных сообщений применяем полную валидацию
+        # Проверяем, что у сообщения есть текст
+        if not message.text:
+            # Если нет текста, но есть медиа - это нормально
+            if message.photo or message.video or message.document or message.voice or message.audio or message.sticker:
+                return []
+            # Если нет ни текста, ни медиа - это подозрительно
+            return ["message_text: Сообщение не содержит текста или медиа"]
+        
         validation_errors = input_validator.validate_message(message)
         
         # Конвертируем в старый формат для совместимости
@@ -292,7 +300,7 @@ class ValidationMiddleware(BaseMiddleware):
             chat_id = event.chat.id if event.chat else None
             text = sanitize_for_logging(event.text) if event.text else None
 
-            logger.info(f"Message validated: user_id={user_id}, chat_id={chat_id}, " f"text='{text[:100] if text else None}'")
+            logger.info(f"Message validated: user_id={user_id}, chat_id={chat_id}, " f"text='{text[:100] if text else 'None'}'")
 
         elif isinstance(event, CallbackQuery):
             user_id = event.from_user.id if event.from_user else None

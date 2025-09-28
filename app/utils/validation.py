@@ -87,6 +87,14 @@ class InputValidator:
         # Проверка текста
         if message.text:
             errors.extend(self._validate_text_content(message.text, "message_text"))
+        elif not (message.photo or message.video or message.document or message.voice or message.audio or message.sticker):
+            # Если нет текста и нет медиа - это подозрительно
+            errors.append(ValidationError(
+                field="message_content",
+                message="Сообщение не содержит текста или медиа",
+                severity=ValidationSeverity.MEDIUM,
+                code="empty_message"
+            ))
         
         # Проверка пользователя
         if message.from_user:
@@ -205,6 +213,16 @@ class InputValidator:
     def _validate_text_content(self, text: str, field_name: str) -> List[ValidationError]:
         """Валидирует текстовое содержимое"""
         errors = []
+        
+        # Проверяем, что текст не None
+        if text is None:
+            errors.append(ValidationError(
+                field=field_name,
+                message="Текст не может быть None",
+                severity=ValidationSeverity.HIGH,
+                code="text_is_none"
+            ))
+            return errors
         
         if not isinstance(text, str):
             errors.append(ValidationError(
