@@ -16,6 +16,7 @@ from app.database import create_tables
 from app.middlewares.dependency_injection import DependencyInjectionMiddleware
 from app.middlewares.logging import LoggingMiddleware
 from app.middlewares.ratelimit import RateLimitMiddleware
+from app.middlewares.redis_rate_limit import RedisRateLimitMiddleware
 from app.middlewares.suspicious_profile import SuspiciousProfileMiddleware
 from app.middlewares.validation import ValidationMiddleware, CommandValidationMiddleware
 from app.services.config_watcher import LimitsHotReload
@@ -54,13 +55,40 @@ async def main():
 
         # 5. Setup graceful shutdown
         shutdown_manager = await create_graceful_shutdown(bot, dp, config.admin_ids_list)
+        
+        # 6. Initialize Redis (if enabled)
+        if config.redis_enabled:
+            from app.services.redis import get_redis_service
+            try:
+                redis_service = await get_redis_service()
+                logger.info("Redis подключен успешно")
+            except Exception as e:
+                logger.error(f"Ошибка подключения к Redis: {e}")
+                logger.warning("Продолжаем работу без Redis rate limiting")
+                config.redis_enabled = False
 
-        # 6. Register middlewares (order matters!)
+        # 7. Register middlewares (order matters!)
         # Validation -> Logging -> RateLimit -> DI -> SuspiciousProfile
         dp.message.middleware(ValidationMiddleware())
         dp.message.middleware(CommandValidationMiddleware())
         dp.message.middleware(LoggingMiddleware())
-        dp.message.middleware(RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60))
+        
+        # Rate limiting middleware (Redis or fallback)
+        if config.redis_enabled:
+            dp.message.middleware(RedisRateLimitMiddleware(
+                user_limit=config.redis_user_limit,
+                admin_limit=config.redis_admin_limit,
+                interval=config.redis_interval,
+                strategy=config.redis_strategy,
+                block_duration=config.redis_block_duration,
+            ))
+        else:
+            dp.message.middleware(RateLimitMiddleware(
+                user_limit=config.redis_user_limit,
+                admin_limit=config.redis_admin_limit,
+                interval=config.redis_interval
+            ))
+        
         dp.message.middleware(DependencyInjectionMiddleware())
 
         # SuspiciousProfile middleware (after DI to get profile_service)
@@ -92,7 +120,23 @@ async def main():
         ]:
             update_type.middleware(ValidationMiddleware())
             update_type.middleware(LoggingMiddleware())
-            update_type.middleware(RateLimitMiddleware(user_limit=10, admin_limit=100, interval=60))
+            
+            # Rate limiting for other update types
+            if config.redis_enabled:
+                update_type.middleware(RedisRateLimitMiddleware(
+                    user_limit=config.redis_user_limit,
+                    admin_limit=config.redis_admin_limit,
+                    interval=config.redis_interval,
+                    strategy=config.redis_strategy,
+                    block_duration=config.redis_block_duration,
+                ))
+            else:
+                update_type.middleware(RateLimitMiddleware(
+                    user_limit=config.redis_user_limit,
+                    admin_limit=config.redis_admin_limit,
+                    interval=config.redis_interval
+                ))
+            
             update_type.middleware(DependencyInjectionMiddleware())
 
         logger.info("Middlewares registered successfully")
@@ -139,6 +183,14 @@ async def main():
         elif bot:
             logger.info("Closing bot session...")
             await bot.session.close()
+        
+        # 13. Close Redis connection
+        try:
+            from app.services.redis import close_redis_service
+            await close_redis_service()
+            logger.info("Redis connection closed")
+        except Exception as e:
+            logger.error(f"Error closing Redis connection: {e}")
 
 
 if __name__ == "__main__":

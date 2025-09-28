@@ -35,6 +35,8 @@ dependencies = [
     "cryptography>=46.0.1",
     "aiosqlite>=0.21.0",
     "punq>=0.7.0",
+    "redis>=5.0.0",
+    "aioredis>=2.0.0",
 ]
 
 [project.optional-dependencies]

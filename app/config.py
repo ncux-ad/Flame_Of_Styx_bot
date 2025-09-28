@@ -33,6 +33,17 @@ class Settings(BaseSettings):
     
     # Настройки уведомлений
     show_limits_on_startup: bool = True  # Показывать лимиты при запуске бота
+    
+    # Настройки Redis
+    redis_url: str = Field(default="redis://localhost:6379/0", description="URL подключения к Redis")
+    redis_enabled: bool = Field(default=True, description="Включить Redis rate limiting")
+    
+    # Настройки Redis Rate Limiting
+    redis_user_limit: int = Field(default=10, ge=1, le=100, description="Лимит сообщений для пользователей")
+    redis_admin_limit: int = Field(default=100, ge=10, le=1000, description="Лимит сообщений для администраторов")
+    redis_interval: int = Field(default=60, ge=10, le=3600, description="Интервал rate limiting в секундах")
+    redis_strategy: str = Field(default="sliding_window", description="Стратегия rate limiting")
+    redis_block_duration: int = Field(default=300, ge=60, le=3600, description="Длительность блокировки в секундах")
 
     @field_validator("db_path")
     @classmethod
@@ -96,6 +107,27 @@ class Settings(BaseSettings):
                     result.append(int(x))
             return result
         return []
+
+    @field_validator("redis_strategy")
+    @classmethod
+    def validate_redis_strategy(cls, v: str) -> str:
+        """Валидация стратегии Redis rate limiting."""
+        valid_strategies = ["fixed_window", "sliding_window", "token_bucket"]
+        if v not in valid_strategies:
+            raise ValueError(f"redis_strategy должен быть одним из: {', '.join(valid_strategies)}")
+        return v
+
+    @field_validator("redis_url")
+    @classmethod
+    def validate_redis_url(cls, v: str) -> str:
+        """Валидация URL Redis."""
+        if not v:
+            raise ValueError("redis_url не может быть пустым")
+        
+        if not v.startswith(("redis://", "rediss://")):
+            raise ValueError("redis_url должен начинаться с redis:// или rediss://")
+        
+        return v
 
     model_config = {"env_file": ".env", "extra": "ignore"}  # Игнорировать дополнительные поля
 

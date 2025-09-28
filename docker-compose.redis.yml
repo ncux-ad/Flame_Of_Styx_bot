@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Redis для rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: antispam-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Основной сервис бота с Redis
+  antispam-bot:
+    build: .
+    container_name: antispam-bot-redis
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_ENABLED=true
+      - REDIS_USER_LIMIT=10
+      - REDIS_ADMIN_LIMIT=100
+      - REDIS_INTERVAL=60
+      - REDIS_STRATEGY=sliding_window
+      - REDIS_BLOCK_DURATION=300
+    secrets:
+      - bot_token
+      - admin_ids
+      - db_path
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+
+volumes:
+  redis_data:
+    driver: local
+
+secrets:
+  bot_token:
+    file: ./secrets/bot_token.txt
+  admin_ids:
+    file: ./secrets/admin_ids.txt
+  db_path:
+    file: ./secrets/db_path.txt
