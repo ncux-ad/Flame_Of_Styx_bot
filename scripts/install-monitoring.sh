@@ -53,15 +53,19 @@ print_menu() {
     echo -e "   • Изолированная среда"
     echo -e "   • Автоматическая сборка"
     echo ""
-    echo -e "${GREEN}3)${NC} 🔧 Принудительное исправление"
+    echo -e "${GREEN}3)${NC} 🔧 Простая установка Uptime Kuma"
+    echo -e "   • Без сборки фронтенда"
+    echo -e "   • Только production зависимости"
+    echo ""
+    echo -e "${GREEN}4)${NC} 🔧 Принудительное исправление"
     echo -e "   • Исправляет существующие проблемы"
     echo -e "   • Переустанавливает с нуля"
     echo ""
-    echo -e "${GREEN}4)${NC} 📊 Только Netdata"
+    echo -e "${GREEN}5)${NC} 📊 Только Netdata"
     echo -e "   • Только мониторинг сервера"
     echo -e "   • Без Uptime Kuma"
     echo ""
-    echo -e "${GREEN}5)${NC} ❌ Отмена"
+    echo -e "${GREEN}6)${NC} ❌ Отмена"
     echo ""
 }
 
@@ -139,23 +143,29 @@ while true; do
             fi
             ;;
         3)
+            print_step "Запускаем простую установку Uptime Kuma..."
+            chmod +x scripts/install-uptime-kuma-simple.sh
+            ./scripts/install-uptime-kuma-simple.sh
+            break
+            ;;
+        4)
             print_step "Запускаем принудительное исправление..."
             chmod +x scripts/force-fix-uptime-kuma.sh
             ./scripts/force-fix-uptime-kuma.sh
             break
             ;;
-        4)
+        5)
             print_step "Устанавливаем только Netdata..."
             chmod +x scripts/install-netdata-only.sh
             ./scripts/install-netdata-only.sh
             break
             ;;
-        5)
+        6)
             print_info "Установка отменена"
             exit 0
             ;;
         *)
-            print_error "Неверный выбор. Введите число от 1 до 5."
+            print_error "Неверный выбор. Введите число от 1 до 6."
             ;;
     esac
 done

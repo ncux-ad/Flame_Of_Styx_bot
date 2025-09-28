@@ -1,5 +1,5 @@
 #!/bin/bash
-# Оптимизированная установка Uptime Kuma для слабого VPS
+# Простая установка Uptime Kuma без сборки (используем готовую версию)
 
 set -e
 
@@ -13,8 +13,8 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 print_header() {
-    echo -e "${BLUE}🚀 VPS Optimized Uptime Kuma Setup${NC}"
-    echo -e "${BLUE}===================================${NC}"
+    echo -e "${BLUE}🚀 Simple Uptime Kuma Setup (No Build)${NC}"
+    echo -e "${BLUE}=====================================${NC}"
 }
 
 print_success() {
@@ -33,17 +33,7 @@ print_step() {
     echo -e "${PURPLE}🔧 $1${NC}"
 }
 
-print_warning() {
-    echo -e "${YELLOW}⚠️ $1${NC}"
-}
-
 print_header
-
-# Проверяем права
-if [[ $EUID -eq 0 ]]; then
-    print_error "Не запускайте скрипт от root!"
-    exit 1
-fi
 
 # Останавливаем существующий сервис
 print_step "Останавливаем существующий сервис..."
@@ -69,48 +59,32 @@ sudo chown -R uptime-kuma:uptime-kuma /opt/uptime-kuma
 sudo chown -R uptime-kuma:uptime-kuma /home/uptime-kuma
 sudo chmod 755 /home/uptime-kuma
 
-# Клонируем репозиторий
-print_step "Клонируем Uptime Kuma..."
-cd /home/uptime-kuma
-sudo -u uptime-kuma git clone https://github.com/louislam/uptime-kuma.git
+# Скачиваем готовую версию Uptime Kuma
+print_step "Скачиваем готовую версию Uptime Kuma..."
+cd /tmp
+rm -rf uptime-kuma-1.23.3 1.23.3.tar.gz 2>/dev/null || true
 
-# Переходим в директорию
-cd uptime-kuma
+wget https://github.com/louislam/uptime-kuma/archive/refs/tags/1.23.3.tar.gz
+tar -xzf 1.23.3.tar.gz
 
-# Проверяем версию Node.js
-print_step "Проверяем версию Node.js..."
-NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
-if [[ $NODE_VERSION -lt 20 ]]; then
-    print_warning "Node.js версии $NODE_VERSION устарела. Обновляем до версии 20..."
-    
-    # Обновляем Node.js до версии 20
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
-    
-    print_success "Node.js обновлен до версии $(node --version)"
-fi
-
-# Устанавливаем зависимости с оптимизацией для VPS
-print_step "Устанавливаем зависимости (VPS оптимизация)..."
-print_warning "Это может занять время на слабом VPS..."
-
-# Увеличиваем лимит памяти для npm
-export NODE_OPTIONS="--max-old-space-size=1024"
-
-# Устанавливаем ВСЕ зависимости (включая dev для сборки)
-sudo -u uptime-kuma npm install --no-audit --no-fund
-
-# Собираем проект
-print_step "Собираем проект..."
-sudo -u uptime-kuma npm run build
-
-# Копируем в /opt
-print_step "Копируем в /opt..."
-sudo cp -r /home/uptime-kuma/uptime-kuma/* /opt/uptime-kuma/
+# Копируем файлы
+print_step "Копируем файлы..."
+sudo cp -r uptime-kuma-1.23.3/* /opt/uptime-kuma/
 sudo chown -R uptime-kuma:uptime-kuma /opt/uptime-kuma
 
-# Очищаем временные файлы
-sudo rm -rf /home/uptime-kuma/uptime-kuma
+# Очищаем
+rm -rf uptime-kuma-1.23.3 1.23.3.tar.gz
+
+# Устанавливаем только production зависимости
+print_step "Устанавливаем production зависимости..."
+cd /opt/uptime-kuma
+
+# Увеличиваем лимит памяти
+export NODE_OPTIONS="--max-old-space-size=512"
+
+# Устанавливаем как root, потом меняем владельца
+sudo npm install --production --no-optional --no-audit --no-fund
+sudo chown -R uptime-kuma:uptime-kuma /opt/uptime-kuma
 
 # Создаем systemd сервис
 print_step "Создаем systemd сервис..."
@@ -125,15 +99,15 @@ Type=simple
 User=uptime-kuma
 Group=uptime-kuma
 WorkingDirectory=/opt/uptime-kuma
-ExecStart=/usr/bin/npm run start-server
+ExecStart=/usr/bin/node server/server.js
 Restart=on-failure
 RestartSec=10
 Environment=NODE_ENV=production
 Environment=PORT=3001
 Environment=HOST=0.0.0.0
 # Ограничения ресурсов для слабого VPS
-MemoryLimit=512M
-CPUQuota=50%
+MemoryLimit=256M
+CPUQuota=25%
 
 [Install]
 WantedBy=multi-user.target
