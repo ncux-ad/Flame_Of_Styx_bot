@@ -27,6 +27,19 @@ if ! command -v python3.11 &> /dev/null; then
     ./scripts/install-python.sh
 fi
 
+# Настраиваем структуру логов
+echo "📁 Настройка структуры логов..."
+if [[ -f "scripts/setup-logs-structure.sh" ]]; then
+    chmod +x scripts/setup-logs-structure.sh
+    ./scripts/setup-logs-structure.sh
+else
+    echo "⚠️ Скрипт настройки логов не найден, создаем базовую структуру..."
+    mkdir -p /var/log/flame-of-styx/{general,encrypted,security,reports}
+    mkdir -p /opt/flame-of-styx/logs/{general,encrypted,security,reports}
+    chown -R $SERVICE_USER:$SERVICE_USER /var/log/flame-of-styx
+    chown -R $SERVICE_USER:$SERVICE_USER /opt/flame-of-styx/logs
+fi
+
 # Создаем пользователя
 if ! id "$SERVICE_USER" &>/dev/null; then
     echo "👤 Создание пользователя $SERVICE_USER"

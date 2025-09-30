@@ -155,6 +155,16 @@ logs/
 # Dynamic configuration files
 limits.json
 
+# Security reports
+security-report.json
+safety-report.json
+*.security.json
+
+# Logs and reports
+*.log
+reports/
+security/
+
 # IDE
 .vscode/
 .idea/

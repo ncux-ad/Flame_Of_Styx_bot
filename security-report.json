@@ -1,17 +1,17 @@
 {
   "errors": [],
-  "generated_at": "2025-09-28T00:51:34Z",
+  "generated_at": "2025-09-30T19:24:24Z",
   "metrics": {
     "_totals": {
-      "CONFIDENCE.HIGH": 12,
+      "CONFIDENCE.HIGH": 11,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 1,
       "CONFIDENCE.UNDEFINED": 0,
       "SEVERITY.HIGH": 0,
-      "SEVERITY.LOW": 13,
+      "SEVERITY.LOW": 12,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 7419,
+      "loc": 8989,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -50,7 +50,7 @@
       "SEVERITY.LOW": 1,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 88,
+      "loc": 115,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -146,15 +146,119 @@
       "skipped_tests": 0
     },
     "app/handlers\\admin.py": {
-      "CONFIDENCE.HIGH": 8,
+      "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
       "CONFIDENCE.MEDIUM": 0,
       "CONFIDENCE.UNDEFINED": 0,
       "SEVERITY.HIGH": 0,
-      "SEVERITY.LOW": 8,
+      "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 1302,
+      "loc": 4,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/handlers\\admin\\__init__.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 39,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/handlers\\admin\\basic.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 171,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/handlers\\admin\\channels.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 123,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/handlers\\admin\\interactive.py": {
+      "CONFIDENCE.HIGH": 1,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 1,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 406,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/handlers\\admin\\limits.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 56,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/handlers\\admin\\moderation.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 344,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/handlers\\admin\\suspicious.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 82,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/handlers\\admin\\utils.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 48,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -275,6 +379,32 @@
       "nosec": 0,
       "skipped_tests": 0
     },
+    "app/middlewares\\redis_rate_limit.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 207,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/middlewares\\silent_logging.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 91,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
     "app/middlewares\\suspicious_profile.py": {
       "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
@@ -297,7 +427,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 319,
+      "loc": 400,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -557,7 +687,7 @@
       "SEVERITY.LOW": 3,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 192,
+      "loc": 202,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -570,7 +700,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 697,
+      "loc": 723,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -626,6 +756,19 @@
       "nosec": 0,
       "skipped_tests": 0
     },
+    "app/services\\redis.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 236,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
     "app/services\\status.py": {
       "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
@@ -652,6 +795,32 @@
       "nosec": 0,
       "skipped_tests": 0
     },
+    "app/utils\\advanced_logging.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 139,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/utils\\alerts.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 210,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
     "app/utils\\error_handling.py": {
       "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
@@ -665,6 +834,19 @@
       "nosec": 0,
       "skipped_tests": 0
     },
+    "app/utils\\graceful_shutdown.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 118,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
     "app/utils\\security.py": {
       "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
@@ -674,14 +856,40 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 277,
+      "loc": 300,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/utils\\validation.py": {
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 356,
+      "nosec": 0,
+      "skipped_tests": 0
+    },
+    "app/utils\\windows_safe.py": {
+      "CONFIDENCE.HIGH": 6,
+      "CONFIDENCE.LOW": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.UNDEFINED": 0,
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.LOW": 6,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.UNDEFINED": 0,
+      "loc": 75,
       "nosec": 0,
       "skipped_tests": 0
     }
   },
   "results": [
     {
-      "code": "122     # \u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c, \u0447\u0442\u043e \u0442\u043e\u043a\u0435\u043d \u043d\u0435 \u044f\u0432\u043b\u044f\u0435\u0442\u0441\u044f placeholder\n123     if config.bot_token == \"your_telegram_bot_token_here\":\n124         raise ValueError(\"BOT_TOKEN \u043d\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d. \u0417\u0430\u043c\u0435\u043d\u0438\u0442\u0435 'your_telegram_bot_token_here' \u043d\u0430 \u0440\u0435\u0430\u043b\u044c\u043d\u044b\u0439 \u0442\u043e\u043a\u0435\u043d.\")\n",
+      "code": "162     # \u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c, \u0447\u0442\u043e \u0442\u043e\u043a\u0435\u043d \u043d\u0435 \u044f\u0432\u043b\u044f\u0435\u0442\u0441\u044f placeholder (\u0442\u043e\u043b\u044c\u043a\u043e \u0434\u043b\u044f production)\n163     if config.bot_token == \"your_telegram_bot_token_here\" and not config.bot_token.startswith(\"test_token\"):\n164         raise ValueError(\"BOT_TOKEN \u043d\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d. \u0417\u0430\u043c\u0435\u043d\u0438\u0442\u0435 'your_telegram_bot_token_here' \u043d\u0430 \u0440\u0435\u0430\u043b\u044c\u043d\u044b\u0439 \u0442\u043e\u043a\u0435\u043d.\")\n",
       "col_offset": 27,
       "end_col_offset": 57,
       "filename": "app/config.py",
@@ -692,19 +900,19 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Possible hardcoded password: 'your_telegram_bot_token_here'",
-      "line_number": 123,
+      "line_number": 163,
       "line_range": [
-        123
+        163
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b105_hardcoded_password_string.html",
       "test_id": "B105",
       "test_name": "hardcoded_password_string"
     },
     {
-      "code": "810                         text += \"<b>\ud83d\udcca \u041f\u043e\u0441\u0442\u043e\u0432:</b> \" + str(profile.post_count) + \"\\n\\n\"\n811                 except Exception:\n812                     pass\n813             \n",
+      "code": "110                         text += \"<b>\ud83d\udcca \u041f\u043e\u0441\u0442\u043e\u0432:</b> \" + str(profile.post_count) + \"\\n\\n\"\n111                 except Exception:\n112                     pass\n113             \n",
       "col_offset": 16,
       "end_col_offset": 24,
-      "filename": "app/handlers\\admin.py",
+      "filename": "app/handlers\\admin\\interactive.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
         "id": 703,
@@ -712,187 +920,14 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Try, Except, Pass detected.",
-      "line_number": 811,
+      "line_number": 111,
       "line_range": [
-        811,
-        812
+        111,
+        112
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b110_try_except_pass.html",
       "test_id": "B110",
       "test_name": "try_except_pass"
-    },
-    {
-      "code": "1206                         native_channels.append(channel)\n1207                 except Exception:\n1208                     # \u0415\u0441\u043b\u0438 \u043d\u0435 \u043c\u043e\u0436\u0435\u043c \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0441\u0442\u0430\u0442\u0443\u0441, \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430\u0435\u043c\n1209                     continue\n1210 \n",
-      "col_offset": 16,
-      "end_col_offset": 28,
-      "filename": "app/handlers\\admin.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Try, Except, Continue detected.",
-      "line_number": 1207,
-      "line_range": [
-        1207,
-        1208,
-        1209
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b112_try_except_continue.html",
-      "test_id": "B112",
-      "test_name": "try_except_continue"
-    },
-    {
-      "code": "1247                         native_channels.append(channel)\n1248                 except Exception:\n1249                     continue\n1250             \n",
-      "col_offset": 16,
-      "end_col_offset": 28,
-      "filename": "app/handlers\\admin.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Try, Except, Continue detected.",
-      "line_number": 1248,
-      "line_range": [
-        1248,
-        1249
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b112_try_except_continue.html",
-      "test_id": "B112",
-      "test_name": "try_except_continue"
-    },
-    {
-      "code": "1558         import os\n1559         import subprocess\n1560 \n",
-      "col_offset": 8,
-      "end_col_offset": 25,
-      "filename": "app/handlers\\admin.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 1559,
-      "line_range": [
-        1559
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b404-import-subprocess",
-      "test_id": "B404",
-      "test_name": "blacklist"
-    },
-    {
-      "code": "1570                     break\n1571             except Exception:\n1572                 continue\n1573 \n",
-      "col_offset": 12,
-      "end_col_offset": 24,
-      "filename": "app/handlers\\admin.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Try, Except, Continue detected.",
-      "line_number": 1571,
-      "line_range": [
-        1571,
-        1572
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b112_try_except_continue.html",
-      "test_id": "B112",
-      "test_name": "try_except_continue"
-    },
-    {
-      "code": "1630                     timeout=10,\n1631                     shell=False,\n1632                 )\n1633             elif log_level == \"warning\":\n1634                 # \u041f\u0440\u0435\u0434\u0443\u043f\u0440\u0435\u0436\u0434\u0435\u043d\u0438\u044f \u0438 \u043e\u0448\u0438\u0431\u043a\u0438 - \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u043c grep \u0434\u043b\u044f \u0444\u0438\u043b\u044c\u0442\u0440\u0430\u0446\u0438\u0438\n1635                 result = subprocess.run(\n1636                     [journalctl_path, \"-u\", \"antispam-bot.service\", \"--since\", \"1 hour ago\", \"--no-pager\", \"-n\", \"100\"],\n1637                     capture_output=True,\n1638                     text=True,\n1639                     timeout=10,\n1640                     shell=False,\n1641                 )\n1642                 if result.returncode == 0 and result.stdout:\n1643                     # \u0424\u0438\u043b\u044c\u0442\u0440\u0443\u0435\u043c \u0442\u043e\u043b\u044c\u043a\u043e WARNING \u0438 ERROR \u0443\u0440\u043e\u0432\u043d\u0438\n1644                     import re\n1645 \n1646                     warning_lines = []\n1647                     for line in result.stdout.split(\"\\n\"):\n1648                         if re.search(r\"(WARNING|ERROR|CRITICAL)\", line, re.IGNORECASE):\n1649                             warning_lines.append(line)\n",
-      "col_offset": 25,
-      "end_col_offset": 17,
-      "filename": "app/handlers\\admin.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 1631,
-      "line_range": [
-        1615,
-        1616,
-        1617,
-        1618,
-        1619,
-        1620,
-        1621,
-        1622,
-        1623,
-        1624,
-        1625,
-        1626,
-        1627,
-        1628,
-        1629,
-        1630,
-        1631,
-        1632
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "1639                     timeout=10,\n1640                     shell=False,\n1641                 )\n1642                 if result.returncode == 0 and result.stdout:\n1643                     # \u0424\u0438\u043b\u044c\u0442\u0440\u0443\u0435\u043c \u0442\u043e\u043b\u044c\u043a\u043e WARNING \u0438 ERROR \u0443\u0440\u043e\u0432\u043d\u0438\n1644                     import re\n1645 \n1646                     warning_lines = []\n1647                     for line in result.stdout.split(\"\\n\"):\n",
-      "col_offset": 25,
-      "end_col_offset": 17,
-      "filename": "app/handlers\\admin.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 1640,
-      "line_range": [
-        1635,
-        1636,
-        1637,
-        1638,
-        1639,
-        1640,
-        1641
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
-    },
-    {
-      "code": "1657                     timeout=10,\n1658                     shell=False,\n1659                 )\n1660 \n1661             if result.returncode == 0:\n1662                 logs_text = result.stdout.strip() if result.stdout else \"\"\n1663 \n1664                 if logs_text:\n1665                     # \u041e\u0433\u0440\u0430\u043d\u0438\u0447\u0438\u0432\u0430\u0435\u043c \u0440\u0430\u0437\u043c\u0435\u0440 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u044f (Telegram \u043b\u0438\u043c\u0438\u0442 4096 \u0441\u0438\u043c\u0432\u043e\u043b\u043e\u0432)\n",
-      "col_offset": 25,
-      "end_col_offset": 17,
-      "filename": "app/handlers\\admin.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 78,
-        "link": "https://cwe.mitre.org/data/definitions/78.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 1658,
-      "line_range": [
-        1653,
-        1654,
-        1655,
-        1656,
-        1657,
-        1658,
-        1659
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
-      "test_id": "B603",
-      "test_name": "subprocess_without_shell_equals_true"
     },
     {
       "code": "8 import logging\n9 import subprocess\n10 # import os  # \u041d\u0435 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0435\u0442\u0441\u044f\n",
@@ -915,9 +950,9 @@
       "test_name": "blacklist"
     },
     {
-      "code": "214             try:\n215                 result = subprocess.run(\n216                     [\"git\", \"rev-parse\", \"--short\", \"HEAD\"],\n217                     capture_output=True,\n218                     text=True,\n219                     cwd=\".\"\n220                 )\n221                 if result.returncode == 0:\n",
-      "col_offset": 25,
-      "end_col_offset": 17,
+      "code": "213                 try:\n214                     result = subprocess.run(\n215                         [\"git\", \"rev-parse\", \"--short\", \"HEAD\"],\n216                         capture_output=True,\n217                         text=True,\n218                         cwd=\".\"\n219                     )\n220                     if result.returncode == 0:\n",
+      "col_offset": 29,
+      "end_col_offset": 21,
       "filename": "app/services\\config_watcher.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -926,23 +961,23 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Starting a process with a partial executable path",
-      "line_number": 215,
+      "line_number": 214,
       "line_range": [
+        214,
         215,
         216,
         217,
         218,
-        219,
-        220
+        219
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b607_start_process_with_partial_path.html",
       "test_id": "B607",
       "test_name": "start_process_with_partial_path"
     },
     {
-      "code": "214             try:\n215                 result = subprocess.run(\n216                     [\"git\", \"rev-parse\", \"--short\", \"HEAD\"],\n217                     capture_output=True,\n218                     text=True,\n219                     cwd=\".\"\n220                 )\n221                 if result.returncode == 0:\n",
-      "col_offset": 25,
-      "end_col_offset": 17,
+      "code": "213                 try:\n214                     result = subprocess.run(\n215                         [\"git\", \"rev-parse\", \"--short\", \"HEAD\"],\n216                         capture_output=True,\n217                         text=True,\n218                         cwd=\".\"\n219                     )\n220                     if result.returncode == 0:\n",
+      "col_offset": 29,
+      "end_col_offset": 21,
       "filename": "app/services\\config_watcher.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -951,14 +986,14 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 215,
+      "line_number": 214,
       "line_range": [
+        214,
         215,
         216,
         217,
         218,
-        219,
-        220
+        219
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
@@ -980,6 +1015,128 @@
       "line_range": [
         97,
         98
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "82             # Try to set UTF-8 mode\n83             os.system('chcp 65001 > nul 2>&1')\n84         except:\n",
+      "col_offset": 12,
+      "end_col_offset": 46,
+      "filename": "app/utils\\windows_safe.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a shell: Seems safe, but may be changed in the future, consider rewriting without shell",
+      "line_number": 83,
+      "line_range": [
+        83
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b605_start_process_with_a_shell.html",
+      "test_id": "B605",
+      "test_name": "start_process_with_a_shell"
+    },
+    {
+      "code": "82             # Try to set UTF-8 mode\n83             os.system('chcp 65001 > nul 2>&1')\n84         except:\n",
+      "col_offset": 12,
+      "end_col_offset": 46,
+      "filename": "app/utils\\windows_safe.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 83,
+      "line_range": [
+        83
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "83             os.system('chcp 65001 > nul 2>&1')\n84         except:\n85             pass\n86 \n",
+      "col_offset": 8,
+      "end_col_offset": 16,
+      "filename": "app/utils\\windows_safe.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 84,
+      "line_range": [
+        84,
+        85
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b110_try_except_pass.html",
+      "test_id": "B110",
+      "test_name": "try_except_pass"
+    },
+    {
+      "code": "98         try:\n99             os.system('chcp 65001 > nul 2>&1')\n100         except:\n",
+      "col_offset": 12,
+      "end_col_offset": 46,
+      "filename": "app/utils\\windows_safe.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a shell: Seems safe, but may be changed in the future, consider rewriting without shell",
+      "line_number": 99,
+      "line_range": [
+        99
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b605_start_process_with_a_shell.html",
+      "test_id": "B605",
+      "test_name": "start_process_with_a_shell"
+    },
+    {
+      "code": "98         try:\n99             os.system('chcp 65001 > nul 2>&1')\n100         except:\n",
+      "col_offset": 12,
+      "end_col_offset": 46,
+      "filename": "app/utils\\windows_safe.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 78,
+        "link": "https://cwe.mitre.org/data/definitions/78.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Starting a process with a partial executable path",
+      "line_number": 99,
+      "line_range": [
+        99
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b607_start_process_with_partial_path.html",
+      "test_id": "B607",
+      "test_name": "start_process_with_partial_path"
+    },
+    {
+      "code": "99             os.system('chcp 65001 > nul 2>&1')\n100         except:\n101             pass\n102     \n",
+      "col_offset": 8,
+      "end_col_offset": 16,
+      "filename": "app/utils\\windows_safe.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Try, Except, Pass detected.",
+      "line_number": 100,
+      "line_range": [
+        100,
+        101
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b110_try_except_pass.html",
       "test_id": "B110",

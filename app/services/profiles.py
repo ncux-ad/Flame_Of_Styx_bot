@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.suspicious_profile import SuspiciousProfile
 from app.services.moderation import ModerationService
 from app.utils.security import safe_format_message, sanitize_for_logging
+from app.utils.pii_protection import secure_logger
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,23 @@ class ProfileService:
 
             # Analyze profile
             analysis_result = await self._perform_profile_analysis(user)
+
+            # Безопасное логирование для анализа спама
+            secure_logger.log_spam_analysis(
+                message=f"Profile analysis for user {user.id}",
+                user_id=user.id,
+                chat_id=0,  # Profile analysis not tied to specific chat
+                analysis_result={
+                    'profile_analysis': analysis_result,
+                    'user_info': {
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'username': user.username,
+                        'is_bot': user.is_bot
+                    },
+                    'log_type': 'profile_analysis'
+                }
+            )
 
             if analysis_result["is_suspicious"]:
                 if existing_profile:

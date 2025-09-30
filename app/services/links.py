@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.bot import Bot as BotModel
 from app.services.moderation import ModerationService
 from app.utils.security import safe_format_message, sanitize_for_logging
+from app.utils.pii_protection import secure_logger
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,21 @@ class LinkService:
         if message.photo or message.video or message.document:
             media_matches = await self._check_media_for_suspicious_content(message)
             results.extend(media_matches)
+
+        # Безопасное логирование для анализа спама
+        if results:
+            analysis_result = {
+                'bot_links_count': len([r for r in results if r[1]]),
+                'total_suspicious': len([r for r in results if r[1]]),
+                'check_types': [r[0] for r in results]
+            }
+            
+            secure_logger.log_spam_analysis(
+                message=message.text or message.caption or "",
+                user_id=message.from_user.id if message.from_user else None,
+                chat_id=message.chat.id,
+                analysis_result=analysis_result
+            )
 
         return results
 

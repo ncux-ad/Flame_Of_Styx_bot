@@ -52,3 +52,17 @@ def get_main_menu_keyboard() -> InlineKeyboardMarkup:
 
     builder.adjust(2, 2)
     return builder.as_markup()
+
+
+def get_spam_analysis_keyboard() -> InlineKeyboardMarkup:
+    """Get keyboard for spam analysis menu."""
+    builder = InlineKeyboardBuilder()
+
+    builder.add(InlineKeyboardButton(text="📊 Статистика", callback_data="spam_stats"))
+    builder.add(InlineKeyboardButton(text="🔍 Паттерны", callback_data="spam_patterns"))
+    builder.add(InlineKeyboardButton(text="📤 Экспорт", callback_data="spam_export"))
+    builder.add(InlineKeyboardButton(text="🧹 Очистка", callback_data="spam_cleanup"))
+    builder.add(InlineKeyboardButton(text="⬅️ Назад", callback_data="spam_back"))
+
+    builder.adjust(2, 2, 1)
+    return builder.as_markup()
