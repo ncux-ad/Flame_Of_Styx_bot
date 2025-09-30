@@ -66,12 +66,20 @@ GLANCES_SYSTEMD_PATH="/home/glances/venv/bin/glances"
 # Создаем пользователя для Glances
 print_step "Создаем пользователя glances..."
 sudo userdel glances 2>/dev/null || true
-sudo useradd -r -s /bin/false -m glances
+sudo useradd -r -s /bin/false -m glances 2>/dev/null || {
+    print_warning "Пользователь glances уже существует, продолжаем..."
+}
 
 # Копируем venv для glances
 print_step "Копируем виртуальное окружение для glances..."
 sudo cp -r venv /home/glances/
 sudo chown -R glances:glances /home/glances/venv
+
+# Проверяем что пользователь glances существует
+if ! id glances >/dev/null 2>&1; then
+    print_error "Пользователь glances не создан!"
+    exit 1
+fi
 
 # Создаем конфигурацию Glances
 print_step "Создаем конфигурацию Glances..."
