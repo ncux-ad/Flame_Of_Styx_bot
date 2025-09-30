@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Быстрая настройка безопасности для существующих установок
-# Использование: ./scripts/quick-security-setup.sh
+# Модуль установки безопасности
+# Использование: source scripts/install/install-security.sh
 
 set -e
 
@@ -14,58 +14,42 @@ NC='\033[0m' # No Color
 
 # Функции для вывода
 log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    echo -e "${BLUE}[SECURITY]${NC} $1"
 }
 
 log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    echo -e "${GREEN}[SECURITY]${NC} $1"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    echo -e "${YELLOW}[SECURITY]${NC} $1"
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}[SECURITY]${NC} $1"
 }
 
-# Проверка прав
-check_permissions() {
-    if [[ $EUID -eq 0 ]]; then
-        log_warning "Скрипт запущен с правами root. Это может быть небезопасно."
-        read -p "Продолжить? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 1
-        fi
-    fi
-}
-
-# Проверка зависимостей
-check_dependencies() {
-    log_info "Проверка зависимостей безопасности..."
+# Установка зависимостей безопасности
+install_security_dependencies() {
+    log_info "Установка зависимостей безопасности..."
     
     # Проверяем Python пакеты
-    if ! python3 -c "import bandit" 2>/dev/null; then
-        log_warning "bandit не установлен. Устанавливаем..."
-        pip3 install bandit
-    fi
+    local packages=("bandit" "safety" "cryptography")
     
-    if ! python3 -c "import safety" 2>/dev/null; then
-        log_warning "safety не установлен. Устанавливаем..."
-        pip3 install safety
-    fi
+    for package in "${packages[@]}"; do
+        if ! python3 -c "import $package" 2>/dev/null; then
+            log_info "Устанавливаем $package..."
+            pip3 install "$package" --quiet --disable-pip-version-check
+        else
+            log_info "$package уже установлен"
+        fi
+    done
     
-    if ! python3 -c "import cryptography" 2>/dev/null; then
-        log_warning "cryptography не установлен. Устанавливаем..."
-        pip3 install cryptography
-    fi
-    
-    log_success "Все зависимости безопасности установлены"
+    log_success "Зависимости безопасности установлены"
 }
 
 # Настройка структуры логов
-setup_logs() {
+setup_logs_structure() {
     log_info "Настройка структуры логов..."
     
     if [[ -f "scripts/setup-logs-structure.sh" ]]; then
@@ -92,18 +76,11 @@ run_security_checks() {
     fi
 }
 
-# Обновление конфигурации
-update_config() {
-    log_info "Обновление конфигурации..."
+# Настройка переменных окружения
+setup_environment() {
+    log_info "Настройка переменных окружения для безопасности..."
     
-    # Проверяем, есть ли уже настройки безопасности в bot.py
-    if ! grep -q "pii_protection" bot.py 2>/dev/null; then
-        log_info "Добавляем импорт PII protection в bot.py..."
-        # Здесь можно добавить автоматическое обновление bot.py
-        log_warning "Необходимо вручную добавить импорт PII protection в bot.py"
-    fi
-    
-    # Проверяем переменные окружения
+    # Создаем или обновляем .env
     if [[ ! -f ".env" ]]; then
         log_info "Создаем файл .env..."
         cat > .env << EOF
@@ -118,7 +95,16 @@ ENABLE_FULL_LOGGING=true
 EOF
         log_success "Файл .env создан"
     else
-        log_info "Файл .env уже существует"
+        # Проверяем, есть ли уже настройки безопасности
+        if ! grep -q "ENABLE_FULL_LOGGING" .env; then
+            log_info "Добавляем настройки безопасности в .env..."
+            echo "" >> .env
+            echo "# Безопасность" >> .env
+            echo "ENABLE_FULL_LOGGING=true" >> .env
+            log_success "Настройки безопасности добавлены в .env"
+        else
+            log_info "Настройки безопасности уже присутствуют в .env"
+        fi
     fi
 }
 
@@ -140,8 +126,8 @@ create_symlinks() {
 }
 
 # Настройка cron задач
-setup_cron() {
-    log_info "Настройка автоматических задач..."
+setup_cron_tasks() {
+    log_info "Настройка автоматических задач безопасности..."
     
     # Проверяем, есть ли уже задачи безопасности в crontab
     if ! crontab -l 2>/dev/null | grep -q "security-check"; then
@@ -163,15 +149,18 @@ setup_cron() {
     fi
 }
 
-# Проверка статуса
-check_status() {
+# Проверка статуса безопасности
+check_security_status() {
     log_info "Проверка статуса безопасности..."
+    
+    local status=0
     
     # Проверяем структуру логов
     if [[ -d "logs" ]]; then
         log_success "✓ Структура логов настроена"
     else
         log_warning "✗ Структура логов не настроена"
+        status=1
     fi
     
     # Проверяем отчеты безопасности
@@ -179,6 +168,7 @@ check_status() {
         log_success "✓ Директория отчетов безопасности создана"
     else
         log_warning "✗ Директория отчетов безопасности не найдена"
+        status=1
     fi
     
     # Проверяем зависимости
@@ -186,6 +176,7 @@ check_status() {
         log_success "✓ Все зависимости безопасности установлены"
     else
         log_warning "✗ Некоторые зависимости безопасности отсутствуют"
+        status=1
     fi
     
     # Проверяем скрипты
@@ -193,55 +184,34 @@ check_status() {
         log_success "✓ Скрипты безопасности доступны"
     else
         log_warning "✗ Некоторые скрипты безопасности отсутствуют"
+        status=1
     fi
+    
+    return $status
 }
 
-# Основная функция
-main() {
-    log_info "Быстрая настройка безопасности Flame of Styx Bot"
-    log_info "================================================"
+# Основная функция установки безопасности
+install_security() {
+    log_info "Установка модуля безопасности..."
+    log_info "================================"
     
-    # Проверяем, есть ли модульный подход
-    if [[ -f "scripts/install/install-security.sh" ]]; then
-        log_info "Используем модульный подход..."
-        source scripts/install/install-security.sh
-        if install_security; then
-            log_success "Модуль безопасности установлен успешно!"
-        else
-            log_warning "Модуль безопасности установлен с предупреждениями"
-        fi
+    install_security_dependencies
+    setup_logs_structure
+    run_security_checks
+    setup_environment
+    create_symlinks
+    setup_cron_tasks
+    
+    if check_security_status; then
+        log_success "Модуль безопасности установлен успешно!"
+        return 0
     else
-        log_warning "Модуль безопасности не найден, используем fallback..."
-        check_permissions
-        check_dependencies
-        setup_logs
-        run_security_checks
-        update_config
-        create_symlinks
-        setup_cron
-        check_status
-        
-        log_success "Настройка безопасности завершена!"
+        log_warning "Модуль безопасности установлен с предупреждениями"
+        return 1
     fi
-    
-    log_info ""
-    log_info "Что было сделано:"
-    log_info "  ✓ Установлены зависимости безопасности"
-    log_info "  ✓ Настроена структура логов"
-    log_info "  ✓ Запущены проверки безопасности"
-    log_info "  ✓ Обновлена конфигурация"
-    log_info "  ✓ Созданы символические ссылки"
-    log_info "  ✓ Настроены автоматические задачи"
-    log_info ""
-    log_info "Полезные команды:"
-    log_info "  • Проверка безопасности: ./scripts/security-check.sh"
-    log_info "  • Анализ спама: /spam_analysis (в боте)"
-    log_info "  • Логи безопасности: tail -f logs/security/security.log"
-    log_info "  • Отчеты: reports/security/security-summary.md"
-    log_info ""
-    log_info "Для применения изменений перезапустите бота:"
-    log_info "  sudo systemctl restart antispam-bot"
 }
 
-# Запуск
-main "$@"
+# Если скрипт запущен напрямую
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    install_security
+fi
