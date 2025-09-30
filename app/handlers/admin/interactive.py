@@ -277,14 +277,14 @@ async def handle_suspicious_analyze_command(
                 await analyze_user_by_id(message, profile_service, admin_id, user_id)
                 return
             except (ValueError, IndexError):
-                await send_silent_response(message,("❌ Неверный формат ID пользователя")
+                await send_silent_response(message, "❌ Неверный формат ID пользователя")
                 return
         
         # Интерактивный режим - запрашиваем ввод
         user_id = message.from_user.id
         waiting_for_user_input[user_id] = "suspicious_analyze"
         
-        await send_silent_response(message,(
+        await send_silent_response(message,
             "🔍 <b>Анализ подозрительного профиля</b>\n\n"
             "📝 <b>Введите ID пользователя или username:</b>\n\n"
             "• <b>ID:</b> <code>123456789</code>\n"
@@ -298,7 +298,7 @@ async def handle_suspicious_analyze_command(
 
     except Exception as e:
         logger.error(f"Error in suspicious_analyze command: {sanitize_for_logging(str(e))}")
-        await send_silent_response(message,("❌ Ошибка анализа профиля")
+        await send_silent_response(message, "❌ Ошибка анализа профиля")
 
 
 @interactive_router.message(Command("suspicious_remove"))
