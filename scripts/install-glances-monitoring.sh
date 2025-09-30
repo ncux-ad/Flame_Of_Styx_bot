@@ -184,7 +184,7 @@ fi
 
 # Устанавливаем Glances в venv
 print_step "Устанавливаем Glances в виртуальное окружение..."
-if ! safe_exec "pip install glances[web]" "Установка Glances"; then
+if ! safe_exec "pip install glances[web] --quiet --disable-pip-version-check" "Установка Glances"; then
     print_error "Не удалось установить Glances"
     exit 1
 fi
@@ -228,11 +228,8 @@ fi
 
 # Создаем конфигурацию Glances
 print_step "Создаем конфигурацию Glances..."
-sudo mkdir -p /etc/glances
-# Удаляем старый конфиг если есть
-sudo rm -f /etc/glances/glances.conf
 # Принудительно очищаем директорию
-sudo rm -rf /etc/glances/*
+sudo rm -rf /etc/glances
 sudo mkdir -p /etc/glances
 sudo tee /etc/glances/glances.conf > /dev/null <<EOF
 [global]
@@ -323,11 +320,11 @@ sudo chmod 644 /var/www/html/healthcheck.php
 # Устанавливаем nginx, PHP и Apache utils для healthcheck и аутентификации
 print_step "Устанавливаем nginx, PHP и Apache utils..."
 if command -v apt &> /dev/null; then
-    sudo apt install -y nginx php-fpm apache2-utils
+    sudo apt install -y nginx php-fpm apache2-utils >/dev/null 2>&1
 elif command -v yum &> /dev/null; then
-    sudo yum install -y nginx php-fpm httpd-tools
+    sudo yum install -y nginx php-fpm httpd-tools >/dev/null 2>&1
 elif command -v dnf &> /dev/null; then
-    sudo dnf install -y nginx php-fpm httpd-tools
+    sudo dnf install -y nginx php-fpm httpd-tools >/dev/null 2>&1
 fi
 
 # Настраиваем nginx
@@ -409,6 +406,11 @@ fi
 print_step "Останавливаем старые сервисы..."
 sudo systemctl stop glances 2>/dev/null || true
 sudo systemctl stop nginx 2>/dev/null || true
+
+# Принудительно очищаем конфиг Glances
+print_step "Очищаем старую конфигурацию Glances..."
+sudo rm -rf /etc/glances
+sudo mkdir -p /etc/glances
 
 # Запускаем сервисы
 print_step "Запускаем сервисы..."
