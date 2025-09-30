@@ -108,6 +108,33 @@ sudo systemctl enable antispam-bot.service
 
 print_success "Systemd сервис настроен"
 
+# Настройка структуры логов и безопасности
+echo ""
+print_info "🔒 Настройка безопасности и логов:"
+echo ""
+
+# Настройка структуры логов
+if [[ -f "scripts/setup-logs-structure.sh" ]]; then
+    print_step "Настраиваем структуру логов..."
+    chmod +x scripts/setup-logs-structure.sh
+    ./scripts/setup-logs-structure.sh
+    print_success "Структура логов настроена"
+else
+    print_warning "Скрипт настройки логов не найден, создаем базовую структуру..."
+    mkdir -p logs/{general,encrypted,security,reports}
+    print_success "Базовая структура логов создана"
+fi
+
+# Проверка безопасности
+if [[ -f "scripts/security-check.sh" ]]; then
+    print_step "Запускаем проверку безопасности..."
+    chmod +x scripts/security-check.sh
+    ./scripts/security-check.sh
+    print_success "Проверка безопасности завершена"
+else
+    print_warning "Скрипт проверки безопасности не найден"
+fi
+
 # Спрашиваем про мониторинг
 echo ""
 print_info "📊 Настройка мониторинга:"
@@ -208,6 +235,13 @@ echo -e "  • ${YELLOW}Статус${NC}: sudo systemctl status antispam-bot"
 echo -e "  • ${YELLOW}Логи${NC}: sudo journalctl -u antispam-bot -f"
 echo -e "  • ${YELLOW}Перезапуск${NC}: sudo systemctl restart antispam-bot"
 echo -e "  • ${YELLOW}Остановка${NC}: sudo systemctl stop antispam-bot"
+echo ""
+
+print_info "🔒 Управление безопасностью:"
+echo -e "  • ${YELLOW}Проверка безопасности${NC}: ./scripts/security-check.sh"
+echo -e "  • ${YELLOW}Анализ спама${NC}: /spam_analysis (в боте)"
+echo -e "  • ${YELLOW}Логи безопасности${NC}: /var/log/flame-of-styx/security/"
+echo -e "  • ${YELLOW}Отчеты безопасности${NC}: reports/security/"
 echo ""
 
 if [[ "$MONITORING_INSTALLED" == "true" ]]; then
