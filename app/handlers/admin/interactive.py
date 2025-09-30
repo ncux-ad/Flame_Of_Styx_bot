@@ -328,14 +328,14 @@ async def handle_suspicious_remove_command(
                 await remove_suspicious_user_by_id(message, profile_service, admin_id, user_id)
                 return
             except ValueError:
-                await send_silent_response(message,("❌ Неверный формат ID пользователя")
+                await send_silent_response(message, "❌ Неверный формат ID пользователя")
                 return
         
         # Интерактивный режим - запрашиваем ввод
         user_id = message.from_user.id
         waiting_for_user_input[user_id] = "suspicious_remove"
         
-        await send_silent_response(message,(
+        await send_silent_response(message,
             "🗑️ <b>Удаление из подозрительных профилей</b>\n\n"
             "📝 <b>Введите ID пользователя для удаления:</b>\n\n"
             "• <b>ID:</b> <code>123456789</code>\n\n"
@@ -348,7 +348,7 @@ async def handle_suspicious_remove_command(
 
     except Exception as e:
         logger.error(f"Error in suspicious_remove command: {sanitize_for_logging(str(e))}")
-        await send_silent_response(message,("❌ Ошибка удаления из подозрительных")
+        await send_silent_response(message, "❌ Ошибка удаления из подозрительных")
 
 
 @interactive_router.message(Command("setlimit"))
@@ -371,14 +371,14 @@ async def handle_setlimit_command(message: Message, limits_service: LimitsServic
                 await set_limit_by_params(message, limits_service, limit_type, value)
                 return
             except ValueError:
-                await send_silent_response(message,("❌ Значение должно быть числом!")
+                await send_silent_response(message,"❌ Значение должно быть числом!")
                 return
 
         # Интерактивный режим - запрашиваем тип лимита
         user_id = message.from_user.id
         waiting_for_user_input[user_id] = "setlimit_type"
         
-        await send_silent_response(message,(
+        await send_silent_response(message,
             "⚙️ <b>Настройка лимитов</b>\n\n"
             "📝 <b>Выберите тип лимита для изменения:</b>\n\n"
             "• <b>messages</b> - максимум сообщений в минуту\n"
@@ -396,7 +396,7 @@ async def handle_setlimit_command(message: Message, limits_service: LimitsServic
 
     except Exception as e:
         logger.error(f"Error in setlimit command: {sanitize_for_logging(str(e))}")
-        await send_silent_response(message,("❌ Ошибка при обработке команды!")
+        await send_silent_response(message,"❌ Ошибка при обработке команды!")
 
 
 @interactive_router.message(Command("cancel"))
@@ -412,14 +412,14 @@ async def handle_cancel_command(
         user_id = message.from_user.id
         if user_id in waiting_for_user_input:
             del waiting_for_user_input[user_id]
-            await send_silent_response(message,("❌ Операция отменена")
+            await send_silent_response(message,"❌ Операция отменена")
             logger.info(f"Operation cancelled for user {sanitize_for_logging(str(user_id))}")
         else:
-            await send_silent_response(message,("ℹ️ Нет активных операций для отмены")
+            await send_silent_response(message,"ℹ️ Нет активных операций для отмены")
             
     except Exception as e:
         logger.error(f"Error in cancel command: {sanitize_for_logging(str(e))}")
-        await send_silent_response(message,("❌ Ошибка отмены операции")
+        await send_silent_response(message,"❌ Ошибка отмены операции")
 
 
 @interactive_router.message()
@@ -455,17 +455,17 @@ async def handle_user_input(
                 try:
                     # Пытаемся найти пользователя по username
                     # Для простоты пока что не реализуем поиск по username
-                    await send_silent_response(message,("❌ Поиск по username пока не поддерживается. Используйте ID пользователя.")
+                    await send_silent_response(message,"❌ Поиск по username пока не поддерживается. Используйте ID пользователя.")
                     return
                 except Exception as e:
-                    await send_silent_response(message,(f"❌ Ошибка поиска пользователя: {sanitize_for_logging(str(e))}")
+                    await send_silent_response(message,f"❌ Ошибка поиска пользователя: {sanitize_for_logging(str(e))}")
                     return
             else:
                 # Это ID
                 try:
                     user_id_to_analyze = int(input_text)
                 except ValueError:
-                    await send_silent_response(message,("❌ Неверный формат ID пользователя")
+                    await send_silent_response(message, "❌ Неверный формат ID пользователя")
                     return
             
             # Убираем из ожидания
@@ -484,7 +484,7 @@ async def handle_user_input(
             try:
                 user_id_to_remove = int(input_text)
             except ValueError:
-                await send_silent_response(message,("❌ Неверный формат ID пользователя")
+                await send_silent_response(message, "❌ Неверный формат ID пользователя")
                 return
             
             # Убираем из ожидания
@@ -501,7 +501,7 @@ async def handle_user_input(
             valid_types = ["messages", "links", "ban", "threshold", "media_check", "allow_gifs", "allow_photos", "allow_videos", "doc_size"]
             
             if input_text not in valid_types:
-                await send_silent_response(message,("❌ Неверный тип лимита. Выберите один из предложенных вариантов.")
+                await send_silent_response(message,"❌ Неверный тип лимита. Выберите один из предложенных вариантов.")
                 return
             
             # Сохраняем тип лимита и запрашиваем значение
@@ -517,7 +517,7 @@ async def handle_user_input(
             else:
                 value_type = "целое число"
             
-            await send_silent_response(message,(
+            await send_silent_response(message,
                 f"📝 <b>Введите значение для {input_text}:</b>\n\n"
                 f"• Тип значения: {value_type}\n\n"
                 f"💡 <b>Примеры:</b>\n"
@@ -544,9 +544,9 @@ async def handle_user_input(
                 await set_limit_by_params(message, limits_service, limit_type, value)
                 
             except ValueError:
-                await send_silent_response(message,("❌ Неверный формат значения. Введите число.")
+                await send_silent_response(message,"❌ Неверный формат значения. Введите число.")
                 return
             
     except Exception as e:
         logger.error(f"Error in handle_user_input: {sanitize_for_logging(str(e))}")
-        await send_silent_response(message,("❌ Ошибка обработки ввода")
+        await send_silent_response(message,"❌ Ошибка обработки ввода")
