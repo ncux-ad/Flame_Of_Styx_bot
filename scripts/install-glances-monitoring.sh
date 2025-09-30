@@ -31,6 +31,10 @@ print_info() {
     echo -e "${CYAN}ℹ️ $1${NC}"
 }
 
+print_warning() {
+    echo -e "${YELLOW}⚠️ $1${NC}"
+}
+
 print_step() {
     echo -e "${PURPLE}🔧 $1${NC}"
 }
