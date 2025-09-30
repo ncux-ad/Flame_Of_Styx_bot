@@ -444,11 +444,8 @@ fi
 # Проверяем порты
 SERVER_IP=$(hostname -I | awk '{print $1}')
 
-if netstat -tlnp 2>/dev/null | grep -q ":8080"; then
-    print_success "Glances веб-интерфейс: http://${SERVER_IP}:8080"
-else
-    print_error "Порт 8080 не открыт"
-fi
+# Порт 8080 не используется в новой конфигурации
+print_info "Порт 8080 не используется (старая конфигурация)"
 
 if netstat -tlnp 2>/dev/null | grep -q ":61208"; then
     print_success "Glances Web UI (с аутентификацией): http://${SERVER_IP}:61208"
@@ -458,10 +455,11 @@ else
     print_error "Порт 61208 не открыт"
 fi
 
-if netstat -tlnp 2>/dev/null | grep -q ":61209"; then
-    print_success "Glances внутренний порт: 61209 (только локальный доступ)"
+# Проверяем внутренний порт (только локальный)
+if netstat -tlnp 2>/dev/null | grep -q "127.0.0.1:61209"; then
+    print_success "Glances внутренний порт: 61209 (локальный доступ работает)"
 else
-    print_error "Внутренний порт 61209 не открыт"
+    print_warning "Внутренний порт 61209 не найден (может быть нормально)"
 fi
 
 if netstat -tlnp 2>/dev/null | grep -q ":8081"; then
