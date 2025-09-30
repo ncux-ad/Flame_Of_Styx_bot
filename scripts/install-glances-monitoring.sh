@@ -317,14 +317,14 @@ EOF
 sudo chown www-data:www-data /var/www/html/healthcheck.php
 sudo chmod 644 /var/www/html/healthcheck.php
 
-# Устанавливаем nginx для healthcheck
-print_step "Устанавливаем nginx для healthcheck..."
+# Устанавливаем nginx и PHP для healthcheck
+print_step "Устанавливаем nginx и PHP для healthcheck..."
 if command -v apt &> /dev/null; then
-    sudo apt install -y nginx
+    sudo apt install -y nginx php-fpm
 elif command -v yum &> /dev/null; then
-    sudo yum install -y nginx
+    sudo yum install -y nginx php-fpm
 elif command -v dnf &> /dev/null; then
-    sudo dnf install -y nginx
+    sudo dnf install -y nginx php-fpm
 fi
 
 # Настраиваем nginx
@@ -350,6 +350,10 @@ EOF
 # Активируем сайт
 sudo ln -sf /etc/nginx/sites-available/healthcheck /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
+
+# Запускаем PHP-FPM
+sudo systemctl enable php7.4-fpm
+sudo systemctl start php7.4-fpm
 
 # Настраиваем firewall
 print_step "Настраиваем firewall..."
