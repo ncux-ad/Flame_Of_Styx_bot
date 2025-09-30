@@ -402,6 +402,11 @@ elif command -v firewall-cmd &> /dev/null; then
     print_success "Firewalld настроен"
 fi
 
+# Останавливаем старые сервисы
+print_step "Останавливаем старые сервисы..."
+sudo systemctl stop glances 2>/dev/null || true
+sudo systemctl stop nginx 2>/dev/null || true
+
 # Запускаем сервисы
 print_step "Запускаем сервисы..."
 sudo systemctl daemon-reload
