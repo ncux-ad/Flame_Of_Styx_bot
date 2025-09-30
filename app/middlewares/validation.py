@@ -88,7 +88,7 @@ class ValidationMiddleware(BaseMiddleware):
 
     async def _validate_message(self, message: Message) -> List[str]:
         """
-        Валидирует сообщение.
+        Валидирует сообщение (оптимизированная версия).
 
         Args:
             message: Сообщение для валидации
@@ -96,9 +96,8 @@ class ValidationMiddleware(BaseMiddleware):
         Returns:
             Список ошибок валидации
         """
-        # Для команд применяем только базовую валидацию
+        # 1. ВАЛИДАЦИЯ КОМАНД (всегда)
         if message.text and message.text.startswith("/"):
-            # Для команд валидируем только текст сообщения, не профиль пользователя
             errors = []
             if message.text:
                 text_errors = input_validator._validate_text_content(message.text, "message_text")
@@ -108,13 +107,11 @@ class ValidationMiddleware(BaseMiddleware):
                         errors.append(f"{error.field}: {error.message}")
             return errors
         
-        # Проверяем, является ли это ответом в интерактивном режиме
+        # 2. ВАЛИДАЦИЯ ИНТЕРАКТИВНЫХ ОТВЕТОВ (всегда)
         if message.from_user and message.text:
-            # Импортируем словарь состояния (избегаем циклического импорта)
             try:
                 from app.handlers.admin import waiting_for_user_input
                 if message.from_user.id in waiting_for_user_input:
-                    # Это ответ в интерактивном режиме - применяем только базовую валидацию
                     errors = []
                     if message.text:
                         text_errors = input_validator._validate_text_content(message.text, "message_text")
@@ -124,24 +121,119 @@ class ValidationMiddleware(BaseMiddleware):
                                 errors.append(f"{error.field}: {error.message}")
                     return errors
             except ImportError:
-                # Если не можем импортировать, продолжаем с обычной валидацией
                 pass
         
-        # Для обычных сообщений применяем полную валидацию
+        # 3. ПРОВЕРКА ТИПА ЧАТА - в группах комментариев валидируем только подозрительные
+        if message.chat and message.chat.type in ["group", "supergroup"]:
+            # В группах валидируем только подозрительные сообщения
+            if self._is_suspicious_message(message):
+                return self._validate_suspicious_message(message)
+            else:
+                # Обычные сообщения в группах пропускаем
+                return []
+        
+        # 4. ВАЛИДАЦИЯ В ЛИЧНЫХ СООБЩЕНИЯХ (полная)
+        if message.chat and message.chat.type == "private":
+            return self._validate_private_message(message)
+        
+        # 5. ВАЛИДАЦИЯ В КАНАЛАХ (только подозрительные)
+        if message.chat and message.chat.type == "channel":
+            if self._is_suspicious_message(message):
+                return self._validate_suspicious_message(message)
+            else:
+                return []
+        
+        # 6. ПО УМОЛЧАНИЮ - пропускаем
+        return []
+
+    def _is_suspicious_message(self, message: Message) -> bool:
+        """
+        Проверяет, является ли сообщение подозрительным.
+        
+        Args:
+            message: Сообщение для проверки
+            
+        Returns:
+            True если сообщение подозрительное
+        """
+        # Проверяем на спам-паттерны
+        if message.text:
+            # Ссылки
+            if "http" in message.text.lower() or "www." in message.text.lower():
+                return True
+            # Подозрительные слова
+            spam_words = ["реклама", "заработок", "быстро", "легко", "без вложений", "кликни", "перейди"]
+            if any(word in message.text.lower() for word in spam_words):
+                return True
+            # Много заглавных букв
+            if len([c for c in message.text if c.isupper()]) > len(message.text) * 0.7:
+                return True
+            # Много повторяющихся символов
+            if any(message.text.count(c) > 5 for c in set(message.text)):
+                return True
+        
+        # Проверяем медиа без подписи
+        if (message.photo or message.video or message.document) and not message.caption:
+            return True
+        
+        # Проверяем размер файлов
+        if message.document and message.document.file_size and message.document.file_size > 10 * 1024 * 1024:  # 10MB
+            return True
+        
+        return False
+
+    def _validate_suspicious_message(self, message: Message) -> List[str]:
+        """
+        Валидирует подозрительное сообщение.
+        
+        Args:
+            message: Подозрительное сообщение
+            
+        Returns:
+            Список ошибок валидации
+        """
+        errors = []
+        
+        # Базовые проверки
+        if not message.text and not (message.photo or message.video or message.document):
+            errors.append("message_content: Сообщение не содержит текста или медиа")
+        
+        # Проверка текста
+        if message.text:
+            text_errors = input_validator._validate_text_content(message.text, "message_text")
+            for error in text_errors:
+                if error.severity in [ValidationSeverity.CRITICAL, ValidationSeverity.HIGH]:
+                    errors.append(f"{error.field}: {error.message}")
+        
+        # Проверка медиа
+        if message.photo or message.video or message.document:
+            if not self._is_safe_media(message):
+                errors.append("Небезопасное медиа")
+        
+        return errors
+
+    def _validate_private_message(self, message: Message) -> List[str]:
+        """
+        Валидирует сообщение в личном чате (полная валидация).
+        
+        Args:
+            message: Сообщение в личном чате
+            
+        Returns:
+            Список ошибок валидации
+        """
+        errors = []
+        
         # Проверяем, что у сообщения есть текст
         if not message.text:
-            # Если нет текста, но есть медиа - это нормально
             if message.photo or message.video or message.document or message.voice or message.audio or message.sticker:
                 return []
-            # Если нет ни текста, ни медиа - это подозрительно
             return ["message_text: Сообщение не содержит текста или медиа"]
         
         validation_errors = input_validator.validate_message(message)
         
         # Конвертируем в старый формат для совместимости
-        errors = []
         for error in validation_errors:
-            # Логируем критические ошибки
             if error.severity == ValidationSeverity.CRITICAL:
                 logger.critical(f"Critical validation error: {error.field} - {error.message}")
             elif error.severity == ValidationSeverity.HIGH:
