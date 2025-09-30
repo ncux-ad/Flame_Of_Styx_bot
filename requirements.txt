@@ -6,15 +6,13 @@ pydantic-settings==2.11.0
 alembic==1.16.5
 punq==0.7.0
 aiohttp>=3.12.14
-redis>=5.0.0
-aioredis==2.0.1; python_version < "3.11"
+
+# Redis dependencies
 redis>=5.0.0; python_version >= "3.11"
+aioredis==2.0.1; python_version < "3.11"
 
 # Security dependencies
 cryptography>=45.0.0
-
-# Redis dependencies
-redis>=5.0.0
 
 # Development dependencies (install with: pip install -e ".[dev]")
 pytest==8.4.2
@@ -24,5 +22,7 @@ ruff==0.13.2
 mypy==1.11.2
 isort==5.13.2
 pre-commit==3.6.0
+
+# Security tools
 safety==3.6.2
 bandit==1.8.6
