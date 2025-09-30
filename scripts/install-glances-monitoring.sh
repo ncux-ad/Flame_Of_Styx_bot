@@ -231,6 +231,9 @@ print_step "Создаем конфигурацию Glances..."
 sudo mkdir -p /etc/glances
 # Удаляем старый конфиг если есть
 sudo rm -f /etc/glances/glances.conf
+# Принудительно очищаем директорию
+sudo rm -rf /etc/glances/*
+sudo mkdir -p /etc/glances
 sudo tee /etc/glances/glances.conf > /dev/null <<EOF
 [global]
 # Основные настройки
