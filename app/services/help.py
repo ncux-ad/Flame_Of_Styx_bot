@@ -49,6 +49,13 @@ class HelpService:
                 examples=["/status"],
                 admin_only=True,
             ),
+            "spam_analysis": CommandInfo(
+                command="/spam_analysis",
+                description="Анализ спама и статистика детекции",
+                usage="/spam_analysis",
+                examples=["/spam_analysis"],
+                admin_only=True,
+            ),
             "settings": CommandInfo(
                 command="/settings",
                 description="Настройки бота и конфигурация",
@@ -326,7 +333,13 @@ class HelpService:
             "• Количество каналов и их статус\n"
             "• Количество ботов в whitelist\n"
             "• Статистика модерации и банов\n"
-            "• Общий статус системы\n\n"
+            "• Общий статус системы\n"
+            "• Ссылки на мониторинг и healthcheck\n\n"
+            "<b>/spam_analysis</b> - Анализ спама и статистика детекции\n"
+            "• Статистика обнаруженного спама\n"
+            "• Паттерны и паттерны детекции\n"
+            "• Экспорт данных для анализа\n"
+            "• Очистка старых данных\n\n"
             "<b>/settings</b> - Настройки бота и конфигурация\n"
             "• Текущие настройки системы\n"
             "• Статус компонентов\n"

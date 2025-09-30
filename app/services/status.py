@@ -86,6 +86,14 @@ class StatusService:
             status_text += f"• Всего записей: {len(banned_users)}\n"
             status_text += f"• Удалено спам-сообщений: {deleted_messages}\n"
             status_text += f"• Всего действий модерации: {total_actions}\n\n"
+            
+            # Мониторинг и healthcheck
+            status_text += "📊 <b>Мониторинг и Healthcheck:</b>\n"
+            status_text += "• <b>Glances:</b> http://your-server:61208 (мониторинг системы)\n"
+            status_text += "• <b>Healthcheck:</b> http://your-server/health (статус бота)\n"
+            status_text += "• <b>Логи:</b> /var/log/flame-of-styx/ (системные логи)\n"
+            status_text += "• <b>Отчеты безопасности:</b> reports/security/ (отчеты)\n\n"
+            
             status_text += f"👑 <b>Администратор:</b> <code>{admin_id}</code>"
             
             return status_text
