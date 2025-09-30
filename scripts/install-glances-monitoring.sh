@@ -46,6 +46,8 @@ fi
 
 # Устанавливаем Glances
 print_step "Устанавливаем Glances..."
+sudo apt update
+sudo apt install -y python3-pip
 sudo pip3 install glances[web] --break-system-packages
 
 # Находим путь к glances
