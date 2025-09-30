@@ -211,30 +211,20 @@ class LimitsHotReload:
                 
                 # Добавляем информацию о коммите
                 try:
-                    # Получаем абсолютный путь к проекту
-                    import os
-                    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                    
-                    # Логируем для отладки
-                    logger.info(f"Trying to get git commit from directory: {project_root}")
-                    
+                    # Используем полный путь к git и рабочую директорию
                     result = subprocess.run(
-                        ["git", "rev-parse", "--short", "HEAD"],
+                        ["/usr/bin/git", "rev-parse", "--short", "HEAD"],
                         capture_output=True,
                         text=True,
-                        cwd=project_root
+                        cwd="/home/ncux11/bots/Flame_Of_Styx_bot"
                     )
-                    
-                    logger.info(f"Git command result: returncode={result.returncode}, stdout='{result.stdout.strip()}', stderr='{result.stderr.strip()}'")
-                    
                     if result.returncode == 0:
                         commit_hash = result.stdout.strip()
                         message += f"📝 <b>ID текущего коммита:</b> <code>{commit_hash}</code>\n\n"
                     else:
-                        message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно (git error: {result.stderr.strip()})</code>\n\n"
-                except Exception as e:
-                    logger.error(f"Error getting git commit: {e}")
-                    message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно (error: {str(e)})</code>\n\n"
+                        message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>\n\n"
+                except Exception:
+                    message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>\n\n"
                 
                 # Добавляем информацию о лимитах (если включено)
                 if getattr(self, 'show_limits_on_startup', True):
