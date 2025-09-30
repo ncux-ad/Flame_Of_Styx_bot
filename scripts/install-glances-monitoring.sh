@@ -12,6 +12,10 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# =============================================================================
+# СТАНДАРТНЫЕ ФУНКЦИИ ДЛЯ ВСЕХ СКРИПТОВ
+# =============================================================================
+
 print_header() {
     echo -e "${BLUE}👁️ Glances Monitoring Setup${NC}"
     echo -e "${BLUE}============================${NC}"
@@ -39,18 +43,151 @@ print_step() {
     echo -e "${PURPLE}🔧 $1${NC}"
 }
 
+print_debug() {
+    if [[ "${DEBUG:-0}" == "1" ]]; then
+        echo -e "${PURPLE}🐛 DEBUG: $1${NC}"
+    fi
+}
+
+# Проверка команд
+check_command() {
+    local cmd="$1"
+    local name="${2:-$cmd}"
+    if ! command -v "$cmd" &> /dev/null; then
+        print_error "$name не найден. Установите: $cmd"
+        return 1
+    fi
+    print_debug "$name найден: $(which $cmd)"
+    return 0
+}
+
+# Проверка прав root
+check_root() {
+    if [[ $EUID -eq 0 ]]; then
+        print_warning "Скрипт запущен от root. Это может быть небезопасно."
+        read -p "Продолжить? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_info "Установка отменена"
+            exit 0
+        fi
+    fi
+}
+
+# Безопасное выполнение команд
+safe_exec() {
+    local cmd="$1"
+    local description="${2:-Выполнение команды}"
+    
+    print_debug "Выполняем: $cmd"
+    
+    if eval "$cmd"; then
+        print_debug "✅ $description успешно"
+        return 0
+    else
+        print_error "❌ Ошибка при $description"
+        return 1
+    fi
+}
+
+# Проверка существования файла/директории
+check_exists() {
+    local path="$1"
+    local type="${2:-file}"
+    
+    case "$type" in
+        "file")
+            if [[ -f "$path" ]]; then
+                print_debug "Файл существует: $path"
+                return 0
+            fi
+            ;;
+        "dir")
+            if [[ -d "$path" ]]; then
+                print_debug "Директория существует: $path"
+                return 0
+            fi
+            ;;
+        "link")
+            if [[ -L "$path" ]]; then
+                print_debug "Ссылка существует: $path"
+                return 0
+            fi
+            ;;
+    esac
+    
+    print_debug "$type не найден: $path"
+    return 1
+}
+
+# Создание бэкапа
+create_backup() {
+    local file="$1"
+    local backup="${file}.backup.$(date +%Y%m%d_%H%M%S)"
+    
+    if check_exists "$file" "file"; then
+        if cp "$file" "$backup"; then
+            print_info "Создан бэкап: $backup"
+            return 0
+        else
+            print_error "Не удалось создать бэкап: $file"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+# Восстановление из бэкапа
+restore_backup() {
+    local file="$1"
+    local backup="${file}.backup.$(date +%Y%m%d_%H%M%S)"
+    
+    if check_exists "$backup" "file"; then
+        if cp "$backup" "$file"; then
+            print_info "Восстановлен из бэкапа: $backup"
+            return 0
+        else
+            print_error "Не удалось восстановить из бэкапа: $backup"
+            return 1
+        fi
+    fi
+    return 1
+}
+
+# Очистка при ошибке
+cleanup_on_error() {
+    print_error "Произошла ошибка. Выполняем очистку..."
+    
+    # Останавливаем сервисы
+    safe_exec "sudo systemctl stop glances" "Остановка glances"
+    
+    # Удаляем временные файлы
+    safe_exec "sudo rm -f /etc/glances/glances.conf" "Удаление конфига"
+    
+    print_warning "Очистка завершена"
+}
+
+# Установка trap для очистки
+trap cleanup_on_error ERR
+
 print_header
+
+# Проверяем права
+check_root
 
 # Проверяем Python
 print_step "Проверяем Python..."
-if ! command -v python3 &> /dev/null; then
+if ! check_command "python3" "Python3"; then
     print_error "Python3 не установлен"
     exit 1
 fi
 
 # Устанавливаем Glances в venv
 print_step "Устанавливаем Glances в виртуальное окружение..."
-pip install glances[web]
+if ! safe_exec "pip install glances[web]" "Установка Glances"; then
+    print_error "Не удалось установить Glances"
+    exit 1
+fi
 
 # Находим путь к glances в venv
 GLANCES_PATH=$(which glances)
@@ -69,10 +206,14 @@ GLANCES_SYSTEMD_PATH="/home/glances/venv/bin/glances"
 
 # Создаем пользователя для Glances
 print_step "Создаем пользователя glances..."
-sudo userdel glances 2>/dev/null || true
-sudo useradd -r -s /bin/false -m glances 2>/dev/null || {
+if id glances >/dev/null 2>&1; then
     print_warning "Пользователь glances уже существует, продолжаем..."
-}
+else
+    if ! safe_exec "sudo useradd -r -s /bin/false -m glances" "Создание пользователя glances"; then
+        print_error "Не удалось создать пользователя glances"
+        exit 1
+    fi
+fi
 
 # Копируем venv для glances
 print_step "Копируем виртуальное окружение для glances..."
