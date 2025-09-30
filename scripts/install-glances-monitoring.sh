@@ -46,12 +46,12 @@ fi
 
 # Устанавливаем Glances
 print_step "Устанавливаем Glances..."
-pip3 install glances[web,telegram] --break-system-packages
+sudo pip3 install glances[web] --break-system-packages
 
 # Находим путь к glances
 GLANCES_PATH=$(which glances)
 if [ -z "$GLANCES_PATH" ]; then
-    GLANCES_PATH="/home/$(whoami)/.local/bin/glances"
+    GLANCES_PATH="/usr/local/bin/glances"
 fi
 
 print_info "Glances установлен в: $GLANCES_PATH"
@@ -104,14 +104,14 @@ Type=simple
 User=glances
 Group=glances
 WorkingDirectory=/home/glances
-ExecStart=$GLANCES_PATH -w -s --config /etc/glances/glances.conf
+ExecStart=$GLANCES_PATH -w --port 61208 --bind 0.0.0.0
 Restart=on-failure
 RestartSec=10
-Environment=PYTHONPATH=/usr/local/lib/python3.*/site-packages
+Environment=PYTHONUNBUFFERED=1
 
 # Ограничения ресурсов для VPS
-MemoryLimit=128M
-CPUQuota=20%
+MemoryLimit=64M
+CPUQuota=10%
 
 [Install]
 WantedBy=multi-user.target
