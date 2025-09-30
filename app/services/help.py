@@ -56,6 +56,20 @@ class HelpService:
                 examples=["/spam_analysis"],
                 admin_only=True,
             ),
+            "rate_limit": CommandInfo(
+                command="/rate_limit",
+                description="Информация о rate limiting и лимитах запросов",
+                usage="/rate_limit",
+                examples=["/rate_limit"],
+                admin_only=True,
+            ),
+            "reset_rate_limit": CommandInfo(
+                command="/reset_rate_limit",
+                description="Сброс rate limit для текущего пользователя",
+                usage="/reset_rate_limit",
+                examples=["/reset_rate_limit"],
+                admin_only=True,
+            ),
             "settings": CommandInfo(
                 command="/settings",
                 description="Настройки бота и конфигурация",
@@ -340,6 +354,13 @@ class HelpService:
             "• Паттерны и паттерны детекции\n"
             "• Экспорт данных для анализа\n"
             "• Очистка старых данных\n\n"
+            "<b>/rate_limit</b> - Информация о rate limiting\n"
+            "• Текущие лимиты запросов\n"
+            "• Остаток запросов по категориям\n"
+            "• Время до сброса лимитов\n\n"
+            "<b>/reset_rate_limit</b> - Сброс rate limit\n"
+            "• Сброс лимитов для текущего пользователя\n"
+            "• Используйте при превышении лимитов\n\n"
             "<b>/settings</b> - Настройки бота и конфигурация\n"
             "• Текущие настройки системы\n"
             "• Статус компонентов\n"

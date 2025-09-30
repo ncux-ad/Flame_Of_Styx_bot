@@ -13,6 +13,9 @@ redis>=5.0.0; python_version >= "3.11"
 # Security dependencies
 cryptography>=45.0.0
 
+# Redis dependencies
+redis>=5.0.0
+
 # Development dependencies (install with: pip install -e ".[dev]")
 pytest==8.4.2
 pytest-cov==7.0.0

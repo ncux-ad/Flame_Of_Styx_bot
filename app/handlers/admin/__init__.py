@@ -32,6 +32,7 @@ from .moderation import moderation_router
 from .suspicious import suspicious_router
 from .interactive import interactive_router
 from .spam_analysis import router as spam_analysis_router
+from .rate_limit import rate_limit_router
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ admin_router.include_router(moderation_router)
 admin_router.include_router(suspicious_router)
 admin_router.include_router(interactive_router)
 admin_router.include_router(spam_analysis_router)
+admin_router.include_router(rate_limit_router)
 
 # Применяем фильтр админа ко всем хендлерам
 admin_router.message.filter(IsAdminOrSilentFilter())

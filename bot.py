@@ -16,6 +16,7 @@ from app.database import create_tables
 from app.middlewares.dependency_injection import DependencyInjectionMiddleware
 from app.middlewares.logging import LoggingMiddleware
 from app.middlewares.ratelimit import RateLimitMiddleware
+from app.middlewares.redis_rate_limit import RedisRateLimitMiddleware
 from app.middlewares.suspicious_profile import SuspiciousProfileMiddleware
 from app.middlewares.validation import ValidationMiddleware, CommandValidationMiddleware
 from app.services.config_watcher import LimitsHotReload
@@ -84,16 +85,10 @@ async def main():
         # Rate limiting middleware (Redis or fallback)
         if redis_available:
             try:
-                from app.middlewares.redis_rate_limit import RedisRateLimitMiddleware
-                dp.message.middleware(RedisRateLimitMiddleware(
-                    user_limit=config.redis_user_limit,
-                    admin_limit=config.redis_admin_limit,
-                    interval=config.redis_interval,
-                    strategy=config.redis_strategy,
-                    block_duration=config.redis_block_duration,
-                ))
-            except ImportError as e:
-                logger.error(f"Не удалось импортировать RedisRateLimitMiddleware: {e}")
+                dp.message.middleware(RedisRateLimitMiddleware())
+                logger.info("Redis rate limiting middleware enabled")
+            except Exception as e:
+                logger.error(f"Не удалось инициализировать RedisRateLimitMiddleware: {e}")
                 logger.warning("Используем локальный rate limiting")
                 dp.message.middleware(RateLimitMiddleware(
                     user_limit=config.redis_user_limit,

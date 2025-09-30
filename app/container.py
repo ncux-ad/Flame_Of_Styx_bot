@@ -24,6 +24,7 @@ from app.services.channels_admin import ChannelsAdminService
 from app.services.bots_admin import BotsAdminService
 from app.services.suspicious_admin import SuspiciousAdminService
 from app.services.callbacks import CallbacksService
+from app.services.redis_rate_limiter import get_redis_rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +196,9 @@ class DIContainer:
             profile_service=profile_service,
         )
         
+        # Redis rate limiter (singleton)
+        redis_rate_limiter = get_redis_rate_limiter()
+        
         return {
             # Основные сервисы для антиспама
             "moderation_service": moderation_service,
@@ -211,6 +215,8 @@ class DIContainer:
             "bots_admin_service": bots_admin_service,
             "suspicious_admin_service": suspicious_admin_service,
             "callbacks_service": callbacks_service,
+            # Rate limiting
+            "redis_rate_limiter": redis_rate_limiter,
             # Метаданные
             "admin_id": admin_id,
             "admin_ids": admin_ids,
