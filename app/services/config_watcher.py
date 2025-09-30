@@ -211,18 +211,39 @@ class LimitsHotReload:
                 
                 # Добавляем информацию о коммите
                 try:
-                    # Используем полный путь к git и рабочую директорию
-                    result = subprocess.run(
-                        ["/usr/bin/git", "rev-parse", "--short", "HEAD"],
-                        capture_output=True,
-                        text=True,
-                        cwd="/home/ncux11/bots/Flame_Of_Styx_bot"
-                    )
-                    if result.returncode == 0:
-                        commit_hash = result.stdout.strip()
-                        message += f"📝 <b>ID текущего коммита:</b> <code>{commit_hash}</code>\n\n"
+                    # Получаем рабочую директорию динамически
+                    import os
+                    current_dir = os.getcwd()
+                    
+                    # Проверяем, что мы в git репозитории
+                    if os.path.exists(os.path.join(current_dir, '.git')):
+                        git_dir = current_dir
                     else:
-                        message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>\n\n"
+                        # Пытаемся найти git репозиторий в родительских директориях
+                        git_dir = None
+                        check_dir = current_dir
+                        for _ in range(5):  # Проверяем до 5 уровней вверх
+                            if os.path.exists(os.path.join(check_dir, '.git')):
+                                git_dir = check_dir
+                                break
+                            check_dir = os.path.dirname(check_dir)
+                            if check_dir == '/':
+                                break
+                    
+                    if git_dir:
+                        result = subprocess.run(
+                            ["/usr/bin/git", "rev-parse", "--short", "HEAD"],
+                            capture_output=True,
+                            text=True,
+                            cwd=git_dir
+                        )
+                        if result.returncode == 0:
+                            commit_hash = result.stdout.strip()
+                            message += f"📝 <b>ID текущего коммита:</b> <code>{commit_hash}</code>\n\n"
+                        else:
+                            message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>\n\n"
+                    else:
+                        message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно (git repo не найден)</code>\n\n"
                 except Exception:
                     message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>\n\n"
                 
