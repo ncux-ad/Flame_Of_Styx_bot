@@ -271,7 +271,7 @@ Type=simple
 User=glances
 Group=glances
 WorkingDirectory=/home/glances
-ExecStart=$GLANCES_SYSTEMD_PATH -w --port 61208 --bind 0.0.0.0
+ExecStart=$GLANCES_SYSTEMD_PATH -w --port 61209 --bind 127.0.0.1
 Restart=on-failure
 RestartSec=10
 Environment=PYTHONUNBUFFERED=1
@@ -317,14 +317,14 @@ EOF
 sudo chown www-data:www-data /var/www/html/healthcheck.php
 sudo chmod 644 /var/www/html/healthcheck.php
 
-# Устанавливаем nginx и PHP для healthcheck
-print_step "Устанавливаем nginx и PHP для healthcheck..."
+# Устанавливаем nginx, PHP и Apache utils для healthcheck и аутентификации
+print_step "Устанавливаем nginx, PHP и Apache utils..."
 if command -v apt &> /dev/null; then
-    sudo apt install -y nginx php-fpm
+    sudo apt install -y nginx php-fpm apache2-utils
 elif command -v yum &> /dev/null; then
-    sudo yum install -y nginx php-fpm
+    sudo yum install -y nginx php-fpm httpd-tools
 elif command -v dnf &> /dev/null; then
-    sudo dnf install -y nginx php-fpm
+    sudo dnf install -y nginx php-fpm httpd-tools
 fi
 
 # Настраиваем nginx
@@ -354,6 +354,38 @@ sudo rm -f /etc/nginx/sites-enabled/default
 # Запускаем PHP-FPM
 sudo systemctl enable php7.4-fpm
 sudo systemctl start php7.4-fpm
+
+# Настраиваем аутентификацию для Glances
+print_step "Настраиваем аутентификацию для Glances..."
+
+# Создаем пользователя для аутентификации
+print_info "Создаем пользователя для доступа к мониторингу..."
+sudo htpasswd -c /etc/nginx/.htpasswd glances-admin
+print_warning "Введите пароль для пользователя glances-admin:"
+
+# Создаем конфигурацию nginx для Glances с аутентификацией
+sudo tee /etc/nginx/sites-available/glances > /dev/null <<EOF
+server {
+    listen 61208;
+    server_name _;
+    
+    # Базовая аутентификация
+    auth_basic "Glances Monitoring - Access Restricted";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+    
+    # Проксирование к Glances
+    location / {
+        proxy_pass http://127.0.0.1:61209;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+
+# Включаем конфигурацию Glances
+sudo ln -sf /etc/nginx/sites-available/glances /etc/nginx/sites-enabled/
 
 # Настраиваем firewall
 print_step "Настраиваем firewall..."
@@ -409,9 +441,17 @@ else
 fi
 
 if netstat -tlnp 2>/dev/null | grep -q ":61208"; then
-    print_success "Glances REST API: http://${SERVER_IP}:61208"
+    print_success "Glances Web UI (с аутентификацией): http://${SERVER_IP}:61208"
+    print_info "Логин: glances-admin"
+    print_info "Пароль: тот, что вы ввели при установке"
 else
     print_error "Порт 61208 не открыт"
+fi
+
+if netstat -tlnp 2>/dev/null | grep -q ":61209"; then
+    print_success "Glances внутренний порт: 61209 (только локальный доступ)"
+else
+    print_error "Внутренний порт 61209 не открыт"
 fi
 
 if netstat -tlnp 2>/dev/null | grep -q ":8081"; then
