@@ -187,6 +187,15 @@ class SecureLogger:
         """Настраивает обработчики логов."""
         # Обработчик для общих логов (без ПД)
         general_log_file = self.general_logs_dir / 'general.log'
+        
+        # Убеждаемся что файл существует и имеет правильные права
+        try:
+            general_log_file.touch(mode=0o644)
+        except PermissionError:
+            # Если не можем создать файл, используем временный
+            general_log_file = self.general_logs_dir / 'general_temp.log'
+            general_log_file.touch(mode=0o644)
+        
         general_handler = logging.FileHandler(general_log_file, encoding='utf-8')
         general_formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
