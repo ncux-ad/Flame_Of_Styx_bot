@@ -44,24 +44,34 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# Устанавливаем Glances
-print_step "Устанавливаем Glances..."
-sudo apt update
-sudo apt install -y python3-pip
-sudo pip3 install glances[web] --break-system-packages
+# Устанавливаем Glances в venv
+print_step "Устанавливаем Glances в виртуальное окружение..."
+pip install glances[web]
 
-# Находим путь к glances
+# Находим путь к glances в venv
 GLANCES_PATH=$(which glances)
 if [ -z "$GLANCES_PATH" ]; then
-    GLANCES_PATH="/usr/local/bin/glances"
+    # Ищем в venv
+    GLANCES_PATH="./venv/bin/glances"
+    if [ ! -f "$GLANCES_PATH" ]; then
+        GLANCES_PATH="/usr/local/bin/glances"
+    fi
 fi
 
 print_info "Glances установлен в: $GLANCES_PATH"
+
+# Обновляем путь для systemd (будет в /home/glances/venv/bin/glances)
+GLANCES_SYSTEMD_PATH="/home/glances/venv/bin/glances"
 
 # Создаем пользователя для Glances
 print_step "Создаем пользователя glances..."
 sudo userdel glances 2>/dev/null || true
 sudo useradd -r -s /bin/false -m glances
+
+# Копируем venv для glances
+print_step "Копируем виртуальное окружение для glances..."
+sudo cp -r venv /home/glances/
+sudo chown -R glances:glances /home/glances/venv
 
 # Создаем конфигурацию Glances
 print_step "Создаем конфигурацию Glances..."
@@ -106,10 +116,11 @@ Type=simple
 User=glances
 Group=glances
 WorkingDirectory=/home/glances
-ExecStart=$GLANCES_PATH -w --port 61208 --bind 0.0.0.0
+ExecStart=$GLANCES_SYSTEMD_PATH -w --port 61208 --bind 0.0.0.0
 Restart=on-failure
 RestartSec=10
 Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/home/glances/venv/bin:/usr/local/bin:/usr/bin:/bin
 
 # Ограничения ресурсов для VPS
 MemoryLimit=64M
