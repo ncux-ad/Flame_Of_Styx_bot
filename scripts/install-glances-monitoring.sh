@@ -48,6 +48,14 @@ fi
 print_step "Устанавливаем Glances..."
 pip3 install glances[web,telegram] --break-system-packages
 
+# Находим путь к glances
+GLANCES_PATH=$(which glances)
+if [ -z "$GLANCES_PATH" ]; then
+    GLANCES_PATH="/home/$(whoami)/.local/bin/glances"
+fi
+
+print_info "Glances установлен в: $GLANCES_PATH"
+
 # Создаем пользователя для Glances
 print_step "Создаем пользователя glances..."
 sudo userdel glances 2>/dev/null || true
@@ -96,7 +104,7 @@ Type=simple
 User=glances
 Group=glances
 WorkingDirectory=/home/glances
-ExecStart=/usr/local/bin/glances -w -s --config /etc/glances/glances.conf
+ExecStart=$GLANCES_PATH -w -s --config /etc/glances/glances.conf
 Restart=on-failure
 RestartSec=10
 Environment=PYTHONPATH=/usr/local/lib/python3.*/site-packages
