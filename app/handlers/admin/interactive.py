@@ -79,7 +79,7 @@ async def analyze_user_by_id(message: Message, profile_service: ProfileService, 
             
             # Безопасно парсим паттерны
             patterns = []
-            if profile.detected_patterns and str(profile.detected_patterns).strip():
+            if profile.detected_patterns is not None and str(profile.detected_patterns).strip():
                 try:
                     logger.info("Processing patterns: " + str(profile.detected_patterns))
                     # Дополнительная проверка типа
@@ -102,7 +102,7 @@ async def analyze_user_by_id(message: Message, profile_service: ProfileService, 
                 text += "\n"
             
             # Безопасно проверяем связанный чат
-            if profile.linked_chat_title and str(profile.linked_chat_title).strip():
+            if profile.linked_chat_title is not None and str(profile.linked_chat_title).strip():
                 try:
                     chat_title = str(profile.linked_chat_title).strip()
                     if chat_title:
@@ -127,7 +127,7 @@ async def analyze_user_by_id(message: Message, profile_service: ProfileService, 
             
             # Безопасно форматируем дату
             try:
-                if profile.created_at and hasattr(profile.created_at, 'strftime'):
+                if profile.created_at is not None and hasattr(profile.created_at, 'strftime'):
                     date_str = profile.created_at.strftime('%d.%m.%Y %H:%M')
                 else:
                     date_str = 'Неизвестно'
