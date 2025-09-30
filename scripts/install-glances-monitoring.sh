@@ -76,6 +76,8 @@ sudo chown -R glances:glances /home/glances/venv
 # Создаем конфигурацию Glances
 print_step "Создаем конфигурацию Glances..."
 sudo mkdir -p /etc/glances
+# Удаляем старый конфиг если есть
+sudo rm -f /etc/glances/glances.conf
 sudo tee /etc/glances/glances.conf > /dev/null <<EOF
 [global]
 # Основные настройки
@@ -83,7 +85,7 @@ refresh = 2
 time = 10
 one_shot = False
 percpu = True
-disable_plugin = docker,raid,ip,folders,ports,processcount,processlist,processlistfast,quicklook,system,uptime,load,mem,memswap,network,diskio,fs,now,alert,amps,cloud,gpu,containers,chart,psutilversion,raid,smart,wifi,ip,folders,ports,processcount,processlist,processlistfast,quicklook,system,uptime,load,mem,memswap,network,diskio,fs,now,alert,amps,cloud,gpu,containers,chart,psutilversion,raid,smart,wifi
+disable_plugin = docker,raid,ip,folders,ports,processcount,processlist,processlistfast,quicklook,system,uptime,load,mem,memswap,network,diskio,fs,now,alert,amps,cloud,gpu,containers,chart,psutilversion,smart,wifi
 
 # Веб-интерфейс
 web_server = True
