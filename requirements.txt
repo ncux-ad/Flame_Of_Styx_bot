@@ -21,7 +21,7 @@ black==25.9.0
 ruff==0.13.2
 mypy==1.11.2
 isort==5.13.2
-pre-commit==3.6.0
+pre-commit==4.3.0
 
 # Security tools
 safety==3.6.2
