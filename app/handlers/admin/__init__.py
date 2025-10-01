@@ -127,7 +127,7 @@ async def handle_channels_command(
             return
         logger.info(f"Channels command from {sanitize_for_logging(str(message.from_user.id))}")
 
-        channels_text = await channels_admin_service.get_channels_list()
+        channels_text = await channels_admin_service.get_channels_display()
         await message.answer(channels_text)
         logger.info(f"Channels list sent to {sanitize_for_logging(str(message.from_user.id))}")
 
