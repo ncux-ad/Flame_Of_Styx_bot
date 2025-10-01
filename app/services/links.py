@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # from app.auth.authorization import require_admin, safe_user_operation
 from app.models.bot import Bot as BotModel
 from app.services.moderation import ModerationService
+from app.services.limits import LimitsService
 from app.utils.security import safe_format_message, sanitize_for_logging
 from app.utils.pii_protection import secure_logger
 
