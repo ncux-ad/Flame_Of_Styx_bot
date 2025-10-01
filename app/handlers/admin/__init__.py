@@ -77,6 +77,8 @@ async def test_bots_handler(message: Message) -> None:
 
 # Импортируем необходимые сервисы для bots команд
 from app.services.bots_admin import BotsAdminService
+from app.services.channels_admin import ChannelsAdminService
+from app.services.channels import ChannelService
 from app.utils.error_handling import handle_errors
 from app.middlewares.silent_logging import send_silent_response
 from app.utils.security import sanitize_for_logging
@@ -109,3 +111,107 @@ async def handle_bots_command(
     except Exception as e:
         logger.error(f"Error in bots command: {sanitize_for_logging(str(e))}")
         await send_silent_response(message, "❌ Ошибка получения списка ботов")
+
+# Команда /channels (перенесена из channels_router)
+@admin_router.message(Command("channels"), IsAdminOrSilentFilter())
+@handle_errors(user_message="❌ Ошибка выполнения команды /channels")
+async def handle_channels_command(
+    message: Message,
+    channel_service: ChannelService,
+    channels_admin_service: ChannelsAdminService,
+    admin_id: int,
+) -> None:
+    """Показать список каналов."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Channels command from {sanitize_for_logging(str(message.from_user.id))}")
+
+        channels_text = await channels_admin_service.get_channels_list()
+        await message.answer(channels_text)
+        logger.info(f"Channels list sent to {sanitize_for_logging(str(message.from_user.id))}")
+
+    except Exception as e:
+        logger.error(f"Error in channels command: {sanitize_for_logging(str(e))}")
+        await message.answer("❌ Ошибка получения списка каналов")
+
+# Команда /sync_channels (перенесена из channels_router)
+@admin_router.message(Command("sync_channels"), IsAdminOrSilentFilter())
+@handle_errors(user_message="❌ Ошибка выполнения команды /sync_channels")
+async def handle_sync_channels_command(
+    message: Message,
+    channel_service: ChannelService,
+    admin_id: int,
+) -> None:
+    """Синхронизация статуса каналов."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Sync channels command from {sanitize_for_logging(str(message.from_user.id))}")
+
+        # Получаем список каналов
+        channels = await channel_service.get_all_channels()
+        
+        if not channels:
+            await message.answer("📋 Каналы не найдены")
+            return
+
+        # Синхронизируем статус каждого канала
+        synced_count = 0
+        for channel in channels:
+            try:
+                await channel_service.sync_channel_status(channel.chat_id, admin_id)
+                synced_count += 1
+            except Exception as e:
+                logger.error(f"Error syncing channel {channel.chat_id}: {e}")
+                continue
+
+        await message.answer(f"✅ Синхронизировано {synced_count} каналов из {len(channels)}")
+        logger.info(f"Sync channels completed: {synced_count}/{len(channels)}")
+
+    except Exception as e:
+        logger.error(f"Error in sync_channels command: {sanitize_for_logging(str(e))}")
+        await message.answer("❌ Ошибка синхронизации каналов")
+
+# Команда /find_chat (перенесена из channels_router)
+@admin_router.message(Command("find_chat"), IsAdminOrSilentFilter())
+@handle_errors(user_message="❌ Ошибка выполнения команды /find_chat")
+async def handle_find_chat_command(
+    message: Message,
+    channel_service: ChannelService,
+    admin_id: int,
+) -> None:
+    """Найти чат по ID или username."""
+    try:
+        if not message.from_user:
+            return
+        
+        # Получаем аргументы команды
+        args = message.text.split()[1:] if message.text else []
+        if not args:
+            await message.answer("❌ <b>Использование:</b> /find_chat <chat_id> или /find_chat @username")
+            return
+
+        chat_identifier = args[0]
+        logger.info(f"Find chat command from {sanitize_for_logging(str(message.from_user.id))}: {chat_identifier}")
+
+        # Ищем чат по ID или username
+        chat_info = await channel_service.find_chat_by_identifier(chat_identifier)
+        
+        if chat_info:
+            response = f"📋 <b>Найден чат:</b>\n"
+            response += f"• ID: <code>{chat_info.get('id', 'N/A')}</code>\n"
+            response += f"• Название: {chat_info.get('title', 'N/A')}\n"
+            response += f"• Username: @{chat_info.get('username', 'N/A')}\n"
+            response += f"• Тип: {chat_info.get('type', 'N/A')}\n"
+            response += f"• Статус: {'✅ Антиспам активен' if chat_info.get('is_active', False) else '❌ Антиспам неактивен'}"
+            
+            await message.answer(response)
+            logger.info(f"Chat found: {chat_info.get('id')}")
+        else:
+            await message.answer(f"❌ Чат не найден: {chat_identifier}")
+            logger.info(f"Chat not found: {chat_identifier}")
+
+    except Exception as e:
+        logger.error(f"Error in find_chat command: {sanitize_for_logging(str(e))}")
+        await message.answer("❌ Ошибка поиска чата")
