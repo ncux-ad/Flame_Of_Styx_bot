@@ -19,7 +19,11 @@ limits_router = Router()
 
 
 @limits_router.message(Command("setlimits"))
-async def handle_setlimits_command(message: Message, limits_service: LimitsService) -> None:
+async def handle_setlimits_command(
+    message: Message,
+    limits_service: LimitsService,
+    admin_id: int,
+) -> None:
     """Просмотр лимитов системы."""
     try:
         if not message.from_user:
@@ -48,7 +52,11 @@ async def handle_setlimits_command(message: Message, limits_service: LimitsServi
 
 
 @limits_router.message(Command("reload_limits"))
-async def handle_reload_limits_command(message: Message, limits_service: LimitsService) -> None:
+async def handle_reload_limits_command(
+    message: Message,
+    limits_service: LimitsService,
+    admin_id: int,
+) -> None:
     """Принудительная перезагрузка лимитов из файла."""
     try:
         if not message.from_user:

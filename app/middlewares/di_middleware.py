@@ -54,13 +54,19 @@ class DIMiddleware(BaseMiddleware):
         Основной метод middleware.
         
         Создает сервисы при первом вызове и добавляет их в data.
+        Оптимизирован для Aiogram 3.x с кэшированием и проверками.
         """
         if not self._initialized:
             await self._initialize_services(data)
             self._initialized = True
         
         # Добавляем все сервисы в data для хендлеров
+        # Это позволяет хендлерам получать сервисы через DI
         data.update(self._services)
+        
+        # Логируем успешную инъекцию (только для отладки)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"DI services injected: {list(self._services.keys())}")
         
         return await handler(event, data)
     
@@ -141,6 +147,15 @@ class DIMiddleware(BaseMiddleware):
                 db_session=db_session,
             )
             
+            # Создаем дополнительные сервисы
+            from app.services.config_watcher import ConfigWatcherService
+            from app.services.redis_rate_limiter import RedisRateLimiterService
+            from app.services.redis import RedisService
+            
+            config_watcher_service = ConfigWatcherService()
+            redis_rate_limiter_service = RedisRateLimiterService()
+            redis_service = RedisService()
+            
             # Сохраняем все сервисы
             self._services = {
                 'moderation_service': moderation_service,
@@ -156,6 +171,9 @@ class DIMiddleware(BaseMiddleware):
                 'suspicious_admin_service': suspicious_admin_service,
                 'callbacks_service': callbacks_service,
                 'link_service': link_service,
+                'config_watcher_service': config_watcher_service,
+                'redis_rate_limiter_service': redis_rate_limiter_service,
+                'redis_service': redis_service,
             }
             
             logger.info(f"DI services initialized: {list(self._services.keys())}")
