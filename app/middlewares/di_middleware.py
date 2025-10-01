@@ -100,6 +100,14 @@ class DIMiddleware(BaseMiddleware):
             help_service = HelpService()
             limits_service = LimitsService()
             
+            # Создаем status_service
+            from app.services.status import StatusService
+            status_service = StatusService(
+                moderation_service=moderation_service,
+                bot_service=bot_service,
+                channel_service=channel_service,
+            )
+            
             # Создаем сервисы с зависимостями
             admin_service = AdminService(
                 moderation_service=moderation_service,
@@ -141,6 +149,7 @@ class DIMiddleware(BaseMiddleware):
                 'profile_service': profile_service,
                 'help_service': help_service,
                 'limits_service': limits_service,
+                'status_service': status_service,
                 'admin_service': admin_service,
                 'bots_admin_service': bots_admin_service,
                 'channels_admin_service': channels_admin_service,
