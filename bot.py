@@ -179,6 +179,9 @@ async def main():
         logger.info("Antispam router registered")
 
         logger.info("All routers registered successfully")
+        
+        # Логируем информацию о роутерах
+        logger.info("Router registration completed")
 
         # 8. Initialize hot-reload for limits
         limits_service = LimitsService()

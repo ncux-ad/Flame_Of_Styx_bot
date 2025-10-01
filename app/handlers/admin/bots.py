@@ -23,7 +23,7 @@ bots_router = Router()
 async def handle_test_bots_command(message: Message) -> None:
     """Тестовый хендлер для проверки роутинга."""
     logger.info("TEST BOTS COMMAND HANDLER CALLED!")
-    await message.answer("Тест команды /test_bots работает!")
+    await message.answer("✅ Bots router работает!")
 
 
 @bots_router.message(Command("bots"))

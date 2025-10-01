@@ -61,11 +61,9 @@ admin_router.callback_query.filter(IsAdminOrSilentFilter())
 
 logger.info("Admin filter applied to all admin router handlers")
 
-# Добавляем общий хендлер для логирования всех сообщений в admin router
-@admin_router.message()
-async def admin_router_debug_handler(message: Message) -> None:
-    """Debug handler для логирования всех сообщений в admin router."""
-    logger.info(f"ADMIN ROUTER DEBUG: Received message: {sanitize_for_logging(message.text)}")
-    logger.info(f"ADMIN ROUTER DEBUG: Message type: {type(message)}")
-    logger.info(f"ADMIN ROUTER DEBUG: Chat type: {message.chat.type}")
-    logger.info(f"ADMIN ROUTER DEBUG: From user: {message.from_user.id if message.from_user else None}")
+# Простой тестовый хендлер без фильтров
+@admin_router.message(Command("test_admin"))
+async def test_admin_handler(message: Message) -> None:
+    """Простой тестовый хендлер для проверки работы admin router."""
+    logger.info("TEST ADMIN HANDLER CALLED!")
+    await message.answer("✅ Admin router работает!")
