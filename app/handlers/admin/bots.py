@@ -18,6 +18,15 @@ logger = logging.getLogger(__name__)
 # Создаем роутер для команд ботов
 bots_router = Router()
 
+# Добавляем общий хендлер для отладки
+@bots_router.message()
+async def bots_router_debug_handler(message: Message) -> None:
+    """Debug handler для логирования всех сообщений в bots router."""
+    logger.info(f"BOTS ROUTER DEBUG: Received message: {sanitize_for_logging(message.text)}")
+    logger.info(f"BOTS ROUTER DEBUG: Message type: {type(message)}")
+    logger.info(f"BOTS ROUTER DEBUG: Chat type: {message.chat.type}")
+    logger.info(f"BOTS ROUTER DEBUG: From user: {message.from_user.id if message.from_user else None}")
+
 
 @bots_router.message(Command("test_bots"), IsAdminOrSilentFilter())
 async def handle_test_bots_command(message: Message) -> None:
