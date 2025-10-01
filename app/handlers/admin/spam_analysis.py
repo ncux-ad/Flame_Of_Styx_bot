@@ -11,15 +11,15 @@ from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from app.filters.is_admin import IsAdminFilter
+from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 from app.keyboards.inline import get_spam_analysis_keyboard
 from app.utils.pii_protection import secure_logger
 
 logger = logging.getLogger(__name__)
 
 router = Router()
-router.message.filter(IsAdminFilter())
-router.callback_query.filter(IsAdminFilter())
+router.message.filter(IsAdminOrSilentFilter())
+router.callback_query.filter(IsAdminOrSilentFilter())
 
 
 @router.message(Command("spam_analysis"))
