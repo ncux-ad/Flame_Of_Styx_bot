@@ -54,8 +54,8 @@ admin_router.include_router(bots_router)
 logger.info(f"Admin router configured with {len(admin_router.sub_routers)} sub-routers")
 logger.info(f"Sub-routers: {[router.name for router in admin_router.sub_routers]}")
 
-# Применяем фильтр админа ко всем хендлерам
-admin_router.message.filter(IsAdminOrSilentFilter())
-admin_router.callback_query.filter(IsAdminOrSilentFilter())
+# Фильтр админа применяется к каждому хендлеру отдельно
+# admin_router.message.filter(IsAdminOrSilentFilter())
+# admin_router.callback_query.filter(IsAdminOrSilentFilter())
 
-logger.info("Admin filter applied to all admin router handlers")
+logger.info("Admin filter will be applied to individual handlers")

@@ -11,6 +11,7 @@ from app.services.bots_admin import BotsAdminService
 from app.utils.error_handling import handle_errors
 from app.utils.security import sanitize_for_logging
 from app.middlewares.silent_logging import send_silent_response
+from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 bots_router = Router()
 
 
-@bots_router.message(Command("bots"))
+@bots_router.message(Command("bots"), IsAdminOrSilentFilter())
 @handle_errors(user_message="❌ Ошибка выполнения команды /bots")
 async def handle_bots_command(
     message: Message,
@@ -47,7 +48,7 @@ async def handle_bots_command(
         await send_silent_response(message, "❌ Ошибка получения списка ботов")
 
 
-@bots_router.message(Command("add_bot"))
+@bots_router.message(Command("add_bot"), IsAdminOrSilentFilter())
 @handle_errors(user_message="❌ Ошибка выполнения команды /add_bot")
 async def handle_add_bot_command(
     message: Message,
@@ -86,7 +87,7 @@ async def handle_add_bot_command(
         await send_silent_response(message, "❌ Ошибка добавления бота")
 
 
-@bots_router.message(Command("remove_bot"))
+@bots_router.message(Command("remove_bot"), IsAdminOrSilentFilter())
 @handle_errors(user_message="❌ Ошибка выполнения команды /remove_bot")
 async def handle_remove_bot_command(
     message: Message,
