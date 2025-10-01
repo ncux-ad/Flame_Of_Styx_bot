@@ -27,6 +27,7 @@ async def handle_bots_command(
 ) -> None:
     """Показать список ботов и управление whitelist."""
     try:
+        logger.info(f"BOTS COMMAND HANDLER CALLED: {message.text}")
         if not message.from_user:
             logger.warning("Bots command: no from_user")
             return

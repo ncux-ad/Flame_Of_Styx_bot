@@ -37,6 +37,8 @@ class IsAdminOrSilentFilter(BaseFilter):
             logger = __import__("logging").getLogger(__name__)
             if isinstance(obj, Message):
                 logger.info(f"Admin filter: user {user_id}, is_admin: {is_admin}, text: {obj.text}")
+                if obj.text and "bots" in obj.text.lower():
+                    logger.info(f"BOTS COMMAND DETECTED: user {user_id}, is_admin: {is_admin}, admin_ids: {self.admin_ids}")
 
             # Log non-admin attempts for security monitoring
             if not is_admin:
