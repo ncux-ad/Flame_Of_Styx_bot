@@ -4,7 +4,7 @@ from typing import List
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
-from app.constants import SUSPICION_THRESHOLD
+from app.constants import SUSPICION_THRESHOLD, DEFAULT_DB_PATH, DEFAULT_REDIS_URL
 from app.utils.security import validate_admin_id, validate_bot_token, validate_test_bot_token
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class Settings(BaseSettings):
     bot_token: str = ""
     admin_ids: str = "366490333,439304619"
-    db_path: str = "db.sqlite3"
+    db_path: str = DEFAULT_DB_PATH
 
     # Native channels (каналы, где бот является администратором)
     native_channel_ids: str = ""
@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     show_limits_on_startup: bool = True  # Показывать лимиты при запуске бота
     
     # Настройки Redis
-    redis_url: str = Field(default="redis://localhost:6379/0", description="URL подключения к Redis")
+    redis_url: str = Field(default=DEFAULT_REDIS_URL, description="URL подключения к Redis")
     redis_enabled: bool = Field(default=False, description="Включить Redis rate limiting")
     
     # Настройки Redis Rate Limiting

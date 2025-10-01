@@ -109,3 +109,57 @@ async def handle_suspicious_reset_command(
     except Exception as e:
         logger.error(f"Error in suspicious_reset command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка сброса подозрительных профилей")
+
+
+@suspicious_router.message(Command("recalculate_suspicious"))
+async def handle_recalculate_suspicious_command(
+    message: Message,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Пересчитать подозрительные профили с новыми весами."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Recalculate suspicious command from {sanitize_for_logging(str(message.from_user.id))}")
+
+        # Пересчитываем все подозрительные профили
+        recalculated_count = await profile_service.recalculate_suspicious_profiles()
+        
+        await message.answer(
+            f"✅ <b>Подозрительные профили пересчитаны</b>\n\n"
+            f"🔄 Пересчитано профилей: {recalculated_count}\n"
+            f"📊 Применены обновленные веса паттернов"
+        )
+        logger.info(f"Recalculated {sanitize_for_logging(str(recalculated_count))} suspicious profiles for {sanitize_for_logging(str(message.from_user.id))}")
+
+    except Exception as e:
+        logger.error(f"Error in recalculate_suspicious command: {sanitize_for_logging(str(e))}")
+        await message.answer("❌ Ошибка пересчета подозрительных профилей")
+
+
+@suspicious_router.message(Command("cleanup_duplicates"))
+async def handle_cleanup_duplicates_command(
+    message: Message,
+    profile_service: ProfileService,
+    admin_id: int,
+) -> None:
+    """Очистить дублирующие подозрительные профили."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Cleanup duplicates command from {sanitize_for_logging(str(message.from_user.id))}")
+
+        # Очищаем дублирующие записи
+        cleaned_count = await profile_service.cleanup_duplicate_profiles()
+        
+        await message.answer(
+            f"✅ <b>Дублирующие профили очищены</b>\n\n"
+            f"🗑️ Удалено дубликатов: {cleaned_count}\n"
+            f"📊 Оставлены только самые свежие записи"
+        )
+        logger.info(f"Cleaned up {sanitize_for_logging(str(cleaned_count))} duplicate profiles for {sanitize_for_logging(str(message.from_user.id))}")
+
+    except Exception as e:
+        logger.error(f"Error in cleanup_duplicates command: {sanitize_for_logging(str(e))}")
+        await message.answer("❌ Ошибка очистки дубликатов")

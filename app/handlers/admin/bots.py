@@ -1,0 +1,118 @@
+"""
+Команды для управления ботами
+"""
+
+import logging
+from aiogram import Router
+from aiogram.filters import Command
+from aiogram.types import Message
+
+from app.services.bots_admin import BotsAdminService
+from app.utils.error_handling import handle_errors
+from app.utils.security import sanitize_for_logging
+from app.middlewares.silent_logging import send_silent_response
+
+logger = logging.getLogger(__name__)
+
+# Создаем роутер для команд ботов
+bots_router = Router()
+
+
+@bots_router.message(Command("bots"))
+@handle_errors(user_message="❌ Ошибка выполнения команды /bots")
+async def handle_bots_command(
+    message: Message,
+    bots_admin_service: BotsAdminService,
+    admin_id: int,
+) -> None:
+    """Показать список ботов и управление whitelist."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Bots command from {sanitize_for_logging(str(message.from_user.id))}")
+
+        bots_text = await bots_admin_service.get_bots_list()
+        await send_silent_response(message, bots_text)
+        logger.info(f"Bots list sent to {sanitize_for_logging(str(message.from_user.id))}")
+
+    except Exception as e:
+        logger.error(f"Error in bots command: {sanitize_for_logging(str(e))}")
+        await send_silent_response(message, "❌ Ошибка получения списка ботов")
+
+
+@bots_router.message(Command("add_bot"))
+@handle_errors(user_message="❌ Ошибка выполнения команды /add_bot")
+async def handle_add_bot_command(
+    message: Message,
+    bots_admin_service: BotsAdminService,
+    admin_id: int,
+) -> None:
+    """Добавить бота в whitelist."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Add bot command from {sanitize_for_logging(str(message.from_user.id))}")
+
+        # Парсим аргументы команды
+        if not message.text:
+            await send_silent_response(message, "❌ Ошибка: пустое сообщение")
+            return
+        args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
+
+        if not args:
+            await send_silent_response(
+                message,
+                "❌ <b>Использование:</b> /add_bot &lt;bot_username&gt;\n\n"
+                "💡 <b>Примеры:</b>\n"
+                "• /add_bot @mybot\n"
+                "• /add_bot mybot"
+            )
+            return
+
+        bot_username = args[0].lstrip("@")
+        result = await bots_admin_service.add_bot_to_whitelist(bot_username, admin_id)
+        await send_silent_response(message, result)
+        logger.info(f"Add bot result sent to {sanitize_for_logging(str(message.from_user.id))}")
+
+    except Exception as e:
+        logger.error(f"Error in add_bot command: {sanitize_for_logging(str(e))}")
+        await send_silent_response(message, "❌ Ошибка добавления бота")
+
+
+@bots_router.message(Command("remove_bot"))
+@handle_errors(user_message="❌ Ошибка выполнения команды /remove_bot")
+async def handle_remove_bot_command(
+    message: Message,
+    bots_admin_service: BotsAdminService,
+    admin_id: int,
+) -> None:
+    """Удалить бота из whitelist."""
+    try:
+        if not message.from_user:
+            return
+        logger.info(f"Remove bot command from {sanitize_for_logging(str(message.from_user.id))}")
+
+        # Парсим аргументы команды
+        if not message.text:
+            await send_silent_response(message, "❌ Ошибка: пустое сообщение")
+            return
+        args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
+
+        if not args:
+            await send_silent_response(
+                message,
+                "❌ <b>Использование:</b> /remove_bot &lt;bot_username&gt;\n\n"
+                "💡 <b>Примеры:</b>\n"
+                "• /remove_bot @mybot\n"
+                "• /remove_bot mybot"
+            )
+            return
+
+        bot_username = args[0].lstrip("@")
+        result = await bots_admin_service.remove_bot_from_whitelist(bot_username, admin_id)
+        await send_silent_response(message, result)
+        logger.info(f"Remove bot result sent to {sanitize_for_logging(str(message.from_user.id))}")
+
+    except Exception as e:
+        logger.error(f"Error in remove_bot command: {sanitize_for_logging(str(e))}")
+        await send_silent_response(message, "❌ Ошибка удаления бота")

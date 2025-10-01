@@ -4,7 +4,6 @@ import logging
 
 from aiogram import Router
 
-# from aiogram.filters import KICKED, LEFT, MEMBER, ChatMemberUpdatedFilter
 from aiogram.types import Message
 
 from app.services.channels import ChannelService

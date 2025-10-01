@@ -131,14 +131,37 @@ async def handle_all_messages(
 
         # Для каналов и супергрупп - проверяем антиспам
         if is_channel_message:
-            await handle_channel_antispam(
-                message,
-                moderation_service,
-                link_service,
-                channel_service,
-                profile_service,
-                admin_id,
-            )
+            # Определяем ID канала
+            channel_id = message.sender_chat.id if message.sender_chat else message.chat.id
+
+            # Проверяем на бот-ссылки и подозрительный контент
+            bot_links = await link_service.check_message_for_bot_links(message)
+
+            if bot_links:
+                logger.warning(f"Bot links detected: {bot_links}")
+
+                # Обрабатываем обнаружение бот-ссылок
+                await link_service.handle_bot_link_detection(message, bot_links)
+
+                # Помечаем канал как подозрительный
+                await channel_service.mark_channel_as_suspicious(
+                    channel_id=channel_id, reason="Bot links detected in channel", admin_id=admin_id
+                )
+
+                logger.info(f"Message deleted and user banned due to bot links: {bot_links}")
+            else:
+                logger.info("No bot links detected, message allowed")
+
+                # Если нет бот-ссылок, но есть отправитель - анализируем его профиль
+                if message.from_user:
+                    try:
+                        suspicious_profile = await profile_service.analyze_user_profile(user=message.from_user, admin_id=admin_id)
+                        if suspicious_profile:
+                            logger.warning(
+                                f"Suspicious profile detected in channel: user_id={message.from_user.id}, score={suspicious_profile.suspicion_score}"
+                            )
+                    except Exception as e:
+                        logger.error(f"Error analyzing user profile in channel: {e}")
         else:
             # Для личных сообщений - только rate limiting (уже обработан в middleware)
             if message.from_user:
@@ -148,57 +171,3 @@ async def handle_all_messages(
         logger.error(f"Error in anti-spam handler: {e}")
 
 
-async def handle_channel_antispam(
-    message: Message,
-    moderation_service: ModerationService,
-    link_service: LinkService,
-    channel_service: ChannelService,
-    profile_service: ProfileService,
-    admin_id: int,
-) -> None:
-    """Обрабатывает антиспам для сообщений в каналах/группах."""
-    try:
-        # Определяем ID канала
-        channel_id = message.sender_chat.id if message.sender_chat else message.chat.id
-
-        # Логируем детали сообщения для отладки
-        logger.info(
-            f"Channel antispam debug: chat_id={message.chat.id}, sender_chat={message.sender_chat.id if message.sender_chat else None}, channel_id={channel_id}"
-        )
-
-        # Проверяем, является ли это нативным каналом (где бот админ)
-        is_native_channel = await channel_service.is_native_channel(channel_id)
-
-        logger.info(f"Channel antispam: channel_id={channel_id}, is_native={is_native_channel}")
-
-        # Проверяем на бот-ссылки и подозрительный контент
-        bot_links = await link_service.check_message_for_bot_links(message)
-
-        if bot_links:
-            logger.warning(f"Bot links detected: {bot_links}")
-
-            # Обрабатываем обнаружение бот-ссылок
-            await link_service.handle_bot_link_detection(message, bot_links)
-
-            # Помечаем канал как подозрительный
-            await channel_service.mark_channel_as_suspicious(
-                channel_id=channel_id, reason="Bot links detected in channel", admin_id=admin_id
-            )
-
-            logger.info(f"Message deleted and user banned due to bot links: {bot_links}")
-        else:
-            logger.info("No bot links detected, message allowed")
-
-            # Если нет бот-ссылок, но есть отправитель - анализируем его профиль
-            if message.from_user:
-                try:
-                    suspicious_profile = await profile_service.analyze_user_profile(user=message.from_user, admin_id=admin_id)
-                    if suspicious_profile:
-                        logger.warning(
-                            f"Suspicious profile detected in channel: user_id={message.from_user.id}, score={suspicious_profile.suspicion_score}"
-                        )
-                except Exception as e:
-                    logger.error(f"Error analyzing user profile in channel: {e}")
-
-    except Exception as e:
-        logger.error(f"Error in channel antispam: {e}")
