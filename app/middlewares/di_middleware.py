@@ -147,9 +147,10 @@ class DIMiddleware(BaseMiddleware):
                 db_session=db_session,
             )
             
-            # RedisService временно отключен из-за проблем с aioredis на Python 3.11
-            # from app.services.redis import RedisService
-            # redis_service = RedisService()
+            # Создаем Redis сервис
+            from app.services.redis import RedisService
+            
+            redis_service = RedisService()
             
             # Сохраняем все сервисы
             self._services = {
@@ -166,7 +167,7 @@ class DIMiddleware(BaseMiddleware):
                 'suspicious_admin_service': suspicious_admin_service,
                 'callbacks_service': callbacks_service,
                 'link_service': link_service,
-                # 'redis_service': redis_service,  # Временно отключен
+                'redis_service': redis_service,
             }
             
             logger.info(f"DI services initialized: {list(self._services.keys())}")
