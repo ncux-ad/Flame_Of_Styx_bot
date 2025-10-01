@@ -3,6 +3,7 @@
 import logging
 
 from aiogram import Router
+from aiogram.filters import ChatTypeFilter
 
 from aiogram.types import Message
 
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 channel_router = Router()
 
 
-@channel_router.message()
+@channel_router.message(ChatTypeFilter(chat_types=["channel", "supergroup"]))
 async def handle_channel_message(
     message: Message,
     channel_service: ChannelService,
@@ -38,9 +39,7 @@ async def handle_channel_message(
         )
 
         # Handle messages from channels (sender_chat) or channel comment groups (supergroup)
-        # Skip private messages and regular groups
-        if message.chat.type not in ["channel", "supergroup"]:
-            return
+        # Filter already ensures we only get channel/supergroup messages
 
         # Skip if message is from bot (but allow channel messages)
         if message.from_user and message.from_user.is_bot and not message.sender_chat:
@@ -178,7 +177,7 @@ async def _handle_foreign_channel_message(
         logger.error(safe_format_message("Error handling foreign channel message: {error}", error=sanitize_for_logging(e)))
 
 
-@channel_router.my_chat_member()
+@channel_router.my_chat_member(ChatTypeFilter(chat_types=["channel", "supergroup"]))
 async def handle_channel_member_update(update, channel_service: ChannelService, admin_id: int) -> None:
     """Handle channel member updates."""
     try:
