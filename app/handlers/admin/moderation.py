@@ -461,4 +461,6 @@ async def handle_sync_bans_command(
 
     except Exception as e:
         logger.error(f"Error in sync_bans command: {sanitize_for_logging(str(e))}")
-        await message.answer("❌ Ошибка синхронизации банов")
+        import traceback
+        logger.error(f"Sync_bans traceback: {traceback.format_exc()}")
+        await message.answer(f"❌ Ошибка синхронизации банов: {sanitize_for_logging(str(e))}")
