@@ -67,3 +67,10 @@ async def test_admin_handler(message: Message) -> None:
     """Простой тестовый хендлер для проверки работы admin router."""
     logger.info("TEST ADMIN HANDLER CALLED!")
     await message.answer("✅ Admin router работает!")
+
+# Тестовый хендлер для bots (перенесен из bots_router)
+@admin_router.message(Command("test_bots"))
+async def test_bots_handler(message: Message) -> None:
+    """Тестовый хендлер для проверки работы bots функциональности."""
+    logger.info("TEST BOTS HANDLER CALLED!")
+    await message.answer("✅ Bots функциональность работает!")
