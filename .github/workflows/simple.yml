@@ -29,7 +29,6 @@ jobs:
         pip install sqlalchemy==2.0.43
         pip install aiosqlite==0.21.0
         pip install alembic==1.16.5
-        pip install punq==0.7.0
         pip install aiohttp>=3.12.14
     
     - name: Test basic functionality
