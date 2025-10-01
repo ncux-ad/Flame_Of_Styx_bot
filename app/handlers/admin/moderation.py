@@ -383,7 +383,7 @@ async def handle_sync_bans_command(
                 channel_service=channel_service,
                 profile_service=ProfileService(moderation_service.bot, moderation_service.db),
                 help_service=HelpService(),
-                limits_service=LimitsService(moderation_service.db)
+                limits_service=LimitsService()
             )
             channels_info = await admin_service.get_channels_info()
             
@@ -434,7 +434,7 @@ async def handle_sync_bans_command(
                     channel_service=channel_service,
                     profile_service=ProfileService(moderation_service.bot, moderation_service.db),
                     help_service=HelpService(),
-                    limits_service=LimitsService(moderation_service.db)
+                    limits_service=LimitsService()
                 )
                 channels_info = await admin_service.get_channels_info()
                 
