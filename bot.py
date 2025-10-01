@@ -108,6 +108,7 @@ async def main():
             data['bot'] = bot
             data['db_session'] = None  # Будет создан в DIMiddleware
             data['config'] = config
+            data['admin_id'] = config.admin_ids[0]  # Добавляем admin_id
             return await handler(event, data)
         
         dp.message.middleware(add_dependencies_middleware)
