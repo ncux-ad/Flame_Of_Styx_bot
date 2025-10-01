@@ -8,6 +8,7 @@ from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
 from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
+from app.utils.security import sanitize_for_logging
 from app.services.bots import BotService
 from app.services.channels import ChannelService
 from app.services.help import HelpService
@@ -59,3 +60,12 @@ admin_router.message.filter(IsAdminOrSilentFilter())
 admin_router.callback_query.filter(IsAdminOrSilentFilter())
 
 logger.info("Admin filter applied to all admin router handlers")
+
+# Добавляем общий хендлер для логирования всех сообщений в admin router
+@admin_router.message()
+async def admin_router_debug_handler(message: Message) -> None:
+    """Debug handler для логирования всех сообщений в admin router."""
+    logger.info(f"ADMIN ROUTER DEBUG: Received message: {sanitize_for_logging(message.text)}")
+    logger.info(f"ADMIN ROUTER DEBUG: Message type: {type(message)}")
+    logger.info(f"ADMIN ROUTER DEBUG: Chat type: {message.chat.type}")
+    logger.info(f"ADMIN ROUTER DEBUG: From user: {message.from_user.id if message.from_user else None}")
