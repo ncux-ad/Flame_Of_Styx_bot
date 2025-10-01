@@ -370,25 +370,26 @@ async def handle_sync_bans_command(
 
         if not args:
             # Показываем только нативные каналы (где бот админ) для синхронизации
-            from app.services.admin import AdminService
-            from app.services.bots import BotService
-            from app.services.profiles import ProfileService
-            from app.services.help import HelpService
-            from app.services.limits import LimitsService
+            # Используем простой способ - получаем каналы напрямую из ChannelService
+            all_channels = await channel_service.get_all_channels()
             
-            # Создаем AdminService с всеми необходимыми сервисами
-            admin_service = AdminService(
-                moderation_service=moderation_service,
-                bot_service=BotService(moderation_service.bot, moderation_service.db),
-                channel_service=channel_service,
-                profile_service=ProfileService(moderation_service.bot, moderation_service.db),
-                help_service=HelpService(),
-                limits_service=LimitsService()
-            )
-            channels_info = await admin_service.get_channels_info()
+            # Фильтруем только нативные каналы и группы комментариев
+            native_channels = []
+            comment_groups = []
             
-            native_channels = channels_info.get("native_channels", [])
-            comment_groups = channels_info.get("comment_groups", [])
+            for channel in all_channels:
+                if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
+                    comment_groups.append({
+                        "title": channel.title or f"Группа {channel.telegram_id}",
+                        "chat_id": str(channel.telegram_id),
+                        "username": channel.username,
+                    })
+                elif hasattr(channel, "is_native") and bool(channel.is_native):
+                    native_channels.append({
+                        "title": channel.title or f"Канал {channel.telegram_id}",
+                        "chat_id": str(channel.telegram_id),
+                        "username": channel.username,
+                    })
             
             # Объединяем нативные каналы и группы комментариев
             available_chats = native_channels + comment_groups
@@ -421,25 +422,28 @@ async def handle_sync_bans_command(
             # Синхронизация по номеру или chat_id
             if args[0].isdigit() and 1 <= int(args[0]) <= 5:
                 # По номеру
-                from app.services.admin import AdminService
-                from app.services.bots import BotService
-                from app.services.profiles import ProfileService
-                from app.services.help import HelpService
-                from app.services.limits import LimitsService
+                # Используем простой способ - получаем каналы напрямую из ChannelService
+                all_channels = await channel_service.get_all_channels()
                 
-                # Создаем AdminService с всеми необходимыми сервисами
-                admin_service = AdminService(
-                    moderation_service=moderation_service,
-                    bot_service=BotService(moderation_service.bot, moderation_service.db),
-                    channel_service=channel_service,
-                    profile_service=ProfileService(moderation_service.bot, moderation_service.db),
-                    help_service=HelpService(),
-                    limits_service=LimitsService()
-                )
-                channels_info = await admin_service.get_channels_info()
+                # Фильтруем только нативные каналы и группы комментариев
+                native_channels = []
+                comment_groups = []
                 
-                native_channels = channels_info.get("native_channels", [])
-                comment_groups = channels_info.get("comment_groups", [])
+                for channel in all_channels:
+                    if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
+                        comment_groups.append({
+                            "title": channel.title or f"Группа {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "username": channel.username,
+                        })
+                    elif hasattr(channel, "is_native") and bool(channel.is_native):
+                        native_channels.append({
+                            "title": channel.title or f"Канал {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "username": channel.username,
+                        })
+                
+                # Объединяем нативные каналы и группы комментариев
                 available_chats = native_channels + comment_groups
                 recent_chats = available_chats[:5]
                 
