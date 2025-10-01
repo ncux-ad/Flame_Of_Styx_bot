@@ -4,7 +4,7 @@ SQLAlchemy==2.0.43
 aiosqlite==0.21.0
 pydantic-settings==2.11.0
 alembic==1.16.5
-punq==0.7.0
+# punq==0.7.0  # Заменен на встроенный DI Aiogram
 aiohttp>=3.12.14
 
 # Redis dependencies

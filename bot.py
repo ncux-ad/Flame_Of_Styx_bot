@@ -13,7 +13,7 @@ from aiogram.enums import ParseMode
 
 from app.config import load_config
 from app.database import create_tables
-from app.middlewares.dependency_injection import DependencyInjectionMiddleware
+from app.middlewares.di_middleware import DIMiddleware
 from app.middlewares.logging import LoggingMiddleware
 from app.middlewares.ratelimit import RateLimitMiddleware
 from app.middlewares.redis_rate_limit import RedisRateLimitMiddleware
@@ -102,7 +102,7 @@ async def main():
                 interval=config.redis_interval
             ))
         
-        dp.message.middleware(DependencyInjectionMiddleware())
+        dp.message.middleware(DIMiddleware())
 
         # SuspiciousProfile middleware (after DI to get profile_service)
         async def suspicious_profile_middleware(handler, event, data):
@@ -158,7 +158,7 @@ async def main():
                     interval=config.redis_interval
                 ))
             
-            update_type.middleware(DependencyInjectionMiddleware())
+            update_type.middleware(DIMiddleware())
 
         logger.info("Middlewares registered successfully")
 
