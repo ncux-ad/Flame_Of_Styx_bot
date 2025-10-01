@@ -3,7 +3,7 @@
 import logging
 
 from aiogram import Router
-from aiogram.filters import ChatTypeFilter
+from aiogram.filters import BaseFilter
 
 from aiogram.types import Message
 
@@ -17,11 +17,20 @@ from app.utils.security import safe_format_message, sanitize_for_logging
 
 logger = logging.getLogger(__name__)
 
+
+class ChannelFilter(BaseFilter):
+    """Filter for channel and supergroup messages only."""
+    
+    async def __call__(self, message: Message) -> bool:
+        """Check if message is from channel or supergroup."""
+        return message.chat.type in ["channel", "supergroup"]
+
+
 # Create router
 channel_router = Router()
 
 
-@channel_router.message(ChatTypeFilter(chat_types=["channel", "supergroup"]))
+@channel_router.message(ChannelFilter())
 async def handle_channel_message(
     message: Message,
     channel_service: ChannelService,
@@ -177,7 +186,7 @@ async def _handle_foreign_channel_message(
         logger.error(safe_format_message("Error handling foreign channel message: {error}", error=sanitize_for_logging(e)))
 
 
-@channel_router.my_chat_member(ChatTypeFilter(chat_types=["channel", "supergroup"]))
+@channel_router.my_chat_member(ChannelFilter())
 async def handle_channel_member_update(update, channel_service: ChannelService, admin_id: int) -> None:
     """Handle channel member updates."""
     try:
