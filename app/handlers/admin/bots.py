@@ -19,7 +19,14 @@ logger = logging.getLogger(__name__)
 bots_router = Router()
 
 
-@bots_router.message(Command("bots"), IsAdminOrSilentFilter())
+@bots_router.message(Command("test_bots"))
+async def handle_test_bots_command(message: Message) -> None:
+    """Тестовый хендлер для проверки роутинга."""
+    logger.info("TEST BOTS COMMAND HANDLER CALLED!")
+    await message.answer("Тест команды /test_bots работает!")
+
+
+@bots_router.message(Command("bots"))
 @handle_errors(user_message="❌ Ошибка выполнения команды /bots")
 async def handle_bots_command(
     message: Message,
@@ -48,7 +55,7 @@ async def handle_bots_command(
         await send_silent_response(message, "❌ Ошибка получения списка ботов")
 
 
-@bots_router.message(Command("add_bot"), IsAdminOrSilentFilter())
+@bots_router.message(Command("add_bot"))
 @handle_errors(user_message="❌ Ошибка выполнения команды /add_bot")
 async def handle_add_bot_command(
     message: Message,
@@ -87,7 +94,7 @@ async def handle_add_bot_command(
         await send_silent_response(message, "❌ Ошибка добавления бота")
 
 
-@bots_router.message(Command("remove_bot"), IsAdminOrSilentFilter())
+@bots_router.message(Command("remove_bot"))
 @handle_errors(user_message="❌ Ошибка выполнения команды /remove_bot")
 async def handle_remove_bot_command(
     message: Message,
