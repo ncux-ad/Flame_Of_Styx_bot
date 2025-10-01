@@ -28,10 +28,16 @@ async def handle_bots_command(
     """Показать список ботов и управление whitelist."""
     try:
         if not message.from_user:
+            logger.warning("Bots command: no from_user")
             return
+        
         logger.info(f"Bots command from {sanitize_for_logging(str(message.from_user.id))}")
+        logger.info(f"Bots admin service: {bots_admin_service}")
+        logger.info(f"Admin ID: {admin_id}")
 
         bots_text = await bots_admin_service.get_bots_list()
+        logger.info(f"Bots text length: {len(bots_text)}")
+        
         await send_silent_response(message, bots_text)
         logger.info(f"Bots list sent to {sanitize_for_logging(str(message.from_user.id))}")
 
