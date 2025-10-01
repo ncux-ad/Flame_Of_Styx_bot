@@ -21,11 +21,17 @@ logger = logging.getLogger(__name__)
 class ChannelService:
     """Service for managing channel whitelist/blacklist."""
 
-    def __init__(self, bot: Bot, db_session: AsyncSession, native_channel_ids: List[int] = None):
+    def __init__(self, bot: Bot, db_session: AsyncSession, native_channel_ids: List[int] = None, moderation_service: ModerationService = None):
         self.bot = bot
         self.db = db_session
-        self.moderation_service = ModerationService(bot, db_session)
         self.native_channel_ids = native_channel_ids or []
+        
+        # Используем переданный сервис или создаем через DI контейнер
+        if moderation_service:
+            self.moderation_service = moderation_service
+        else:
+            from app.container import container
+            self.moderation_service = container.container.resolve(ModerationService)
 
     async def handle_channel_message(self, message: Message, admin_id: int) -> bool:
         """Handle message from channel (sender_chat)."""

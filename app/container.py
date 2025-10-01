@@ -78,15 +78,19 @@ class DIContainer:
     
     def _create_link_service(self, bot: Bot, db_session: AsyncSession) -> LinkService:
         """Создать LinkService."""
-        return LinkService(bot, db_session)
+        moderation_service = self.container.resolve(ModerationService)
+        limits_service = self.container.resolve(LimitsService)
+        return LinkService(bot, db_session, moderation_service, limits_service)
     
     def _create_profile_service(self, bot: Bot, db_session: AsyncSession) -> ProfileService:
         """Создать ProfileService."""
-        return ProfileService(bot, db_session)
+        moderation_service = self.container.resolve(ModerationService)
+        return ProfileService(bot, db_session, moderation_service)
     
     def _create_channel_service(self, bot: Bot, db_session: AsyncSession, config: Settings) -> ChannelService:
         """Создать ChannelService."""
-        return ChannelService(bot, db_session, config.native_channel_ids_list)
+        moderation_service = self.container.resolve(ModerationService)
+        return ChannelService(bot, db_session, config.native_channel_ids_list, moderation_service)
     
     def _create_bot_service(self, bot: Bot, db_session: AsyncSession) -> BotService:
         """Создать BotService."""

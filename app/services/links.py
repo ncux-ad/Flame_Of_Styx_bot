@@ -21,15 +21,22 @@ logger = logging.getLogger(__name__)
 class LinkService:
     """Service for checking links and detecting bots."""
 
-    def __init__(self, bot: Bot, db_session: AsyncSession):
+    def __init__(self, bot: Bot, db_session: AsyncSession, moderation_service: ModerationService = None, limits_service: LimitsService = None):
         self.bot = bot
         self.db = db_session
-        self.moderation_service = ModerationService(bot, db_session)
-
-        # Load limits service for configuration
-        from app.services.limits import LimitsService
-
-        self.limits_service = LimitsService()
+        
+        # Используем переданные сервисы или создаем через DI контейнер
+        if moderation_service:
+            self.moderation_service = moderation_service
+        else:
+            from app.container import container
+            self.moderation_service = container.container.resolve(ModerationService)
+        
+        if limits_service:
+            self.limits_service = limits_service
+        else:
+            from app.container import container
+            self.limits_service = container.container.resolve(LimitsService)
 
     async def check_message_for_bot_links(self, message: Message) -> List[Tuple[str, bool]]:
         """Check message for bot links and return list of (username, is_bot) tuples."""

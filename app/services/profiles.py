@@ -22,10 +22,16 @@ logger = logging.getLogger(__name__)
 class ProfileService:
     """Service for analyzing user profiles and detecting GPT-bots."""
 
-    def __init__(self, bot: Bot, db_session: AsyncSession):
+    def __init__(self, bot: Bot, db_session: AsyncSession, moderation_service: ModerationService = None):
         self.bot = bot
         self.db = db_session
-        self.moderation_service = ModerationService(bot, db_session)
+        
+        # Используем переданный сервис или создаем через DI контейнер
+        if moderation_service:
+            self.moderation_service = moderation_service
+        else:
+            from app.container import container
+            self.moderation_service = container.container.resolve(ModerationService)
 
     async def get_user_info(self, user_id: int) -> dict:
         """Get user information from Telegram API."""
