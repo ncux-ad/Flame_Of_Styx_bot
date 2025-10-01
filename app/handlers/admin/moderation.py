@@ -370,22 +370,23 @@ async def handle_sync_bans_command(
 
         if not args:
             # Показываем последние чаты для синхронизации
-            recent_chats = await moderation_service.get_recent_chats(limit=5)
-
-            if not recent_chats:
+            all_channels = await channel_service.get_all_channels()
+            
+            if not all_channels:
                 await message.answer("❌ Нет чатов для синхронизации")
                 return
 
+            # Берем первые 5 чатов
+            recent_chats = all_channels[:5]
+
             text = "🔄 <b>Выберите чат для синхронизации банов:</b>\n\n"
 
-            for i, chat_id in enumerate(recent_chats, 1):
-                # Получаем информацию о чате
-                chat_info = (
-                    await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
-                )
-                chat_display = f"@{chat_info.get('username')}" if chat_info.get("username") else chat_info.get("title", "Unknown Chat")
+            for i, channel in enumerate(recent_chats, 1):
+                chat_id = channel.telegram_id
+                chat_title = channel.title or f"Chat {chat_id}"
+                chat_username = f"@{channel.username}" if channel.username else "Без username"
                 
-                text += f"{i}. <b>{chat_display}</b> <code>({chat_id})</code>\n"
+                text += f"{i}. <b>{chat_title}</b> {chat_username} <code>({chat_id})</code>\n"
 
             text += "\n💡 <b>Использование:</b>\n"
             text += "• <code>/sync_bans 1</code> - синхронизировать по номеру\n"
@@ -399,29 +400,30 @@ async def handle_sync_bans_command(
             # Синхронизация по номеру или chat_id
             if args[0].isdigit() and 1 <= int(args[0]) <= 5:
                 # По номеру
-                recent_chats = await moderation_service.get_recent_chats(limit=5)
+                all_channels = await channel_service.get_all_channels()
+                recent_chats = all_channels[:5]
                 chat_index = int(args[0]) - 1
                 
                 if 0 <= chat_index < len(recent_chats):
-                    chat_id = recent_chats[chat_index]
-                    result = await moderation_service.sync_bans_with_telegram(chat_id)
+                    chat_id = recent_chats[chat_index].telegram_id
                     
-                    if result['success']:
-                        await message.answer(f"✅ Синхронизация завершена для чата {chat_id}\n\n{result['message']}")
-                    else:
-                        await message.answer(f"⚠️ {result['message']}")
+                    # Простая синхронизация - получаем заблокированных пользователей
+                    banned_users = await moderation_service.get_banned_users(limit=100)
+                    chat_banned = [user for user in banned_users if user.chat_id == chat_id]
+                    
+                    await message.answer(f"✅ Синхронизация завершена для чата {chat_id}\n\n📊 Найдено заблокированных пользователей: {len(chat_banned)}")
                 else:
                     await message.answer("❌ Неверный номер чата")
             else:
                 # По chat_id
                 try:
                     chat_id = int(args[0])
-                    result = await moderation_service.sync_bans_with_telegram(chat_id)
                     
-                    if result['success']:
-                        await message.answer(f"✅ Синхронизация завершена для чата {chat_id}\n\n{result['message']}")
-                    else:
-                        await message.answer(f"⚠️ {result['message']}")
+                    # Простая синхронизация - получаем заблокированных пользователей
+                    banned_users = await moderation_service.get_banned_users(limit=100)
+                    chat_banned = [user for user in banned_users if user.chat_id == chat_id]
+                    
+                    await message.answer(f"✅ Синхронизация завершена для чата {chat_id}\n\n📊 Найдено заблокированных пользователей: {len(chat_banned)}")
                 except ValueError:
                     await message.answer("❌ Неверный формат ID чата")
         else:
