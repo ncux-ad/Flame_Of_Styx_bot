@@ -196,8 +196,8 @@ class DIContainer:
             profile_service=profile_service,
         )
         
-        # Redis rate limiter (singleton)
-        redis_rate_limiter = get_redis_rate_limiter()
+        # Redis rate limiter (singleton) - будет инициализирован при первом использовании
+        redis_rate_limiter = None
         
         return {
             # Основные сервисы для антиспама
