@@ -108,7 +108,9 @@ async def main():
             data['bot'] = bot
             data['db_session'] = None  # Будет создан в DIMiddleware
             data['config'] = config
-            data['admin_id'] = config.admin_ids[0]  # Добавляем admin_id
+            # Добавляем admin_id (преобразуем из строки в int)
+            admin_ids_list = [int(id_str.strip()) for id_str in config.admin_ids.split(',')]
+            data['admin_id'] = admin_ids_list[0]
             return await handler(event, data)
         
         dp.message.middleware(add_dependencies_middleware)

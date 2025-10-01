@@ -93,8 +93,9 @@ class DIMiddleware(BaseMiddleware):
             from app.database import SessionLocal
             db_session = SessionLocal()
             
-            # Добавляем admin_id в data
-            data['admin_id'] = config.admin_ids[0]
+            # Добавляем admin_id в data (преобразуем из строки в int)
+            admin_ids_list = [int(id_str.strip()) for id_str in config.admin_ids.split(',')]
+            data['admin_id'] = admin_ids_list[0]
             
             logger.info("Initializing DI services...")
             
