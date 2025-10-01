@@ -22,13 +22,11 @@ logger = logging.getLogger(__name__)
 class LinkService:
     """Service for checking links and detecting bots."""
 
-    def __init__(self, bot: Bot, db_session: AsyncSession, moderation_service: ModerationService = None, limits_service: LimitsService = None):
+    def __init__(self, bot: Bot, db_session: AsyncSession):
         self.bot = bot
         self.db = db_session
-        
-        # Используем переданные сервисы
-        self.moderation_service = moderation_service
-        self.limits_service = limits_service
+        self.moderation_service = ModerationService(bot, db_session)
+        self.limits_service = LimitsService()
 
     async def check_message_for_bot_links(self, message: Message) -> List[Tuple[str, bool]]:
         """Check message for bot links and return list of (username, is_bot) tuples."""

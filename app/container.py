@@ -78,19 +78,15 @@ class DIContainer:
     
     def _create_link_service(self, bot: Bot, db_session: AsyncSession) -> LinkService:
         """Создать LinkService."""
-        moderation_service = self.container.resolve(ModerationService)
-        limits_service = self.container.resolve(LimitsService)
-        return LinkService(bot, db_session, moderation_service, limits_service)
+        return LinkService(bot, db_session)
     
     def _create_profile_service(self, bot: Bot, db_session: AsyncSession) -> ProfileService:
         """Создать ProfileService."""
-        moderation_service = self.container.resolve(ModerationService)
-        return ProfileService(bot, db_session, moderation_service)
+        return ProfileService(bot, db_session)
     
     def _create_channel_service(self, bot: Bot, db_session: AsyncSession, config: Settings) -> ChannelService:
         """Создать ChannelService."""
-        moderation_service = self.container.resolve(ModerationService)
-        return ChannelService(bot, db_session, config.native_channel_ids_list, moderation_service)
+        return ChannelService(bot, db_session, config.native_channel_ids_list)
     
     def _create_bot_service(self, bot: Bot, db_session: AsyncSession) -> BotService:
         """Создать BotService."""
@@ -104,15 +100,15 @@ class DIContainer:
         """Создать LimitsService."""
         return LimitsService()
     
-    def _create_admin_service(self) -> AdminService:
+    def _create_admin_service(self, bot: Bot, db_session: AsyncSession, config: Settings) -> AdminService:
         """Создать AdminService."""
-        # Получаем все зависимости через контейнер
-        moderation_service = self.container.resolve(ModerationService)
-        bot_service = self.container.resolve(BotService)
-        channel_service = self.container.resolve(ChannelService)
-        profile_service = self.container.resolve(ProfileService)
-        help_service = self.container.resolve(HelpService)
-        limits_service = self.container.resolve(LimitsService)
+        # Создаем все зависимости напрямую
+        moderation_service = ModerationService(bot, db_session)
+        bot_service = BotService(bot, db_session)
+        channel_service = ChannelService(bot, db_session, config.native_channel_ids_list)
+        profile_service = ProfileService(bot, db_session)
+        help_service = HelpService()
+        limits_service = LimitsService()
         
         return AdminService(
             moderation_service=moderation_service,
@@ -123,37 +119,43 @@ class DIContainer:
             limits_service=limits_service,
         )
     
-    def _create_status_service(
-        self,
-        moderation_service: ModerationService,
-        bot_service: BotService,
-        channel_service: ChannelService,
-    ) -> StatusService:
+    def _create_status_service(self, bot: Bot, db_session: AsyncSession, config: Settings) -> StatusService:
         """Создать StatusService."""
+        # Создаем все зависимости напрямую
+        moderation_service = ModerationService(bot, db_session)
+        bot_service = BotService(bot, db_session)
+        channel_service = ChannelService(bot, db_session, config.native_channel_ids_list)
+        
         return StatusService(
             moderation_service=moderation_service,
             bot_service=bot_service,
             channel_service=channel_service,
         )
     
-    def _create_channels_admin_service(self, channel_service: ChannelService) -> ChannelsAdminService:
+    def _create_channels_admin_service(self, bot: Bot, db_session: AsyncSession, config: Settings) -> ChannelsAdminService:
         """Создать ChannelsAdminService."""
+        # Создаем зависимости напрямую
+        channel_service = ChannelService(bot, db_session, config.native_channel_ids_list)
         return ChannelsAdminService(channel_service)
     
-    def _create_bots_admin_service(self, bot_service: BotService) -> BotsAdminService:
+    def _create_bots_admin_service(self, bot: Bot, db_session: AsyncSession) -> BotsAdminService:
         """Создать BotsAdminService."""
+        # Создаем зависимости напрямую
+        bot_service = BotService(bot, db_session)
         return BotsAdminService(bot_service)
     
-    def _create_suspicious_admin_service(self, profile_service: ProfileService) -> SuspiciousAdminService:
+    def _create_suspicious_admin_service(self, bot: Bot, db_session: AsyncSession) -> SuspiciousAdminService:
         """Создать SuspiciousAdminService."""
+        # Создаем зависимости напрямую
+        profile_service = ProfileService(bot, db_session)
         return SuspiciousAdminService(profile_service)
     
-    def _create_callbacks_service(
-        self,
-        moderation_service: ModerationService,
-        profile_service: ProfileService,
-    ) -> CallbacksService:
+    def _create_callbacks_service(self, bot: Bot, db_session: AsyncSession) -> CallbacksService:
         """Создать CallbacksService."""
+        # Создаем зависимости напрямую
+        moderation_service = ModerationService(bot, db_session)
+        profile_service = ProfileService(bot, db_session)
+        
         return CallbacksService(
             moderation_service=moderation_service,
             profile_service=profile_service,
@@ -161,7 +163,8 @@ class DIContainer:
     
     def get(self, service_type: Type[T], **kwargs) -> T:
         """Получить сервис из контейнера."""
-        return self.container.resolve(service_type, **kwargs)
+        result = self.container.resolve(service_type, **kwargs)
+        return result  # type: ignore
     
     def get_all_services(self, bot: Bot, db_session: AsyncSession) -> Dict[str, Any]:
         """Получить все сервисы для хендлеров."""

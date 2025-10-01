@@ -22,12 +22,10 @@ logger = logging.getLogger(__name__)
 class ProfileService:
     """Service for analyzing user profiles and detecting GPT-bots."""
 
-    def __init__(self, bot: Bot, db_session: AsyncSession, moderation_service: ModerationService = None):
+    def __init__(self, bot: Bot, db_session: AsyncSession):
         self.bot = bot
         self.db = db_session
-        
-        # Используем переданный сервис
-        self.moderation_service = moderation_service
+        self.moderation_service = ModerationService(bot, db_session)
 
     async def get_user_info(self, user_id: int) -> dict:
         """Get user information from Telegram API."""
