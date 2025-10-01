@@ -55,14 +55,14 @@ admin_router.include_router(bots_router)
 logger.info(f"Admin router configured with {len(admin_router.sub_routers)} sub-routers")
 logger.info(f"Sub-routers: {[router.name for router in admin_router.sub_routers]}")
 
-# Применяем фильтр админа ко всем хендлерам ПОСЛЕ регистрации подроутеров
-admin_router.message.filter(IsAdminOrSilentFilter())
-admin_router.callback_query.filter(IsAdminOrSilentFilter())
+# Фильтр админа применяется к конкретным хендлерам, а не глобально
+# admin_router.message.filter(IsAdminOrSilentFilter())
+# admin_router.callback_query.filter(IsAdminOrSilentFilter())
 
-logger.info("Admin filter applied to all admin router handlers")
+logger.info("Admin filter will be applied to individual handlers")
 
-# Простой тестовый хендлер без фильтров
-@admin_router.message(Command("test_admin"))
+# Простой тестовый хендлер с фильтром админа
+@admin_router.message(Command("test_admin"), IsAdminOrSilentFilter())
 async def test_admin_handler(message: Message) -> None:
     """Простой тестовый хендлер для проверки работы admin router."""
     logger.info("TEST ADMIN HANDLER CALLED!")
