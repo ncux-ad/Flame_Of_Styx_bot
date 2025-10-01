@@ -26,18 +26,9 @@ class LinkService:
         self.bot = bot
         self.db = db_session
         
-        # Используем переданные сервисы или создаем через DI контейнер
-        if moderation_service:
-            self.moderation_service = moderation_service
-        else:
-            from app.container import container
-            self.moderation_service = container.container.resolve(ModerationService)
-        
-        if limits_service:
-            self.limits_service = limits_service
-        else:
-            from app.container import container
-            self.limits_service = container.container.resolve(LimitsService)
+        # Используем переданные сервисы
+        self.moderation_service = moderation_service
+        self.limits_service = limits_service
 
     async def check_message_for_bot_links(self, message: Message) -> List[Tuple[str, bool]]:
         """Check message for bot links and return list of (username, is_bot) tuples."""

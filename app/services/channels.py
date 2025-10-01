@@ -26,12 +26,8 @@ class ChannelService:
         self.db = db_session
         self.native_channel_ids = native_channel_ids or []
         
-        # Используем переданный сервис или создаем через DI контейнер
-        if moderation_service:
-            self.moderation_service = moderation_service
-        else:
-            from app.container import container
-            self.moderation_service = container.container.resolve(ModerationService)
+        # Используем переданный сервис
+        self.moderation_service = moderation_service
 
     async def handle_channel_message(self, message: Message, admin_id: int) -> bool:
         """Handle message from channel (sender_chat)."""
