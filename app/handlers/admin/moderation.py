@@ -371,7 +371,20 @@ async def handle_sync_bans_command(
         if not args:
             # Показываем только нативные каналы (где бот админ) для синхронизации
             from app.services.admin import AdminService
-            admin_service = AdminService(moderation_service, channel_service)
+            from app.services.bots import BotService
+            from app.services.profiles import ProfileService
+            from app.services.help import HelpService
+            from app.services.limits import LimitsService
+            
+            # Создаем AdminService с всеми необходимыми сервисами
+            admin_service = AdminService(
+                moderation_service=moderation_service,
+                bot_service=BotService(moderation_service.bot, moderation_service.db),
+                channel_service=channel_service,
+                profile_service=ProfileService(moderation_service.bot, moderation_service.db),
+                help_service=HelpService(),
+                limits_service=LimitsService(moderation_service.db)
+            )
             channels_info = await admin_service.get_channels_info()
             
             native_channels = channels_info.get("native_channels", [])
@@ -409,7 +422,20 @@ async def handle_sync_bans_command(
             if args[0].isdigit() and 1 <= int(args[0]) <= 5:
                 # По номеру
                 from app.services.admin import AdminService
-                admin_service = AdminService(moderation_service, channel_service)
+                from app.services.bots import BotService
+                from app.services.profiles import ProfileService
+                from app.services.help import HelpService
+                from app.services.limits import LimitsService
+                
+                # Создаем AdminService с всеми необходимыми сервисами
+                admin_service = AdminService(
+                    moderation_service=moderation_service,
+                    bot_service=BotService(moderation_service.bot, moderation_service.db),
+                    channel_service=channel_service,
+                    profile_service=ProfileService(moderation_service.bot, moderation_service.db),
+                    help_service=HelpService(),
+                    limits_service=LimitsService(moderation_service.db)
+                )
                 channels_info = await admin_service.get_channels_info()
                 
                 native_channels = channels_info.get("native_channels", [])
