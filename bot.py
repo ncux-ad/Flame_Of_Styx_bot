@@ -165,13 +165,13 @@ async def main():
         # 7. Register routers in correct order
         from app.handlers import admin, antispam, channels
 
-        # Admin router first (handles admin commands)
-        dp.include_router(admin.admin_router)
-
-        # Channel router second (handles channel events like my_chat_member)
+        # Channel router first (handles channel events like my_chat_member)
         dp.include_router(channels.channel_router)
 
-        # Anti-spam router third (catches everything else)
+        # Admin router second (handles admin commands)
+        dp.include_router(admin.admin_router)
+
+        # Anti-spam router last (catches everything else, but after admin commands)
         dp.include_router(antispam.antispam_router)
 
         logger.info("Routers registered successfully")
