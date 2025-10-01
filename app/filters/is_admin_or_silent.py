@@ -15,6 +15,8 @@ class IsAdminOrSilentFilter(BaseFilter):
         # Load config once during initialization
         self.config = load_config()
         self.admin_ids = self.config.admin_ids_list
+        logger = __import__("logging").getLogger(__name__)
+        logger.info(f"Admin filter initialized with admin_ids: {self.admin_ids}")
 
     async def __call__(self, obj: Union[Message, CallbackQuery]) -> bool:
         """Check if user is admin, silently ignore others."""

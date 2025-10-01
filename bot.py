@@ -170,6 +170,7 @@ async def main():
 
         # Admin router second (handles admin commands)
         dp.include_router(admin.admin_router)
+        logger.info("Admin router registered with all sub-routers")
 
         # Anti-spam router last (catches everything else, but after admin commands)
         dp.include_router(antispam.antispam_router)
