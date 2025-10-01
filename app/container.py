@@ -104,16 +104,16 @@ class DIContainer:
         """Создать LimitsService."""
         return LimitsService()
     
-    def _create_admin_service(
-        self, 
-        moderation_service: ModerationService,
-        bot_service: BotService,
-        channel_service: ChannelService,
-        profile_service: ProfileService,
-        help_service: HelpService,
-        limits_service: LimitsService,
-    ) -> AdminService:
+    def _create_admin_service(self) -> AdminService:
         """Создать AdminService."""
+        # Получаем все зависимости через контейнер
+        moderation_service = self.container.resolve(ModerationService)
+        bot_service = self.container.resolve(BotService)
+        channel_service = self.container.resolve(ChannelService)
+        profile_service = self.container.resolve(ProfileService)
+        help_service = self.container.resolve(HelpService)
+        limits_service = self.container.resolve(LimitsService)
+        
         return AdminService(
             moderation_service=moderation_service,
             bot_service=bot_service,
