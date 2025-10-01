@@ -29,30 +29,52 @@ project/
 
 ## 🔧 Разработка с aiogram 3.x
 
-### 1. **Обработчики команд**
+### 1. **Dependency Injection - ВСТРОЕННЫЙ DI AIOGRAM ЛУЧШИЙ ВЫБОР!**
+
 ```python
-# ✅ ПРАВИЛЬНО
+# ✅ ПРАВИЛЬНО - Встроенный DI Aiogram 3.x
 @router.message(Command("start"))
-async def handle_start_command(message: Message, data: dict = None, **kwargs) -> None:
+async def handle_start_command(
+    message: Message,                    # 1. Event объект
+    moderation_service: ModerationService,  # 2. Сервис (автоматически инжектируется!)
+    admin_id: int,                      # 3. Конфигурация
+) -> None:
     """Handle /start command."""
-    # Получение сервисов из kwargs
-    service = kwargs.get("service")
+    # Сервис уже готов к использованию!
+    await moderation_service.ban_user(...)
 
-    if not service:
-        logger.error("Service not injected properly")
-        return
-
-    # Логика обработки
-    pass
-
-# ❌ НЕПРАВИЛЬНО
+# ❌ НЕПРАВИЛЬНО - Внешние DI библиотеки
 @router.message(Command("start"))
 async def handle_start_command(message: Message, **kwargs) -> None:
+    # Получение сервисов из kwargs - устаревший подход
+    service = kwargs.get("service")
     # Отсутствует параметр data
     pass
 ```
 
-### 2. **Middleware**
+### 2. **DIMiddleware - Основной DI контейнер**
+
+```python
+# ✅ ПРАВИЛЬНО - Использование DIMiddleware
+class DIMiddleware(BaseMiddleware):
+    """Middleware для Dependency Injection в Aiogram 3.x."""
+    
+    async def __call__(self, handler, event, data):
+        # Создаем сервисы один раз и кэшируем
+        if not self._initialized:
+            await self._initialize_services(data)
+            self._initialized = True
+        
+        # Добавляем все сервисы в data для хендлеров
+        data.update(self._services)
+        return await handler(event, data)
+
+# ❌ НЕПРАВИЛЬНО - Внешние DI библиотеки
+from punq import Container  # НЕ ИСПОЛЬЗУЙТЕ!
+from dependency_injector import containers  # НЕ ИСПОЛЬЗУЙТЕ!
+```
+
+### 3. **Middleware**
 ```python
 # ✅ ПРАВИЛЬНО
 class CustomMiddleware(BaseMiddleware):

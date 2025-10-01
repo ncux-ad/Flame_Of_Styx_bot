@@ -32,7 +32,7 @@ flowchart TD
         direction TB
 
         subgraph Middlewares
-            M1[DependencyInjectionMiddleware]
+            M1[DIMiddleware<br/>Встроенный DI Aiogram 3.x]
             M2[LoggingMiddleware]
             M3[RateLimitMiddleware]
             M4[SuspiciousProfileMiddleware]
@@ -102,7 +102,7 @@ sequenceDiagram
     U->>TG: Отправка сообщения
     TG->>MW: Update (message/edited_message/channel_post)
     
-    MW->>MW: DI: инжекция сервисов
+    MW->>MW: DIMiddleware: инжекция сервисов (встроенный DI)
     MW->>MW: Logging: запись события
     MW->>MW: RateLimit: проверка лимитов
     MW->>MW: Profile: анализ профиля
@@ -155,7 +155,8 @@ sequenceDiagram
 - **`limits.py`** - управление лимитами
 
 ### `app/middlewares/` - Промежуточное ПО
-- **`dependency_injection.py`** - внедрение зависимостей
+- **`di_middleware.py`** - встроенный DI контейнер Aiogram 3.x (ОСНОВНОЙ)
+- **`dependency_injection.py`** - алиас для совместимости (deprecated)
 - **`logging.py`** - логирование событий
 - **`ratelimit.py`** - ограничение частоты запросов
 - **`suspicious_profile.py`** - анализ профилей
@@ -252,9 +253,10 @@ docker-compose up -d
 - Минимальная сложность
 
 ### 2. **Middleware цепочка**
-- DI → Logging → RateLimit → Profile
+- **DIMiddleware** (встроенный DI Aiogram 3.x) → Logging → RateLimit → Profile
 - Все апдейты проходят через цепочку
 - Централизованная обработка
+- **Встроенный DI - лучший выбор для Aiogram проектов!**
 
 ### 3. **Hot-reload конфигурации**
 - Изменения в `limits.json` применяются автоматически
