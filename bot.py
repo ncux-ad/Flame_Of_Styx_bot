@@ -102,6 +102,15 @@ async def main():
                 interval=config.redis_interval
             ))
         
+        # Добавляем зависимости в data для DIMiddleware
+        async def add_dependencies_middleware(handler, event, data):
+            # Добавляем bot, db_session и config в data
+            data['bot'] = bot
+            data['db_session'] = None  # Будет создан в DIMiddleware
+            data['config'] = config
+            return await handler(event, data)
+        
+        dp.message.middleware(add_dependencies_middleware)
         dp.message.middleware(DIMiddleware())
 
         # SuspiciousProfile middleware (after DI to get profile_service)
@@ -133,6 +142,7 @@ async def main():
         ]:
             update_type.middleware(ValidationMiddleware())
             update_type.middleware(LoggingMiddleware())
+            update_type.middleware(add_dependencies_middleware)
             
             # Rate limiting for other update types
             if redis_available:

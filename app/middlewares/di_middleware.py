@@ -73,17 +73,19 @@ class DIMiddleware(BaseMiddleware):
         try:
             # Получаем основные зависимости из data
             bot = data.get('bot')
-            db_session = data.get('db_session')
             config = data.get('config')
             
-            if not all([bot, db_session, config]):
-                logger.error("Missing required dependencies: bot, db_session, or config")
+            if not all([bot, config]):
+                logger.error("Missing required dependencies: bot or config")
                 return
             
             # Type assertions для mypy
             assert isinstance(bot, Bot)
-            assert isinstance(db_session, AsyncSession)
             assert isinstance(config, Settings)
+            
+            # Создаем db_session
+            from app.database import SessionLocal
+            db_session = SessionLocal()
             
             logger.info("Initializing DI services...")
             
