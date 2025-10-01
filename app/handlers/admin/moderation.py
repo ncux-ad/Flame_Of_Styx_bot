@@ -369,22 +369,30 @@ async def handle_sync_bans_command(
         args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
 
         if not args:
-            # Показываем последние чаты для синхронизации
-            all_channels = await channel_service.get_all_channels()
+            # Показываем только нативные каналы (где бот админ) для синхронизации
+            from app.services.admin import AdminService
+            admin_service = AdminService(moderation_service, channel_service)
+            channels_info = await admin_service.get_channels_info()
             
-            if not all_channels:
-                await message.answer("❌ Нет чатов для синхронизации")
+            native_channels = channels_info.get("native_channels", [])
+            comment_groups = channels_info.get("comment_groups", [])
+            
+            # Объединяем нативные каналы и группы комментариев
+            available_chats = native_channels + comment_groups
+            
+            if not available_chats:
+                await message.answer("❌ Нет чатов где бот является администратором")
                 return
 
             # Берем первые 5 чатов
-            recent_chats = all_channels[:5]
+            recent_chats = available_chats[:5]
 
             text = "🔄 <b>Выберите чат для синхронизации банов:</b>\n\n"
 
-            for i, channel in enumerate(recent_chats, 1):
-                chat_id = channel.telegram_id
-                chat_title = channel.title or f"Chat {chat_id}"
-                chat_username = f"@{channel.username}" if channel.username else "Без username"
+            for i, chat in enumerate(recent_chats, 1):
+                chat_id = chat["chat_id"]
+                chat_title = chat["title"]
+                chat_username = f"@{chat['username']}" if chat.get("username") else "Без username"
                 
                 text += f"{i}. <b>{chat_title}</b> {chat_username} <code>({chat_id})</code>\n"
 
@@ -400,12 +408,19 @@ async def handle_sync_bans_command(
             # Синхронизация по номеру или chat_id
             if args[0].isdigit() and 1 <= int(args[0]) <= 5:
                 # По номеру
-                all_channels = await channel_service.get_all_channels()
-                recent_chats = all_channels[:5]
+                from app.services.admin import AdminService
+                admin_service = AdminService(moderation_service, channel_service)
+                channels_info = await admin_service.get_channels_info()
+                
+                native_channels = channels_info.get("native_channels", [])
+                comment_groups = channels_info.get("comment_groups", [])
+                available_chats = native_channels + comment_groups
+                recent_chats = available_chats[:5]
+                
                 chat_index = int(args[0]) - 1
                 
                 if 0 <= chat_index < len(recent_chats):
-                    chat_id = recent_chats[chat_index].telegram_id
+                    chat_id = int(recent_chats[chat_index]["chat_id"])
                     
                     # Простая синхронизация - получаем заблокированных пользователей
                     banned_users = await moderation_service.get_banned_users(limit=100)
