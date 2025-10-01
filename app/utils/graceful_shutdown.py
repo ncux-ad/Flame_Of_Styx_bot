@@ -111,6 +111,18 @@ class GracefulShutdown:
             logger.info("Closing bot session...")
             await self.bot.session.close()
             
+            # Закрываем соединения с базой данных
+            logger.info("Closing database connections...")
+            try:
+                from app.database import engine
+                if engine:
+                    await engine.dispose()
+                    logger.info("Database engine disposed successfully")
+                else:
+                    logger.warning("Database engine not found")
+            except Exception as e:
+                logger.error(f"Error disposing database engine: {e}")
+            
             logger.info("Graceful shutdown completed successfully")
             
         except Exception as e:
