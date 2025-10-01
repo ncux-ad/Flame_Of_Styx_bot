@@ -371,14 +371,26 @@ async def handle_sync_bans_command(
 
         if not args:
             # Показываем только нативные каналы (где бот админ) для синхронизации
-            # Используем DI контейнер для получения AdminService
-            from app.container import container
+            # Используем прямое обращение к ChannelService
+            all_channels = await channel_service.get_all_channels()
             
-            admin_service = container.container.resolve(AdminService)
-            channels_info = await admin_service.get_channels_info()
+            # Фильтруем только нативные каналы и группы комментариев
+            native_channels = []
+            comment_groups = []
             
-            native_channels = channels_info.get("native_channels", [])
-            comment_groups = channels_info.get("comment_groups", [])
+            for channel in all_channels:
+                if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
+                    comment_groups.append({
+                        "title": channel.title or f"Группа {channel.telegram_id}",
+                        "chat_id": str(channel.telegram_id),
+                        "username": channel.username,
+                    })
+                elif hasattr(channel, "is_native") and bool(channel.is_native):
+                    native_channels.append({
+                        "title": channel.title or f"Канал {channel.telegram_id}",
+                        "chat_id": str(channel.telegram_id),
+                        "username": channel.username,
+                    })
             
             # Объединяем нативные каналы и группы комментариев
             available_chats = native_channels + comment_groups
@@ -411,14 +423,28 @@ async def handle_sync_bans_command(
             # Синхронизация по номеру или chat_id
             if args[0].isdigit() and 1 <= int(args[0]) <= 5:
                 # По номеру
-                # Используем DI контейнер для получения AdminService
-                from app.container import container
+                # Используем прямое обращение к ChannelService
+                all_channels = await channel_service.get_all_channels()
                 
-                admin_service = container.container.resolve(AdminService)
-                channels_info = await admin_service.get_channels_info()
+                # Фильтруем только нативные каналы и группы комментариев
+                native_channels = []
+                comment_groups = []
                 
-                native_channels = channels_info.get("native_channels", [])
-                comment_groups = channels_info.get("comment_groups", [])
+                for channel in all_channels:
+                    if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
+                        comment_groups.append({
+                            "title": channel.title or f"Группа {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "username": channel.username,
+                        })
+                    elif hasattr(channel, "is_native") and bool(channel.is_native):
+                        native_channels.append({
+                            "title": channel.title or f"Канал {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "username": channel.username,
+                        })
+                
+                # Объединяем нативные каналы и группы комментариев
                 available_chats = native_channels + comment_groups
                 recent_chats = available_chats[:5]
                 
@@ -469,7 +495,7 @@ async def handle_sync_bans_command(
                 # Синхронизируем статус
                 if telegram_status in ["kicked", "left"] and not is_banned_db:
                     # Пользователь заблокирован в Telegram, но не в БД - добавляем в БД
-                    await moderation_service.ban_user(user_id, chat_id, "Синхронизация с Telegram", admin_id)
+                    await moderation_service.ban_user(user_id, chat_id, admin_id, "Синхронизация с Telegram")
                     await message.answer(f"✅ Пользователь {user_id} добавлен в базу банов")
                 elif telegram_status not in ["kicked", "left"] and is_banned_db:
                     # Пользователь не заблокирован в Telegram, но в БД - разблокируем

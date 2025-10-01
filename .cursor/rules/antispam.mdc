@@ -1,0 +1,255 @@
+---
+alwaysApply: true
+---
+# 🤖 Rules for AI Assistant
+
+**📅 Updated: January 2025**
+
+---
+
+## 🎯 **MAIN PRINCIPLES**
+
+### **1. Built-in DI Aiogram 3.x - THE BEST CHOICE!**
+
+**✅ ALWAYS use built-in DI Aiogram:**
+- **DIMiddleware** - main DI container
+- **Automatic injection** of services into handlers
+- **Service caching** - created once
+- **Optimized for Aiogram** - best performance
+
+**❌ NEVER use external DI libraries:**
+- **punq** - DON'T USE!
+- **dependency-injector** - DON'T USE!
+- **Any other DI libraries** - DON'T USE!
+
+### **2. Project Architecture**
+
+**DI Structure:**
+```
+app/middlewares/
+├── di_middleware.py          # MAIN DI container
+└── dependency_injection.py   # Alias for compatibility (deprecated)
+```
+
+**Middleware Order:**
+```python
+dp.message.middleware(ValidationMiddleware())      # 1. Validation
+dp.message.middleware(LoggingMiddleware())         # 2. Logging  
+dp.message.middleware(RateLimitMiddleware())       # 3. Rate limiting
+dp.message.middleware(DIMiddleware())              # 4. DI (AFTER rate limiting!)
+dp.message.middleware(SuspiciousProfileMiddleware()) # 5. Profile analysis
+```
+
+---
+
+## 🔧 **DEVELOPMENT RULES**
+
+### **1. Handlers**
+
+**✅ CORRECT - Built-in DI:**
+```python
+@router.message(Command("sync_bans"))
+async def handle_sync_bans_command(
+    message: Message,                    # 1. Event object
+    moderation_service: ModerationService,  # 2. Service (automatically injected!)
+    channel_service: ChannelService,        # 3. Service (automatically injected!)
+    admin_id: int,                      # 4. Configuration
+) -> None:
+    """Synchronize bans with Telegram."""
+    # Services are already ready to use!
+    banned_users = await moderation_service.get_banned_users()
+    channels = await channel_service.get_all_channels()
+```
+
+**❌ INCORRECT - External DI libraries:**
+```python
+# DON'T DO THIS!
+from punq import Container
+from dependency_injector import containers
+
+# DON'T DO THIS!
+@router.message(Command("sync_bans"))
+async def handle_sync_bans_command(message: Message, **kwargs):
+    service = kwargs.get("service")  # Outdated approach
+```
+
+### **2. Creating Services**
+
+**✅ CORRECT - In DIMiddleware:**
+```python
+async def _initialize_services(self, data):
+    """Creates all services once and caches them."""
+    bot = data.get('bot')
+    db_session = data.get('db_session')
+    config = data.get('config')
+    
+    # Create base services
+    moderation_service = ModerationService(bot, db_session)
+    bot_service = BotService(bot, db_session)
+    
+    # Create services with dependencies
+    admin_service = AdminService(
+        moderation_service=moderation_service,
+        bot_service=bot_service,
+        # ... other dependencies
+    )
+    
+    # Cache all services
+    self._services = {
+        'moderation_service': moderation_service,
+        'bot_service': bot_service,
+        'admin_service': admin_service,
+        # ... all other services
+    }
+```
+
+**❌ INCORRECT - In handlers:**
+```python
+# DON'T DO THIS!
+async def handle_command(message: Message):
+    # Creating services in handler - INCORRECT!
+    moderation_service = ModerationService(bot, db_session)
+```
+
+### **3. Parameter Order in Handlers**
+
+**✅ CORRECT order:**
+1. **Event objects** (Message, CallbackQuery, etc.)
+2. **Services** (ModerationService, BotService, etc.)
+3. **Configuration** (admin_id, config, etc.)
+
+```python
+# ✅ CORRECT
+async def handle_command(
+    message: Message,                    # 1. Event
+    moderation_service: ModerationService,  # 2. Service
+    admin_id: int,                      # 3. Config
+) -> None:
+    pass
+
+# ❌ INCORRECT
+async def handle_command(
+    admin_id: int,                      # Config before service
+    message: Message,                   # Event after config
+    moderation_service: ModerationService,
+) -> None:
+    pass
+```
+
+---
+
+## 📋 **LIST OF ALL SERVICES**
+
+### **Base Services**
+- **`moderation_service`** - ModerationService
+- **`bot_service`** - BotService  
+- **`channel_service`** - ChannelService
+- **`profile_service`** - ProfileService
+- **`help_service`** - HelpService
+- **`limits_service`** - LimitsService
+
+### **Admin Services**
+- **`admin_service`** - AdminService
+- **`bots_admin_service`** - BotsAdminService
+- **`channels_admin_service`** - ChannelsAdminService
+- **`suspicious_admin_service`** - SuspiciousAdminService
+- **`callbacks_service`** - CallbacksService
+
+### **Special Services**
+- **`link_service`** - LinkService
+
+---
+
+## 🚫 **WHAT NOT TO DO**
+
+### **1. External DI libraries**
+```python
+# ❌ NEVER USE!
+from punq import Container
+from dependency_injector import containers
+from dependency_injector.wiring import Provide, inject
+```
+
+### **2. Creating services in handlers**
+```python
+# ❌ NEVER DO!
+async def handle_command(message: Message):
+    # Creating services in handler - INCORRECT!
+    service = ModerationService(bot, db_session)
+```
+
+### **3. Using container.resolve() in handlers**
+```python
+# ❌ NEVER DO!
+async def handle_command(message: Message):
+    # Direct access to container - INCORRECT!
+    service = container.container.resolve(ModerationService)
+```
+
+### **4. Incorrect parameter order**
+```python
+# ❌ NEVER DO!
+async def handle_command(
+    admin_id: int,                      # Config before service
+    message: Message,                   # Event after config
+    moderation_service: ModerationService,
+) -> None:
+    pass
+```
+
+---
+
+## ✅ **WHAT TO DO**
+
+### **1. Use built-in DI Aiogram**
+```python
+# ✅ ALWAYS DO THIS!
+@router.message(Command("command"))
+async def handle_command(
+    message: Message,
+    moderation_service: ModerationService,  # Automatically injected!
+    admin_id: int,
+) -> None:
+    # Service is already ready to use!
+    await moderation_service.ban_user(...)
+```
+
+### **2. Create services in DIMiddleware**
+```python
+# ✅ ALWAYS DO THIS!
+async def _initialize_services(self, data):
+    # Create all services once
+    moderation_service = ModerationService(bot, db_session)
+    # Cache them
+    self._services = {'moderation_service': moderation_service}
+```
+
+### **3. Follow correct parameter order**
+```python
+# ✅ ALWAYS DO THIS!
+async def handle_command(
+    message: Message,                    # 1. Event
+    moderation_service: ModerationService,  # 2. Service
+    admin_id: int,                      # 3. Config
+) -> None:
+    pass
+```
+
+---
+
+## 🎯 **CONCLUSION**
+
+**Built-in DI Aiogram 3.x is THE BEST choice for Aiogram projects!**
+
+**Remember:**
+- ✅ Use DIMiddleware
+- ✅ Services are injected automatically
+- ✅ Follow correct parameter order
+- ❌ DON'T use external DI libraries
+- ❌ DON'T create services in handlers
+
+**Follow these rules for stable and performant architecture!** 🚀
+
+---
+
+**📝 Note:** These rules are part of the AntiSpam Bot architecture and must be followed during any code changes.
