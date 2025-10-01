@@ -114,6 +114,8 @@ async def handle_all_messages(
         # Пропускаем команды - они обрабатываются админ-роутером
         if message.text and message.text.startswith("/"):
             logger.info(f"Command message skipped by antispam: {sanitize_for_logging(message.text)}")
+            if "bots" in message.text.lower():
+                logger.info(f"BOTS COMMAND SKIPPED BY ANTISPAM: {sanitize_for_logging(message.text)}")
             return
 
         # Сохраняем информацию о канале, если сообщение от канала
