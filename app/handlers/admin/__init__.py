@@ -51,6 +51,9 @@ admin_router.include_router(spam_analysis_router)
 admin_router.include_router(rate_limit_router)
 admin_router.include_router(bots_router)
 
+logger.info(f"Admin router configured with {len(admin_router.sub_routers)} sub-routers")
+logger.info(f"Sub-routers: {[router.name for router in admin_router.sub_routers]}")
+
 # Применяем фильтр админа ко всем хендлерам
 admin_router.message.filter(IsAdminOrSilentFilter())
 admin_router.callback_query.filter(IsAdminOrSilentFilter())

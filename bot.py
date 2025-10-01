@@ -167,15 +167,18 @@ async def main():
 
         # Channel router first (handles channel events like my_chat_member)
         dp.include_router(channels.channel_router)
+        logger.info("Channel router registered")
 
         # Admin router second (handles admin commands)
         dp.include_router(admin.admin_router)
         logger.info("Admin router registered with all sub-routers")
+        logger.info(f"Admin router sub-routers: {[router.name for router in admin.admin_router.sub_routers]}")
 
         # Anti-spam router last (catches everything else, but after admin commands)
         dp.include_router(antispam.antispam_router)
+        logger.info("Antispam router registered")
 
-        logger.info("Routers registered successfully")
+        logger.info("All routers registered successfully")
 
         # 8. Initialize hot-reload for limits
         limits_service = LimitsService()
