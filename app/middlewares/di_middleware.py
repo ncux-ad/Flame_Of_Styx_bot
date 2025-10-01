@@ -148,12 +148,8 @@ class DIMiddleware(BaseMiddleware):
             )
             
             # Создаем дополнительные сервисы
-            from app.services.config_watcher import ConfigWatcherService
-            from app.services.redis_rate_limiter import RedisRateLimiterService
             from app.services.redis import RedisService
             
-            config_watcher_service = ConfigWatcherService()
-            redis_rate_limiter_service = RedisRateLimiterService()
             redis_service = RedisService()
             
             # Сохраняем все сервисы
@@ -171,8 +167,6 @@ class DIMiddleware(BaseMiddleware):
                 'suspicious_admin_service': suspicious_admin_service,
                 'callbacks_service': callbacks_service,
                 'link_service': link_service,
-                'config_watcher_service': config_watcher_service,
-                'redis_rate_limiter_service': redis_rate_limiter_service,
                 'redis_service': redis_service,
             }
             
