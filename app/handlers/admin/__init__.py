@@ -74,3 +74,38 @@ async def test_bots_handler(message: Message) -> None:
     """Тестовый хендлер для проверки работы bots функциональности."""
     logger.info("TEST BOTS HANDLER CALLED!")
     await message.answer("✅ Bots функциональность работает!")
+
+# Импортируем необходимые сервисы для bots команд
+from app.services.bots_admin import BotsAdminService
+from app.utils.error_handling import handle_errors
+from app.middlewares.silent_logging import send_silent_response
+from app.utils.security import sanitize_for_logging
+
+# Команда /bots (перенесена из bots_router)
+@admin_router.message(Command("bots"), IsAdminOrSilentFilter())
+@handle_errors(user_message="❌ Ошибка выполнения команды /bots")
+async def handle_bots_command(
+    message: Message,
+    bots_admin_service: BotsAdminService,
+    admin_id: int,
+) -> None:
+    """Показать список ботов и управление whitelist."""
+    try:
+        logger.info(f"BOTS COMMAND HANDLER CALLED: {message.text}")
+        if not message.from_user:
+            logger.warning("Bots command: no from_user")
+            return
+        
+        logger.info(f"Bots command from {sanitize_for_logging(str(message.from_user.id))}")
+        logger.info(f"Bots admin service: {bots_admin_service}")
+        logger.info(f"Admin ID: {admin_id}")
+
+        bots_text = await bots_admin_service.get_bots_list()
+        logger.info(f"Bots text length: {len(bots_text)}")
+        
+        await send_silent_response(message, bots_text)
+        logger.info(f"Bots list sent to {sanitize_for_logging(str(message.from_user.id))}")
+
+    except Exception as e:
+        logger.error(f"Error in bots command: {sanitize_for_logging(str(e))}")
+        await send_silent_response(message, "❌ Ошибка получения списка ботов")
