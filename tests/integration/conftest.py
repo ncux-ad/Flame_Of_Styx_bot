@@ -158,29 +158,50 @@ def create_test_message():
         message_id: int = 1,
         is_admin: bool = False
     ):
-        message = MagicMock()
-        message.message_id = message_id
-        message.date = 1234567890
-        message.text = text
+        # Создаем настоящие User и Chat объекты
+        from_user = User(
+            id=user_id,
+            is_bot=False,
+            first_name="Admin" if is_admin else "Test",
+            last_name="User",
+            username="adminuser" if is_admin else "testuser"
+        )
         
-        # Настраиваем пользователя
-        message.from_user = MagicMock()
-        message.from_user.id = user_id
-        message.from_user.is_bot = False
-        message.from_user.first_name = "Admin" if is_admin else "Test"
-        message.from_user.last_name = "User"
-        message.from_user.username = "adminuser" if is_admin else "testuser"
+        chat = Chat(
+            id=chat_id,
+            type="supergroup" if int(chat_id) < 0 else "private",
+            title="Test Chat" if int(chat_id) < 0 else None
+        )
         
-        # Настраиваем чат
-        message.chat = MagicMock()
-        message.chat.id = chat_id
-        message.chat.type = "supergroup" if int(chat_id) < 0 else "private"
-        message.chat.title = "Test Chat" if int(chat_id) < 0 else None
-        
-        # Добавляем методы для ответов
-        message.answer = AsyncMock()
-        message.reply = AsyncMock()
-        message.edit_text = AsyncMock()
+        # Создаем настоящий Message объект
+        try:
+            from aiogram.types import Message
+            message = Message(
+                message_id=message_id,
+                date=1234567890,
+                text=text,
+                from_user=from_user,
+                chat=chat
+            )
+            
+            # Добавляем методы для ответов
+            message.answer = AsyncMock()
+            message.reply = AsyncMock()
+            message.edit_text = AsyncMock()
+            
+        except Exception:
+            # Если не получается создать настоящий Message, создаем MagicMock
+            message = MagicMock()
+            message.message_id = message_id
+            message.date = 1234567890
+            message.text = text
+            message.from_user = from_user
+            message.chat = chat
+            
+            # Добавляем методы для ответов
+            message.answer = AsyncMock()
+            message.reply = AsyncMock()
+            message.edit_text = AsyncMock()
         
         return message
     
@@ -245,36 +266,41 @@ def create_test_update():
             "chat_join_request": None
         }
         
-        # Создаем MagicMock с правильными атрибутами
-        update = MagicMock()
-        update.update_id = update_id
-        update.message = message
-        update.callback_query = callback_query
-        update.edited_message = None
-        update.channel_post = None
-        update.edited_channel_post = None
-        update.inline_query = None
-        update.chosen_inline_result = None
-        update.shipping_query = None
-        update.pre_checkout_query = None
-        update.poll = None
-        update.poll_answer = None
-        update.my_chat_member = None
-        update.chat_member = None
-        update.chat_join_request = None
-        
-        # Добавляем методы для совместимости с Pydantic
-        update.model_dump = MagicMock(return_value=update_data)
-        update.model_validate = MagicMock(return_value=update)
-        
-        # Добавляем атрибуты для совместимости с Aiogram
-        update.bot = None
-        update._bot = None
-        
-        # Переопределяем model_validate чтобы он возвращал сам объект
-        def mock_model_validate(data, context=None):
-            return update
-        update.model_validate = mock_model_validate
+        # Создаем настоящий Update объект
+        try:
+            from aiogram.types import Update
+            update = Update(**update_data)
+        except Exception:
+            # Если не получается создать настоящий Update, создаем MagicMock
+            update = MagicMock()
+            update.update_id = update_id
+            update.message = message
+            update.callback_query = callback_query
+            update.edited_message = None
+            update.channel_post = None
+            update.edited_channel_post = None
+            update.inline_query = None
+            update.chosen_inline_result = None
+            update.shipping_query = None
+            update.pre_checkout_query = None
+            update.poll = None
+            update.poll_answer = None
+            update.my_chat_member = None
+            update.chat_member = None
+            update.chat_join_request = None
+            
+            # Добавляем методы для совместимости с Pydantic
+            update.model_dump = MagicMock(return_value=update_data)
+            update.model_validate = MagicMock(return_value=update)
+            
+            # Добавляем атрибуты для совместимости с Aiogram
+            update.bot = None
+            update._bot = None
+            
+            # Переопределяем model_validate чтобы он возвращал сам объект
+            def mock_model_validate(data, context=None):
+                return update
+            update.model_validate = mock_model_validate
         
         return update
     
