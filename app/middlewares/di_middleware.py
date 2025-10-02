@@ -148,10 +148,15 @@ class DIMiddleware(BaseMiddleware):
                 db_session=db_session,
             )
             
-            # Создаем Redis сервис
-            from app.services.redis import RedisService
-            
-            redis_service = RedisService()
+            # Создаем Redis сервис (опционально)
+            redis_service = None
+            try:
+                from app.services.redis import RedisService
+                redis_service = RedisService()
+                logger.info("Redis service initialized successfully")
+            except Exception as e:
+                logger.warning(f"Redis service initialization failed: {e}")
+                logger.info("Continuing without Redis service")
             
             # Сохраняем все сервисы
             self._services = {
@@ -168,8 +173,11 @@ class DIMiddleware(BaseMiddleware):
                 'suspicious_admin_service': suspicious_admin_service,
                 'callbacks_service': callbacks_service,
                 'link_service': link_service,
-                'redis_service': redis_service,
             }
+            
+            # Добавляем Redis только если он успешно инициализирован
+            if redis_service:
+                self._services['redis_service'] = redis_service
             
             logger.info(f"DI services initialized: {list(self._services.keys())}")
             
