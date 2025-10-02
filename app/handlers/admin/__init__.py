@@ -218,7 +218,7 @@ async def handle_find_chat_command(
 
 
 # Команда spam_analysis перенесена из подроутера (проблема Aiogram 3.x с подроутерами)
-@admin_router.message(Command("spam_analysis"))
+@admin_router.message(Command("spam_analysis"), IsAdminOrSilentFilter())
 async def handle_spam_analysis_command(message: Message) -> None:
     """Показать меню анализа спама."""
     logger.info("SPAM_ANALYSIS HANDLER CALLED!")
