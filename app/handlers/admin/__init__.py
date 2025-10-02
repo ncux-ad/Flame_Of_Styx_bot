@@ -242,9 +242,10 @@ async def handle_spam_analysis_command(message: Message) -> None:
 
 
 # Callback handlers для spam_analysis (перенесены из подроутера)
-@admin_router.callback_query(F.data == "spam_stats")
+@admin_router.callback_query(F.data == "spam_stats", IsAdminOrSilentFilter())
 async def show_spam_stats(callback: CallbackQuery):
     """Показать статистику спама."""
+    logger.info("SPAM_STATS CALLBACK CALLED!")
     try:
         from app.utils.pii_protection import secure_logger
         
@@ -287,9 +288,10 @@ async def show_spam_stats(callback: CallbackQuery):
             )
 
 
-@admin_router.callback_query(F.data == "spam_back")
+@admin_router.callback_query(F.data == "spam_back", IsAdminOrSilentFilter())
 async def spam_back_to_menu(callback: CallbackQuery):
     """Вернуться к главному меню анализа спама."""
+    logger.info("SPAM_BACK CALLBACK CALLED!")
     try:
         keyboard = get_spam_analysis_keyboard()
         
@@ -302,3 +304,43 @@ async def spam_back_to_menu(callback: CallbackQuery):
             )
     except Exception as e:
         logger.error(f"Error in spam_back_to_menu: {e}")
+
+
+# Временные заглушки для остальных кнопок
+@admin_router.callback_query(F.data == "spam_patterns", IsAdminOrSilentFilter())
+async def spam_patterns_stub(callback: CallbackQuery):
+    """Заглушка для паттернов спама."""
+    logger.info("SPAM_PATTERNS CALLBACK CALLED!")
+    if callback.message:
+        await callback.message.edit_text(
+            "🔍 <b>Паттерны спама</b>\n\n"
+            "Функция в разработке...",
+            reply_markup=get_spam_analysis_keyboard(),
+            parse_mode="HTML"
+        )
+
+
+@admin_router.callback_query(F.data == "spam_export", IsAdminOrSilentFilter())
+async def spam_export_stub(callback: CallbackQuery):
+    """Заглушка для экспорта спама."""
+    logger.info("SPAM_EXPORT CALLBACK CALLED!")
+    if callback.message:
+        await callback.message.edit_text(
+            "📤 <b>Экспорт данных спама</b>\n\n"
+            "Функция в разработке...",
+            reply_markup=get_spam_analysis_keyboard(),
+            parse_mode="HTML"
+        )
+
+
+@admin_router.callback_query(F.data == "spam_cleanup", IsAdminOrSilentFilter())
+async def spam_cleanup_stub(callback: CallbackQuery):
+    """Заглушка для очистки спама."""
+    logger.info("SPAM_CLEANUP CALLBACK CALLED!")
+    if callback.message:
+        await callback.message.edit_text(
+            "🧹 <b>Очистка данных спама</b>\n\n"
+            "Функция в разработке...",
+            reply_markup=get_spam_analysis_keyboard(),
+            parse_mode="HTML"
+        )
