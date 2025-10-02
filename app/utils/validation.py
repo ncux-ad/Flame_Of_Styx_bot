@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 class ValidationSeverity(Enum):
     """Уровни серьезности ошибок валидации"""
 
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+    CRITICAL = 4
 
 
 @dataclass

@@ -25,6 +25,7 @@ class ModerationAction(enum.Enum):
     UNBAN = "unban"
     MUTE = "mute"
     UNMUTE = "unmute"
+    WARN = "warn"  # Добавлено для тестов
     DELETE_MESSAGE = "delete_message"
     ALLOW_CHANNEL = "allow_channel"
     BLOCK_CHANNEL = "block_channel"

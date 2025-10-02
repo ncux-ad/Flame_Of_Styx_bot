@@ -17,6 +17,11 @@ class SuspiciousProfile(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False, index=True)
 
+    # User profile data (для тестов)
+    first_name = Column(String(255), nullable=True)
+    last_name = Column(String(255), nullable=True)
+    username = Column(String(255), nullable=True)
+
     # Profile analysis
     linked_chat_id = Column(Integer, nullable=True)
     linked_chat_username = Column(String(255), nullable=True)

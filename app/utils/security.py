@@ -84,6 +84,10 @@ def sanitize_user_input(user_input: str) -> str:
     # Удаляем лишние пробелы
     sanitized = re.sub(r"\s+", " ", sanitized).strip()
 
+    # Ограничиваем длину
+    if len(sanitized) > 1000:
+        sanitized = sanitized[:1000]
+
     return sanitized
 
 
@@ -239,13 +243,25 @@ def safe_format_message(message: str, **kwargs: Any) -> str:
     try:
         # Санитизируем все параметры
         safe_kwargs = {}
+        sensitive_keywords = ["secret", "password", "token", "key", "private"]
+
         for key, value in kwargs.items():
             if isinstance(value, str):
-                safe_kwargs[key] = sanitize_user_input(value)
+                # Проверяем на чувствительные данные
+                if any(keyword in key.lower() or keyword in value.lower() for keyword in sensitive_keywords):
+                    safe_kwargs[key] = "[REDACTED]"
+                else:
+                    safe_kwargs[key] = sanitize_user_input(value)
             else:
                 safe_kwargs[key] = value
 
-        return message.format(**safe_kwargs)
+        formatted_message = message.format(**safe_kwargs)
+
+        # Дополнительная фильтрация чувствительных данных в результате
+        for keyword in sensitive_keywords:
+            formatted_message = re.sub(rf"\b{keyword}\w*", "[REDACTED]", formatted_message, flags=re.IGNORECASE)
+
+        return formatted_message
     except Exception as e:
         logger.error(f"Ошибка форматирования сообщения: {e}")
         return message
