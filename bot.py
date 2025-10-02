@@ -150,10 +150,12 @@ async def main():
             
             # Отладочное логирование для callback_query
             if update_type == dp.callback_query:
-                async def debug_callback_middleware(handler, event, data):
-                    logger.info(f"CALLBACK_QUERY MIDDLEWARE: {event.data if hasattr(event, 'data') else 'no data'}")
-                    return await handler(event, data)
-                update_type.middleware(debug_callback_middleware)
+                def create_debug_middleware():
+                    async def debug_callback_middleware(handler, event, data):
+                        logger.info(f"CALLBACK_QUERY MIDDLEWARE: {event.data if hasattr(event, 'data') else 'no data'}")
+                        return await handler(event, data)
+                    return debug_callback_middleware
+                update_type.middleware(create_debug_middleware())
             
             # Rate limiting for other update types
             if redis_available:
