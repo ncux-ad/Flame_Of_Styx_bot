@@ -4,28 +4,27 @@
 
 import logging
 import re
-from typing import Any
+from typing import Any, Union
 
 from app.constants import MAX_LOG_MESSAGE_LENGTH, SENSITIVE_PATTERNS
 
 logger = logging.getLogger(__name__)
 
 
-def sanitize_for_logging(message: str) -> str:
+def sanitize_for_logging(message: Union[str, int, float]) -> str:
     """
     Санитизирует сообщение для безопасного логирования.
 
     Удаляет чувствительные данные (токены, пароли, секреты) из сообщений.
 
     Args:
-        message: Исходное сообщение
+        message: Исходное сообщение (может быть строкой, числом)
 
     Returns:
         Санитизированное сообщение
     """
-    # message уже str по типу параметра
-
-    sanitized = message
+    # Преобразуем в строку если это не строка
+    sanitized = str(message)
 
     # Удаляем чувствительные данные
     for pattern in SENSITIVE_PATTERNS:

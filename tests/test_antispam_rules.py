@@ -9,8 +9,8 @@ import pytest
 from aiogram.types import Chat, Message, MessageEntity, User
 
 from app.config import Settings
-from app.services.antispam import AntiSpamService
 from app.services.links import LinkService
+from app.services.moderation import ModerationService
 from app.services.profiles import ProfileService
 
 
@@ -18,9 +18,9 @@ from app.services.profiles import ProfileService
 def mock_config():
     """Mock configuration for tests."""
     return Settings(
-        bot_token="test_token_123456789",
-        admin_ids_list=[123456789],
-        db_path=":memory:",
+        bot_token="123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop",  # Валидный формат токена
+        admin_ids="123456789",
+        db_path="test.sqlite3",  # Валидный путь к БД
         max_messages_per_minute=10,
         max_links_per_message=3,
         ban_duration_hours=24,
@@ -119,7 +119,11 @@ class TestAntiSpamRules:
     @pytest.mark.asyncio
     async def test_message_rate_limiting(self, mock_config, mock_message):
         """Test message rate limiting."""
-        service = AntiSpamService(mock_config)
+        from unittest.mock import Mock
+
+        mock_bot = Mock()
+        mock_db = Mock()
+        service = ModerationService(mock_bot, mock_db)
 
         # Test normal message rate
         for i in range(5):
@@ -139,7 +143,11 @@ class TestAntiSpamRules:
     @pytest.mark.asyncio
     async def test_link_detection(self, mock_config, mock_message):
         """Test link detection and counting."""
-        service = AntiSpamService(mock_config)
+        from unittest.mock import Mock
+
+        mock_bot = Mock()
+        mock_db = Mock()
+        service = ModerationService(mock_bot, mock_db)
 
         # Test message with links
         mock_message.text = "Check this link: https://t.me/bot and this one: https://example.com"
@@ -159,7 +167,11 @@ class TestAntiSpamRules:
     @pytest.mark.asyncio
     async def test_telegram_bot_links(self, mock_config, mock_message):
         """Test detection of t.me/bot links."""
-        service = AntiSpamService(mock_config)
+        from unittest.mock import Mock
+
+        mock_bot = Mock()
+        mock_db = Mock()
+        service = ModerationService(mock_bot, mock_db)
 
         # Test t.me/bot link
         mock_message.text = "Check this bot: https://t.me/testbot"
@@ -175,7 +187,11 @@ class TestAntiSpamRules:
     @pytest.mark.asyncio
     async def test_media_without_caption(self, mock_config, mock_message):
         """Test media messages without captions."""
-        service = AntiSpamService(mock_config)
+        from unittest.mock import Mock
+
+        mock_bot = Mock()
+        mock_db = Mock()
+        service = ModerationService(mock_bot, mock_db)
 
         # Test photo without caption (should be allowed)
         mock_message.text = None
@@ -211,7 +227,11 @@ class TestAntiSpamRules:
     @pytest.mark.asyncio
     async def test_duplicate_message_detection(self, mock_config, mock_message):
         """Test duplicate message detection."""
-        service = AntiSpamService(mock_config)
+        from unittest.mock import Mock
+
+        mock_bot = Mock()
+        mock_db = Mock()
+        service = ModerationService(mock_bot, mock_db)
 
         # Test first message
         result = await service.check_duplicate_message(mock_message)
@@ -225,7 +245,11 @@ class TestAntiSpamRules:
     @pytest.mark.asyncio
     async def test_spam_keywords_detection(self, mock_config, mock_message):
         """Test spam keywords detection."""
-        service = AntiSpamService(mock_config)
+        from unittest.mock import Mock
+
+        mock_bot = Mock()
+        mock_db = Mock()
+        service = ModerationService(mock_bot, mock_db)
 
         # Test normal message
         mock_message.text = "Hello, how are you?"
@@ -241,7 +265,11 @@ class TestAntiSpamRules:
     @pytest.mark.asyncio
     async def test_caps_lock_detection(self, mock_config, mock_message):
         """Test excessive caps detection."""
-        service = AntiSpamService(mock_config)
+        from unittest.mock import Mock
+
+        mock_bot = Mock()
+        mock_db = Mock()
+        service = ModerationService(mock_bot, mock_db)
 
         # Test normal message
         mock_message.text = "Hello, how are you?"
@@ -257,15 +285,19 @@ class TestAntiSpamRules:
     @pytest.mark.asyncio
     async def test_emoji_spam_detection(self, mock_config, mock_message):
         """Test emoji spam detection."""
-        service = AntiSpamService(mock_config)
+        from unittest.mock import Mock
+
+        mock_bot = Mock()
+        mock_db = Mock()
+        service = ModerationService(mock_bot, mock_db)
 
         # Test normal message with few emojis
         mock_message.text = "Hello! 😊 How are you? 👍"
         result = await service.check_emoji_spam(mock_message)
         assert result["allowed"] is True
 
-        # Test message with emoji spam
-        mock_message.text = "😀😃😄😁😆😅😂🤣😊😇🙂🙃😉😌😍🥰😘😗😙😚😋😛😝😜🤪🤨🧐🤓😎🤩🥳😏😒😞😔😟😕🙁☹️😣😖😫😩🥺😢😭😤😠😡🤬🤯😳🥵🥶😱😨😰😥😓🤗🤔🤭🤫🤥😶😐😑😬🙄😯😦😧😮😲🥱😴🤤😪😵🤐🥴🤢🤮🤧😷🤒🤕🤑🤠😈👿👹👺🤡💩👻💀☠️👽👾🤖🎃😺😸😹😻😼😽🙀😿😾"
+        # Test message with emoji spam (shortened for formatting)
+        mock_message.text = "😀😃😄😁😆😅😂🤣😊😇🙂🙃😉😌😍"
         result = await service.check_emoji_spam(mock_message)
         assert result["allowed"] is False
         assert "emoji spam" in result["reason"].lower()
@@ -273,7 +305,11 @@ class TestAntiSpamRules:
     @pytest.mark.asyncio
     async def test_combined_antispam_check(self, mock_config, mock_message):
         """Test combined anti-spam check."""
-        service = AntiSpamService(mock_config)
+        from unittest.mock import Mock
+
+        mock_bot = Mock()
+        mock_db = Mock()
+        service = ModerationService(mock_bot, mock_db)
 
         # Test normal message
         mock_message.text = "Hello, how are you?"
