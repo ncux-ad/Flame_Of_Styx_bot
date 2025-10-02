@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # Netdata - мониторинг сервера (ЛЕГКОВЕСНАЯ ВЕРСИЯ ДЛЯ ТЕСТОВ)
+  netdata-test:
+    image: netdata/netdata:latest
+    container_name: netdata-test
+    hostname: antispam-bot-monitor-test
+    ports:
+      - "19998:19999"  # Другой порт для тестов
+    volumes:
+      - netdata-test-config:/etc/netdata
+      - netdata-test-lib:/var/lib/netdata
+      - netdata-test-cache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      - NETDATA_DISABLE_CLOUD=1  # Отключаем облако для тестов
+      - NETDATA_BIND_TO=*:19999
+    restart: "no"  # Не перезапускаем автоматически в тестах
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:19999/api/v1/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 2
+    # Ограничения ресурсов для слабых VPS
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+
+  # Uptime Kuma - мониторинг доступности (ЛЕГКОВЕСНАЯ ВЕРСИЯ)
+  uptime-kuma-test:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma-test
+    ports:
+      - "3002:3001"  # Другой порт для тестов
+    volumes:
+      - uptime-kuma-test-data:/app/data
+    environment:
+      - UPTIME_KUMA_DISABLE_FRAME_SAMEORIGIN=1
+      - NODE_ENV=production
+      - PORT=3001
+    restart: "no"  # Не перезапускаем автоматически в тестах
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 2
+    # Ограничения ресурсов для слабых VPS
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
+volumes:
+  netdata-test-config:
+  netdata-test-lib:
+  netdata-test-cache:
+  uptime-kuma-test-data:
+
+networks:
+  default:
+    name: monitoring-test-network

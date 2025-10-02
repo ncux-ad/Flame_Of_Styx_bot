@@ -1,0 +1,15 @@
+{
+  "netdata": {
+    "web_available": false,
+    "api_available": false
+  },
+  "uptime_kuma": {
+    "web_available": false
+  },
+  "summary": {
+    "netdata_status": "FAIL",
+    "uptime_kuma_status": "FAIL",
+    "overall_status": "FAIL",
+    "test_timestamp": 1759422140
+  }
+}
