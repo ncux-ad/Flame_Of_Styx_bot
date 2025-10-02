@@ -298,7 +298,7 @@ class InputValidator:
                 ))
             
             # Проверка на реально опасные символы в имени (разрешаем эмодзи и Unicode)
-            dangerous_chars = r'[<>{}\\|`\x00-\x1f\x7f-\x9f]'
+            dangerous_chars = r'[<>{}\\`\x00-\x1f\x7f-\x9f]'
             if re.search(dangerous_chars, user.first_name):
                 errors.append(ValidationError(
                     field="first_name",
@@ -320,7 +320,7 @@ class InputValidator:
                 ))
             
             # Проверка на реально опасные символы в фамилии (разрешаем эмодзи и Unicode)
-            dangerous_chars = r'[<>{}\\|`\x00-\x1f\x7f-\x9f]'
+            dangerous_chars = r'[<>{}\\`\x00-\x1f\x7f-\x9f]'
             if re.search(dangerous_chars, user.last_name):
                 # Временное детальное логирование для отладки
                 logger.warning(f"Dangerous chars in last_name: '{user.last_name}' (length: {len(user.last_name)})")
