@@ -13,6 +13,7 @@ from app.services.help import HelpService
 from app.utils.error_handling import handle_errors
 from app.utils.security import sanitize_for_logging
 from app.middlewares.silent_logging import send_silent_response
+from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ async def handle_start_command(
         raise
 
 
-@basic_router.message(Command("status"))
+@basic_router.message(Command("status"), IsAdminOrSilentFilter())
 async def handle_status_command(
     message: Message,
     status_service: StatusService,
@@ -63,7 +64,7 @@ async def handle_status_command(
         await send_silent_response(message, "❌ Ошибка получения статуса")
 
 
-@basic_router.message(Command("settings"))
+@basic_router.message(Command("settings"), IsAdminOrSilentFilter())
 async def handle_settings_command(message: Message) -> None:
     """Настройки бота."""
     try:
@@ -100,7 +101,7 @@ async def handle_settings_command(message: Message) -> None:
         await send_silent_response(message, "❌ Ошибка получения настроек")
 
 
-@basic_router.message(Command("help"))
+@basic_router.message(Command("help"), IsAdminOrSilentFilter())
 async def handle_help_command(
     message: Message,
     help_service: HelpService,

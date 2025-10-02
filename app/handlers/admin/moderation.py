@@ -13,6 +13,7 @@ from app.services.profiles import ProfileService
 from app.services.admin import AdminService
 from app.utils.error_handling import handle_errors
 from app.utils.security import sanitize_for_logging
+from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +211,7 @@ async def handle_force_unban_command(
         await message.answer("❌ Ошибка принудительного разбана")
 
 
-@moderation_router.message(Command("banned"))
+@moderation_router.message(Command("banned"), IsAdminOrSilentFilter())
 async def handle_banned_command(
     message: Message,
     moderation_service: ModerationService,
