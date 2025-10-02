@@ -64,9 +64,18 @@ class DIMiddleware(BaseMiddleware):
         # Это позволяет хендлерам получать сервисы через DI
         data.update(self._services)
         
+        # Добавляем admin_id в data (если он еще не установлен)
+        if 'admin_id' not in data:
+            config = data.get('config')
+            if config:
+                admin_ids_list = [int(id_str.strip()) for id_str in config.admin_ids.split(',')]
+                data['admin_id'] = admin_ids_list[0]
+                logger.debug(f"Admin ID added to data: {data['admin_id']}")
+        
         # Логируем успешную инъекцию (только для отладки)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"DI services injected: {list(self._services.keys())}")
+            logger.debug(f"Admin ID in data: {data.get('admin_id')}")
         
         return await handler(event, data)
     
