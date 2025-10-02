@@ -51,12 +51,13 @@ async def show_spam_stats(callback: CallbackQuery):
         spam_data = secure_logger.get_spam_analysis_data(days=30)
         
         if not spam_data:
-            await callback.message.edit_text(
-                "📊 **Статистика спама**\n\n"
-                "❌ Данные за последние 30 дней не найдены.\n"
-                "Убедитесь, что включено полное логирование.",
-                parse_mode="Markdown"
-            )
+            if callback.message:
+                await callback.message.edit_text(
+                    "📊 <b>Статистика спама</b>\n\n"
+                    "❌ Данные за последние 30 дней не найдены.\n"
+                    "Убедитесь, что включено полное логирование.",
+                    parse_mode="HTML"
+                )
             return
         
         # Анализируем данные
@@ -81,37 +82,39 @@ async def show_spam_stats(callback: CallbackQuery):
         top_patterns = sorted(pattern_counts.items(), key=lambda x: x[1], reverse=True)[:5]
         
         stats_text = (
-            "📊 **Статистика спама (30 дней)**\n\n"
-            f"📈 **Общая статистика:**\n"
+            "📊 <b>Статистика спама (30 дней)<b>\n\n"
+            f"📈 <b>Общая статистика:<b>\n"
             f"• Всего записей: {total_entries}\n"
             f"• Анализов профилей: {len(profile_analyses)}\n"
             f"• Анализов ссылок: {len(link_analyses)}\n\n"
-            f"🚨 **Подозрительные профили:**\n"
+            f"🚨 <b>Подозрительные профили:<b>\n"
             f"• Найдено: {suspicious_profiles}\n"
             f"• Процент: {suspicious_profiles/len(profile_analyses)*100:.1f}%\n\n"
-            f"🔗 **Ссылки и медиа:**\n"
+            f"🔗 <b>Ссылки и медиа:<b>\n"
             f"• Бот-ссылки: {total_bot_links}\n"
             f"• Подозрительных: {total_suspicious}\n\n"
-            f"🏆 **Топ паттернов:**\n"
+            f"🏆 <b>Топ паттернов:<b>\n"
         )
         
         for pattern, count in top_patterns:
             stats_text += f"• {pattern}: {count}\n"
         
-        await callback.message.edit_text(
-            stats_text,
-            reply_markup=get_spam_analysis_keyboard(),
-            parse_mode="Markdown"
-        )
+        if callback.message:
+            await callback.message.edit_text(
+                stats_text,
+                reply_markup=get_spam_analysis_keyboard(),
+                parse_mode="HTML"
+            )
         
     except Exception as e:
         logger.error(f"Ошибка получения статистики спама: {e}")
-        await callback.message.edit_text(
-            "❌ **Ошибка получения статистики**\n\n"
-            f"Произошла ошибка: {str(e)}",
-            reply_markup=get_spam_analysis_keyboard(),
-            parse_mode="Markdown"
-        )
+        if callback.message:
+            await callback.message.edit_text(
+                "❌ <b>Ошибка получения статистики</b>\n\n"
+                f"Произошла ошибка: {str(e)}",
+                reply_markup=get_spam_analysis_keyboard(),
+                parse_mode="HTML"
+            )
 
 
 @router.callback_query(F.data == "spam_export")
@@ -122,11 +125,12 @@ async def export_spam_data(callback: CallbackQuery):
         spam_data = secure_logger.get_spam_analysis_data(days=7)
         
         if not spam_data:
-            await callback.message.edit_text(
-                "📤 **Экспорт данных спама**\n\n"
+            if callback.message:
+                await callback.message.edit_text(
+                "📤 <b>Экспорт данных спама</b>\n\n"
                 "❌ Данные за последние 7 дней не найдены.",
                 reply_markup=get_spam_analysis_keyboard(),
-                parse_mode="Markdown"
+                parse_mode="HTML"
             )
             return
         
@@ -138,34 +142,38 @@ async def export_spam_data(callback: CallbackQuery):
             json.dump(spam_data, f, ensure_ascii=False, indent=2)
         
         # Отправляем файл
-        with open(filename, 'rb') as f:
+        if callback.message:
+            from aiogram.types import FSInputFile
+            document = FSInputFile(filename)
             await callback.message.answer_document(
-                document=f,
-                caption=f"📤 **Экспорт данных спама**\n\n"
+                document=document,
+                caption=f"📤 <b>Экспорт данных спама</b>\n\n"
                         f"📅 Период: последние 7 дней\n"
                         f"📊 Записей: {len(spam_data)}\n"
                         f"📁 Файл: {filename}",
-                parse_mode="Markdown"
+                parse_mode="HTML"
             )
         
         # Удаляем временный файл
         import os
         os.remove(filename)
         
-        await callback.message.edit_text(
-            "✅ **Экспорт завершен**\n\n"
+        if callback.message:
+            await callback.message.edit_text(
+            "✅ <b>Экспорт завершен<b>\n\n"
             f"Данные экспортированы в файл {filename}",
             reply_markup=get_spam_analysis_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
         
     except Exception as e:
         logger.error(f"Ошибка экспорта данных спама: {e}")
-        await callback.message.edit_text(
-            "❌ **Ошибка экспорта**\n\n"
+        if callback.message:
+            await callback.message.edit_text(
+            "❌ <b>Ошибка экспорта<b>\n\n"
             f"Произошла ошибка: {str(e)}",
             reply_markup=get_spam_analysis_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
 
 
@@ -176,21 +184,23 @@ async def cleanup_spam_data(callback: CallbackQuery):
         # Очищаем логи старше 90 дней
         secure_logger.cleanup_old_logs(days=90)
         
-        await callback.message.edit_text(
-            "🧹 **Очистка данных**\n\n"
+        if callback.message:
+            await callback.message.edit_text(
+            "🧹 <b>Очистка данных<b>\n\n"
             "✅ Старые логи (старше 90 дней) удалены.\n"
             "💾 Освобождено место на диске.",
             reply_markup=get_spam_analysis_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
         
     except Exception as e:
         logger.error(f"Ошибка очистки данных спама: {e}")
-        await callback.message.edit_text(
-            "❌ **Ошибка очистки**\n\n"
+        if callback.message:
+            await callback.message.edit_text(
+            "❌ <b>Ошибка очистки<b>\n\n"
             f"Произошла ошибка: {str(e)}",
             reply_markup=get_spam_analysis_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
 
 
@@ -202,11 +212,12 @@ async def show_spam_patterns(callback: CallbackQuery):
         spam_data = secure_logger.get_spam_analysis_data(days=30)
         
         if not spam_data:
-            await callback.message.edit_text(
-                "🔍 **Паттерны спама**\n\n"
+            if callback.message:
+                await callback.message.edit_text(
+                "🔍 <b>Паттерны спама<b>\n\n"
                 "❌ Данные не найдены.",
                 reply_markup=get_spam_analysis_keyboard(),
-                parse_mode="Markdown"
+                parse_mode="HTML"
             )
             return
         
@@ -231,28 +242,30 @@ async def show_spam_patterns(callback: CallbackQuery):
         # Сортируем по частоте
         sorted_patterns = sorted(pattern_analysis.items(), key=lambda x: x[1], reverse=True)
         
-        patterns_text = "🔍 **Паттерны спама (30 дней)**\n\n"
+        patterns_text = "🔍 <b>Паттерны спама (30 дней)<b>\n\n"
         
         if sorted_patterns:
-            patterns_text += "📊 **Топ паттернов:**\n"
+            patterns_text += "📊 <b>Топ паттернов:<b>\n"
             for pattern, count in sorted_patterns[:10]:
                 patterns_text += f"• {pattern}: {count}\n"
         else:
             patterns_text += "❌ Паттерны не найдены."
         
-        await callback.message.edit_text(
+        if callback.message:
+            await callback.message.edit_text(
             patterns_text,
             reply_markup=get_spam_analysis_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
         
     except Exception as e:
         logger.error(f"Ошибка анализа паттернов спама: {e}")
-        await callback.message.edit_text(
-            "❌ **Ошибка анализа паттернов**\n\n"
+        if callback.message:
+            await callback.message.edit_text(
+            "❌ <b>Ошибка анализа паттернов<b>\n\n"
             f"Произошла ошибка: {str(e)}",
             reply_markup=get_spam_analysis_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
 
 
@@ -262,8 +275,8 @@ async def back_to_spam_menu(callback: CallbackQuery):
     keyboard = get_spam_analysis_keyboard()
     
     await callback.message.edit_text(
-        "🔍 **Анализ данных спама**\n\n"
+        "🔍 <b>Анализ данных спама<b>\n\n"
         "Выберите действие для анализа собранных данных:",
         reply_markup=keyboard,
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
