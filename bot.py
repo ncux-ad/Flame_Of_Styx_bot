@@ -145,6 +145,9 @@ async def main():
             update_type.middleware(LoggingMiddleware())
             update_type.middleware(add_dependencies_middleware)
             
+            # Применяем SuspiciousProfileMiddleware ко всем типам обновлений
+            update_type.middleware(suspicious_profile_middleware)
+            
             # Отладочное логирование для callback_query
             if update_type == dp.callback_query:
                 async def debug_callback_middleware(handler, event, data):
