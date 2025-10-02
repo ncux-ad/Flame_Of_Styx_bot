@@ -45,20 +45,19 @@ class TestHandlersServicesIntegration:
             # Импортируем и вызываем обработчик
             from app.handlers.admin.basic import handle_status_command
             
-            # Устанавливаем message.answer как AsyncMock
-            message.answer = AsyncMock()
-            
-            await handle_status_command(
-                message=message,
-                status_service=status_service,
-                admin_id=test_admin_user.id
-            )
-            
-            # Проверяем что сервис был вызван
-            mock_get_status.assert_called_once()
-            
-            # Проверяем что сообщение было отправлено
-            message.answer.assert_called_once()
+            # Мокаем send_silent_response вместо message.answer
+            with patch('app.handlers.admin.basic.send_silent_response') as mock_send_silent:
+                await handle_status_command(
+                    message=message,
+                    status_service=status_service,
+                    admin_id=test_admin_user.id
+                )
+                
+                # Проверяем что сервис был вызван
+                mock_get_status.assert_called_once()
+                
+                # Проверяем что send_silent_response был вызван
+                mock_send_silent.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_help_command_integration(self, test_config, mock_bot, test_db_session, create_test_message, test_admin_user, test_private_chat):
@@ -83,18 +82,17 @@ class TestHandlersServicesIntegration:
             # Импортируем и вызываем обработчик
             from app.handlers.admin.basic import handle_help_command
             
-            # Устанавливаем message.answer как AsyncMock
-            message.answer = AsyncMock()
-            
-            await handle_help_command(
-                message=message,
-                help_service=help_service,
-                admin_id=test_admin_user.id
-            )
-            
-            # Проверяем вызовы
-            mock_get_help.assert_called_once_with(is_admin=True)
-            message.answer.assert_called_once()
+            # Мокаем send_silent_response вместо message.answer
+            with patch('app.handlers.admin.basic.send_silent_response') as mock_send_silent:
+                await handle_help_command(
+                    message=message,
+                    help_service=help_service,
+                    admin_id=test_admin_user.id
+                )
+                
+                # Проверяем вызовы
+                mock_get_help.assert_called_once_with(is_admin=True)
+                mock_send_silent.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_moderation_command_integration(self, test_config, mock_bot, test_db_session, create_test_message, test_admin_user, test_chat):

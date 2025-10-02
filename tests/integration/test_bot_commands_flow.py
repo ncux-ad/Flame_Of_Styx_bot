@@ -162,7 +162,7 @@ class TestBotCommandsFlow:
         test_dispatcher.include_router(router)
         message.answer = AsyncMock()
         
-        update = Update(update_id=3, message=message)
+        update = create_test_update(message=message, update_id=3)
         
         with patch('app.middlewares.di_middleware.DIMiddleware._initialize_services') as mock_init_services:
             async def mock_init(data):
@@ -200,7 +200,7 @@ class TestBotCommandsFlow:
         test_dispatcher.include_router(router)
         message.answer = AsyncMock()
         
-        update = Update(update_id=4, message=message)
+        update = create_test_update(message=message, update_id=4)
         
         await test_dispatcher.feed_update(bot=mock_bot, update=update)
         
@@ -238,7 +238,7 @@ class TestBotCommandsFlow:
             )
             message.answer = AsyncMock()
             
-            update = Update(update_id=10+i, message=message)
+            update = create_test_update(message=message, update_id=10+i)
             
             try:
                 await dp.feed_update(bot=mock_bot, update=update)
@@ -290,13 +290,13 @@ class TestBotCommandsFlow:
             
             # Обрабатываем подозрительное сообщение
             suspicious_message.answer = AsyncMock()
-            suspicious_update = Update(update_id=20, message=suspicious_message)
+            suspicious_update = create_test_update(message=suspicious_message, update_id=20)
             
             await test_dispatcher.feed_update(bot=mock_bot, update=suspicious_update)
             
             # Обрабатываем нормальное сообщение
             normal_message.answer = AsyncMock()
-            normal_update = Update(update_id=21, message=normal_message)
+            normal_update = create_test_update(message=normal_message, update_id=21)
             
             await test_dispatcher.feed_update(bot=mock_bot, update=normal_update)
         
@@ -350,11 +350,11 @@ class TestBotCommandsFlow:
             mock_init_services.side_effect = mock_init
             
             # Обрабатываем команду от пользователя
-            user_update = Update(update_id=30, message=user_message)
+            user_update = create_test_update(message=user_message, update_id=30)
             await test_dispatcher.feed_update(bot=mock_bot, update=user_update)
             
             # Обрабатываем команду от админа
-            admin_update = Update(update_id=31, message=admin_message)
+            admin_update = create_test_update(message=admin_message, update_id=31)
             await test_dispatcher.feed_update(bot=mock_bot, update=admin_update)
         
         # Проверяем результаты
@@ -447,7 +447,7 @@ class TestBotCommandsFlow:
         test_dispatcher.include_router(router)
         message.answer = AsyncMock()
         
-        update = Update(update_id=50, message=message)
+        update = create_test_update(message=message, update_id=50)
         
         with patch('app.middlewares.di_middleware.DIMiddleware._initialize_services') as mock_init_services:
             async def mock_init(data):
