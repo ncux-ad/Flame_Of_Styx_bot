@@ -49,8 +49,12 @@ class ValidationMiddleware(BaseMiddleware):
             validation_result = await self._validate_event(event, data)
 
             if not validation_result["is_valid"]:
-                await self._handle_validation_error(event, validation_result["errors"])
-                return
+                # Логируем ошибки валидации, но НЕ блокируем обработку для callback queries
+                if isinstance(event, CallbackQuery):
+                    logger.warning(f"Validation errors in callback query (non-blocking): {validation_result['errors']}")
+                else:
+                    await self._handle_validation_error(event, validation_result["errors"])
+                    return
 
             # Санитизируем данные
             await self._sanitize_event_data(event, data)
