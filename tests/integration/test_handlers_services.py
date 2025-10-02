@@ -21,8 +21,9 @@ class TestHandlersServicesIntegration:
         """Тест интеграции команды /status с сервисами"""
         message = create_test_message(
             text="/status",
-            user=test_admin_user,
-            chat=test_private_chat
+            user_id=test_admin_user.id,
+            chat_id=test_private_chat.id,
+            is_admin=True
         )
         
         # Создаем необходимые сервисы
@@ -61,8 +62,9 @@ class TestHandlersServicesIntegration:
         """Тест интеграции команды /help с HelpService"""
         message = create_test_message(
             text="/help",
-            user=test_admin_user,
-            chat=test_private_chat
+            user_id=test_admin_user.id,
+            chat_id=test_private_chat.id,
+            is_admin=True
         )
         
         # Создаем HelpService
@@ -94,8 +96,9 @@ class TestHandlersServicesIntegration:
         # Тест команды бана
         ban_message = create_test_message(
             text="/ban 123456789 Spam",
-            user=test_admin_user,
-            chat=test_chat
+            user_id=test_admin_user.id,
+            chat_id=test_chat.id,
+            is_admin=True
         )
         
         moderation_service = ModerationService(mock_bot, test_db_session)
@@ -167,7 +170,8 @@ class TestHandlersServicesIntegration:
                 
                 await callback.message.edit_text(stats_text)
             
-            # Подменяем ID админа для теста
+            # Подменяем ID админа для теста (создаем новый MagicMock)
+            callback_query.from_user = MagicMock()
             callback_query.from_user.id = 439304619
             
             await handle_spam_stats_callback(callback_query)
@@ -181,8 +185,9 @@ class TestHandlersServicesIntegration:
         """Тест обработки ошибок в handlers"""
         message = create_test_message(
             text="/status",
-            user=test_admin_user,
-            chat=test_private_chat
+            user_id=test_admin_user.id,
+            chat_id=test_private_chat.id,
+            is_admin=True
         )
         
         # Создаем сервис который будет выбрасывать ошибку

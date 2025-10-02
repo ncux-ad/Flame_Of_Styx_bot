@@ -71,8 +71,9 @@ class TestBotCommandsFlow:
         """Тест полного цикла команды /status"""
         message = create_test_message(
             text="/status",
-            user=test_admin_user,
-            chat=test_private_chat
+            user_id=test_admin_user.id,
+            chat_id=test_private_chat.id,
+            is_admin=True
         )
         
         router = Router()
@@ -118,8 +119,9 @@ class TestBotCommandsFlow:
         """Тест полного цикла команды бана"""
         message = create_test_message(
             text="/ban 123456789 Спам в чате",
-            user=test_admin_user,
-            chat=test_chat
+            user_id=test_admin_user.id,
+            chat_id=test_chat.id,
+            is_admin=True
         )
         
         router = Router()
@@ -181,8 +183,9 @@ class TestBotCommandsFlow:
         """Тест обработки некорректных команд"""
         message = create_test_message(
             text="/nonexistent_command",
-            user=test_user,
-            chat=test_private_chat
+            user_id=test_user.id,
+            chat_id=test_private_chat.id,
+            is_admin=True
         )
         
         router = Router()
@@ -229,8 +232,9 @@ class TestBotCommandsFlow:
         for i in range(5):
             message = create_test_message(
                 text=f"/test{i}",
-                user=test_user,
-                chat=test_private_chat
+                user_id=test_user.id,
+                chat_id=test_private_chat.id,
+            is_admin=True
             )
             message.answer = AsyncMock()
             
@@ -252,15 +256,17 @@ class TestBotCommandsFlow:
         # Команда с подозрительным содержимым
         suspicious_message = create_test_message(
             text="/help <script>alert('xss')</script>",
-            user=test_user,
-            chat=test_private_chat
+            user_id=test_user.id,
+            chat_id=test_private_chat.id,
+            is_admin=True
         )
         
         # Нормальная команда
         normal_message = create_test_message(
             text="/help",
-            user=test_user,
-            chat=test_private_chat
+            user_id=test_user.id,
+            chat_id=test_private_chat.id,
+            is_admin=True
         )
         
         router = Router()
@@ -322,16 +328,18 @@ class TestBotCommandsFlow:
         # Тест доступа обычного пользователя
         user_message = create_test_message(
             text="/admin_command",
-            user=test_user,
-            chat=test_private_chat
+            user_id=test_user.id,
+            chat_id=test_private_chat.id,
+            is_admin=True
         )
         user_message.answer = AsyncMock()
         
         # Тест доступа администратора
         admin_message = create_test_message(
             text="/admin_command",
-            user=test_admin_user,
-            chat=test_private_chat
+            user_id=test_admin_user.id,
+            chat_id=test_private_chat.id,
+            is_admin=True
         )
         admin_message.answer = AsyncMock()
         
@@ -365,8 +373,9 @@ class TestBotCommandsFlow:
         """Тест обработки ошибок в потоке команд"""
         message = create_test_message(
             text="/failing_command",
-            user=test_admin_user,
-            chat=test_private_chat
+            user_id=test_admin_user.id,
+            chat_id=test_private_chat.id,
+            is_admin=True
         )
         
         router = Router()
@@ -398,8 +407,9 @@ class TestBotCommandsFlow:
         """Тест сложной команды с параметрами"""
         message = create_test_message(
             text="/config set max_messages 15",
-            user=test_admin_user,
-            chat=test_chat
+            user_id=test_admin_user.id,
+            chat_id=test_chat.id,
+            is_admin=True
         )
         
         router = Router()
@@ -479,8 +489,8 @@ class TestBotCommandsFlow:
         
         test_dispatcher.include_router(router)
         
-        # Создаем Update с callback query
-        update = Update(update_id=60, callback_query=callback_query)
+        # Создаем Update с callback query (используем фабрику)
+        update = create_test_update(callback_query=callback_query, update_id=60)
         
         await test_dispatcher.feed_update(bot=mock_bot, update=update)
         
@@ -532,8 +542,9 @@ class TestEndToEndScenarios:
         for i, command_text in enumerate(commands):
             message = create_test_message(
                 text=command_text,
-                user=test_admin_user,
-                chat=test_chat
+                user_id=test_admin_user.id,
+                chat_id=test_chat.id,
+            is_admin=True
             )
             message.answer = AsyncMock()
             
@@ -574,8 +585,9 @@ class TestEndToEndScenarios:
         for i, command in enumerate(journey_commands):
             message = create_test_message(
                 text=command,
-                user=test_admin_user,
-                chat=test_private_chat
+                user_id=test_admin_user.id,
+                chat_id=test_private_chat.id,
+            is_admin=True
             )
             message.answer = AsyncMock()
             

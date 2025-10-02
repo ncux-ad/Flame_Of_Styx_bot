@@ -267,6 +267,10 @@ def create_test_update():
         update.model_dump = MagicMock(return_value=update_data)
         update.model_validate = MagicMock(return_value=update)
         
+        # Добавляем атрибуты для совместимости с Aiogram
+        update.bot = None
+        update._bot = None
+        
         return update
     
     return _create_update

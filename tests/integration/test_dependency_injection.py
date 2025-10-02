@@ -147,9 +147,12 @@ class TestDependencyInjection:
         di_middleware = DIMiddleware()
         
         # Тест с одним админом
-        config_single = type('Config', (), {
-            'admin_ids': '123456789'
-        })()
+        from app.config import Settings
+        config_single = Settings(
+            bot_token="123456789:test_token",
+            admin_ids="123456789",
+            db_path="/tmp/test.db"
+        )
         
         data = {
             'bot': mock_bot,
@@ -164,9 +167,11 @@ class TestDependencyInjection:
         assert data['admin_id'] == 123456789
         
         # Тест с несколькими админами
-        config_multiple = type('Config', (), {
-            'admin_ids': '123456789,987654321,555666777'
-        })()
+        config_multiple = Settings(
+            bot_token="123456789:test_token",
+            admin_ids="123456789,987654321,555666777",
+            db_path="/tmp/test.db"
+        )
         
         data_multiple = {
             'bot': mock_bot,

@@ -65,8 +65,9 @@ class TestMiddlewareChain:
         # Создаем валидное сообщение
         message = create_test_message(
             text="/help",
-            user=test_user,
-            chat=test_chat
+            user_id=test_user.id,
+            chat_id=test_chat.id,
+            is_admin=True
         )
         
         router = Router()
@@ -104,8 +105,9 @@ class TestMiddlewareChain:
         """Тест что DI middleware работает последним и внедряет зависимости"""
         message = create_test_message(
             text="/status",
-            user=test_user,
-            chat=test_chat
+            user_id=test_user.id,
+            chat_id=test_chat.id,
+            is_admin=True
         )
         
         router = Router()
@@ -153,8 +155,9 @@ class TestMiddlewareChain:
         """Тест обработки исключений в middleware"""
         message = create_test_message(
             text="test message",
-            user=test_user,
-            chat=test_chat
+            user_id=test_user.id,
+            chat_id=test_chat.id,
+            is_admin=True
         )
         
         router = Router()
@@ -185,8 +188,9 @@ class TestMiddlewareChain:
         """Тест передачи данных через middleware"""
         message = create_test_message(
             text="/test",
-            user=test_user,
-            chat=test_chat
+            user_id=test_user.id,
+            chat_id=test_chat.id,
+            is_admin=True
         )
         
         # Тестируем каждый middleware отдельно
@@ -236,8 +240,9 @@ class TestMiddlewareIntegration:
         """Тест полного потока обработки админской команды"""
         message = create_test_message(
             text="/status",
-            user=test_admin_user,
-            chat=test_private_chat
+            user_id=test_admin_user.id,
+            chat_id=test_private_chat.id,
+            is_admin=True
         )
         
         router = Router()
@@ -279,15 +284,17 @@ class TestMiddlewareIntegration:
         # Тест с валидным сообщением
         valid_message = create_test_message(
             text="Hello, this is a normal message",
-            user=test_user,
-            chat=test_chat
+            user_id=test_user.id,
+            chat_id=test_chat.id,
+            is_admin=True
         )
         
         # Тест с подозрительным сообщением
         suspicious_message = create_test_message(
             text="<script>alert('xss')</script>",
-            user=test_user,
-            chat=test_chat
+            user_id=test_user.id,
+            chat_id=test_chat.id,
+            is_admin=True
         )
         
         router = Router()
