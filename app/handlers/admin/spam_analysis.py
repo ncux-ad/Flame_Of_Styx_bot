@@ -23,9 +23,10 @@ router = Router()
 # router.callback_query.filter(IsAdminOrSilentFilter())
 
 
-@router.message(Command("spam_analysis"), IsAdminOrSilentFilter())
+@router.message(Command("spam_analysis"))
 async def spam_analysis_menu(message: Message):
     """Показать меню анализа спама."""
+    logger.info("SPAM_ANALYSIS HANDLER CALLED!")
     try:
         user_id = message.from_user.id if message.from_user else 0
         logger.info(f"Spam analysis menu requested by user {user_id}")
