@@ -66,7 +66,7 @@
 - [x] **`pyproject.toml`** - настройки black, ruff, mypy ✅
 - [x] **GitHub Actions CI** - автоматический запуск тестов и линтеров ✅
 - [x] **Bandit + Safety** - статический анализ безопасности в CI ✅
-- [ ] **Bandit + Safety в pre-commit** - локальные хуки безопасности
+- [x] **Bandit + Safety в pre-commit** - локальные хуки безопасности ✅
 
 ### Логирование
 - [x] **`app/logging.py`** - настройка логирования
