@@ -4,7 +4,6 @@ import logging
 
 from aiogram import Router
 from aiogram.filters import BaseFilter
-
 from aiogram.types import Message
 
 from app.services.channels import ChannelService
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ChannelFilter(BaseFilter):
     """Filter for channel and supergroup messages only."""
-    
+
     async def __call__(self, message: Message) -> bool:
         """Check if message is from channel or supergroup."""
         return message.chat.type in ["channel", "supergroup"]

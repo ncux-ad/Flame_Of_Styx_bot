@@ -3,17 +3,18 @@
 """
 
 import logging
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
+from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
+from app.middlewares.silent_logging import send_silent_response
 from app.services.admin import AdminService
-from app.services.status import StatusService
 from app.services.help import HelpService
+from app.services.status import StatusService
 from app.utils.error_handling import handle_errors
 from app.utils.security import sanitize_for_logging
-from app.middlewares.silent_logging import send_silent_response
-from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,7 @@ async def handle_help_command(
 
         # Получаем аргументы команды
         command_args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
-        
+
         if command_args:
             # Запрошена справка по категории
             category = command_args[0].lower()
@@ -123,7 +124,7 @@ async def handle_help_command(
         else:
             # Общая справка
             help_text = await help_service.get_help_text(message.from_user.id)
-        
+
         await send_silent_response(message, help_text)
         logger.info(f"Help sent to {sanitize_for_logging(str(message.from_user.id))}")
 
@@ -167,11 +168,11 @@ async def handle_logs_command(
         # Получаем аргументы команды
         command_args = message.text.split()[1:] if message.text and len(message.text.split()) > 1 else []
         log_level = command_args[0].lower() if command_args else "all"
-        
+
         # Пробуем разные пути к файлу логов
         log_files = ["bot.log", "logs/bot.log", "/var/log/antispam-bot.log"]
         log_text = ""
-        
+
         for log_file in log_files:
             try:
                 with open(log_file, "r", encoding="utf-8") as f:
@@ -186,14 +187,14 @@ async def handle_logs_command(
                             filtered_lines = [line for line in lines if "INFO" in line]
                         else:
                             filtered_lines = lines
-                        
+
                         # Берем последние 30 строк
                         last_lines = filtered_lines[-30:] if len(filtered_lines) > 30 else filtered_lines
                         log_text = "".join(last_lines)
                         break
             except (FileNotFoundError, PermissionError, OSError):
                 continue
-        
+
         if not log_text:
             log_text = "Файл логов не найден. Проверьте:\n• bot.log\n• logs/bot.log\n• /var/log/antispam-bot.log"
         else:

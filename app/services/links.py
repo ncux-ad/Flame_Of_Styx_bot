@@ -11,10 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 # from app.auth.authorization import require_admin, safe_user_operation
 from app.models.bot import Bot as BotModel
-from app.services.moderation import ModerationService
 from app.services.limits import LimitsService
-from app.utils.security import safe_format_message, sanitize_for_logging
+from app.services.moderation import ModerationService
 from app.utils.pii_protection import secure_logger
+from app.utils.security import safe_format_message, sanitize_for_logging
 
 logger = logging.getLogger(__name__)
 
@@ -67,16 +67,16 @@ class LinkService:
         # Безопасное логирование для анализа спама
         if results:
             analysis_result = {
-                'bot_links_count': len([r for r in results if r[1]]),
-                'total_suspicious': len([r for r in results if r[1]]),
-                'check_types': [r[0] for r in results]
+                "bot_links_count": len([r for r in results if r[1]]),
+                "total_suspicious": len([r for r in results if r[1]]),
+                "check_types": [r[0] for r in results],
             }
-            
+
             secure_logger.log_spam_analysis(
                 message=message.text or message.caption or "",
                 user_id=message.from_user.id if message.from_user else None,
                 chat_id=message.chat.id,
-                analysis_result=analysis_result
+                analysis_result=analysis_result,
             )
 
         return results

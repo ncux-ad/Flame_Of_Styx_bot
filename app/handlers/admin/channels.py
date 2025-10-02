@@ -3,6 +3,7 @@
 """
 
 import logging
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -99,7 +100,7 @@ async def handle_find_chat_command(
             return
 
         chat_identifier = args[0]
-        
+
         try:
             # Пытаемся получить информацию о чате
             if chat_identifier.startswith("@"):
@@ -109,23 +110,23 @@ async def handle_find_chat_command(
                 # Это ID
                 chat_id = int(chat_identifier)
                 chat_info = await moderation_service.bot.get_chat(chat_id)
-            
+
             # Формируем ответ
             chat_type = chat_info.type
             title = chat_info.title or "Без названия"
             username = f"@{chat_info.username}" if chat_info.username else "Нет username"
             description = chat_info.description or "Нет описания"
-            
+
             text = f"🔍 <b>Информация о чате</b>\n\n"
             text += f"📝 <b>Название:</b> {title}\n"
             text += f"🆔 <b>ID:</b> <code>{chat_info.id}</code>\n"
             text += f"👤 <b>Username:</b> {username}\n"
             text += f"📋 <b>Тип:</b> {chat_type}\n"
             text += f"📄 <b>Описание:</b> {description[:200]}{'...' if len(description) > 200 else ''}\n"
-            
+
             await message.answer(text)
             logger.info(f"Chat info sent to {sanitize_for_logging(str(message.from_user.id))}")
-            
+
         except Exception as e:
             await message.answer(f"❌ Чат не найден: {sanitize_for_logging(str(e))}")
             logger.error(f"Error finding chat {chat_identifier}: {sanitize_for_logging(str(e))}")
@@ -155,7 +156,7 @@ async def handle_my_chats_command(
         text += "• /channels - список всех каналов\n"
         text += "• /sync_channels - синхронизация статуса каналов\n"
         text += "• /find_chat - найти чат по ID или username"
-        
+
         await message.answer(text)
         logger.info(f"My chats info sent to {sanitize_for_logging(str(message.from_user.id))}")
 

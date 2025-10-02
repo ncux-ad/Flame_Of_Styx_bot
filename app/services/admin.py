@@ -3,8 +3,9 @@ Admin Service - бизнес-логика для админских команд
 """
 
 import logging
-from typing import Dict, List, Optional, Any
-from aiogram.types import Message, CallbackQuery, User
+from typing import Any, Dict, List, Optional
+
+from aiogram.types import CallbackQuery, Message, User
 
 from app.services.bots import BotService
 from app.services.channels import ChannelService
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class AdminService:
     """Сервис для админских команд и операций."""
-    
+
     def __init__(
         self,
         moderation_service: ModerationService,
@@ -67,31 +68,37 @@ class AdminService:
 
             # Получаем каналы
             all_channels = await self.channel_service.get_all_channels()
-            
+
             # Разделяем на нативные и Foreign
             native_channels = []
             foreign_channels = []
             comment_groups = []
-            
+
             for channel in all_channels:
                 if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
-                    comment_groups.append({
-                        "title": channel.title or f"Группа {channel.telegram_id}",
-                        "chat_id": str(channel.telegram_id),
-                        "type": "Группа для комментариев",
-                    })
+                    comment_groups.append(
+                        {
+                            "title": channel.title or f"Группа {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "type": "Группа для комментариев",
+                        }
+                    )
                 elif hasattr(channel, "is_native") and bool(channel.is_native):
-                    native_channels.append({
-                        "title": channel.title or f"Канал {channel.telegram_id}",
-                        "chat_id": str(channel.telegram_id),
-                        "type": "Канал",
-                    })
+                    native_channels.append(
+                        {
+                            "title": channel.title or f"Канал {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "type": "Канал",
+                        }
+                    )
                 else:
-                    foreign_channels.append({
-                        "title": channel.title or f"Канал {channel.telegram_id}",
-                        "chat_id": str(channel.telegram_id),
-                        "type": "Иностранный канал",
-                    })
+                    foreign_channels.append(
+                        {
+                            "title": channel.title or f"Канал {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "type": "Иностранный канал",
+                        }
+                    )
 
             return {
                 "bot_id": "7977609078",
@@ -112,34 +119,40 @@ class AdminService:
         """Получить информацию о каналах."""
         try:
             channels = await self.channel_service.get_all_channels()
-            
+
             # Разделяем каналы
             native_channels = []
             foreign_channels = []
             comment_groups = []
-            
+
             for channel in channels:
                 if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
-                    comment_groups.append({
-                        "title": channel.title or f"Группа {channel.telegram_id}",
-                        "chat_id": str(channel.telegram_id),
-                        "username": channel.username,
-                        "member_count": getattr(channel, 'member_count', None),
-                    })
+                    comment_groups.append(
+                        {
+                            "title": channel.title or f"Группа {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "username": channel.username,
+                            "member_count": getattr(channel, "member_count", None),
+                        }
+                    )
                 elif hasattr(channel, "is_native") and bool(channel.is_native):
-                    native_channels.append({
-                        "title": channel.title or f"Канал {channel.telegram_id}",
-                        "chat_id": str(channel.telegram_id),
-                        "username": channel.username,
-                        "member_count": getattr(channel, 'member_count', None),
-                    })
+                    native_channels.append(
+                        {
+                            "title": channel.title or f"Канал {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "username": channel.username,
+                            "member_count": getattr(channel, "member_count", None),
+                        }
+                    )
                 else:
-                    foreign_channels.append({
-                        "title": channel.title or f"Канал {channel.telegram_id}",
-                        "chat_id": str(channel.telegram_id),
-                        "username": channel.username,
-                        "member_count": getattr(channel, 'member_count', None),
-                    })
+                    foreign_channels.append(
+                        {
+                            "title": channel.title or f"Канал {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "username": channel.username,
+                            "member_count": getattr(channel, "member_count", None),
+                        }
+                    )
 
             return {
                 "native_channels": native_channels,
@@ -168,20 +181,21 @@ class AdminService:
         try:
             # Получаем информацию о пользователе
             user_info = await self.profile_service.get_user_info(user_id)
-            
+
             # Создаем объект User для анализа
             from aiogram.types import User
+
             user = User(
-                id=user_info['id'],
-                is_bot=user_info['is_bot'],
-                first_name=user_info['first_name'],
-                last_name=user_info['last_name'],
-                username=user_info['username']
+                id=user_info["id"],
+                is_bot=user_info["is_bot"],
+                first_name=user_info["first_name"],
+                last_name=user_info["last_name"],
+                username=user_info["username"],
             )
-            
+
             # Анализируем профиль
             profile = await self.profile_service.analyze_user_profile(user, admin_id)
-            
+
             return {
                 "user_info": user_info,
                 "profile": profile,
@@ -192,17 +206,13 @@ class AdminService:
             raise
 
     async def handle_ban_suspicious_user(
-        self, 
-        user_id: int, 
-        chat_id: int, 
-        admin_id: int,
-        suspicion_score: float
+        self, user_id: int, chat_id: int, admin_id: int, suspicion_score: float
     ) -> Dict[str, Any]:
         """Забанить подозрительного пользователя."""
         try:
             # Получаем информацию о пользователе
             user_info = await self.profile_service.get_user_info(user_id)
-            
+
             # Баним пользователя
             success = await self.moderation_service.ban_user(
                 user_id=user_id,
@@ -210,7 +220,7 @@ class AdminService:
                 reason=f"Подозрительный профиль (счет: {suspicion_score:.2f})",
                 admin_id=admin_id,
             )
-            
+
             if success:
                 # Отмечаем профиль как проверенный и подтвержденный
                 await self.profile_service.mark_profile_as_reviewed(
@@ -219,7 +229,7 @@ class AdminService:
                     is_confirmed=True,
                     notes="Забанен за подозрительный профиль",
                 )
-            
+
             return {
                 "success": success,
                 "user_info": user_info,
@@ -229,11 +239,7 @@ class AdminService:
             logger.error(f"Error banning suspicious user: {sanitize_for_logging(str(e))}")
             raise
 
-    async def handle_watch_suspicious_user(
-        self, 
-        user_id: int, 
-        admin_id: int
-    ) -> Dict[str, Any]:
+    async def handle_watch_suspicious_user(self, user_id: int, admin_id: int) -> Dict[str, Any]:
         """Добавить подозрительного пользователя в наблюдение."""
         try:
             # Отмечаем профиль как проверенный, но не подтвержденный
@@ -243,7 +249,7 @@ class AdminService:
                 is_confirmed=False,
                 notes="Добавлен в наблюдение",
             )
-            
+
             return {
                 "success": True,
                 "user_id": user_id,
@@ -252,11 +258,7 @@ class AdminService:
             logger.error(f"Error watching suspicious user: {sanitize_for_logging(str(e))}")
             raise
 
-    async def handle_allow_suspicious_user(
-        self, 
-        user_id: int, 
-        admin_id: int
-    ) -> Dict[str, Any]:
+    async def handle_allow_suspicious_user(self, user_id: int, admin_id: int) -> Dict[str, Any]:
         """Разрешить подозрительного пользователя (ложное срабатывание)."""
         try:
             # Отмечаем профиль как проверенный и ложное срабатывание
@@ -266,7 +268,7 @@ class AdminService:
                 is_confirmed=False,
                 notes="Ложное срабатывание - разрешен",
             )
-            
+
             return {
                 "success": True,
                 "user_id": user_id,

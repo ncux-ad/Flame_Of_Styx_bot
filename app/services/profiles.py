@@ -13,8 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # from app.models.moderation_log import ModerationAction, ModerationLog
 from app.models.suspicious_profile import SuspiciousProfile
 from app.services.moderation import ModerationService
-from app.utils.security import safe_format_message, sanitize_for_logging
 from app.utils.pii_protection import secure_logger
+from app.utils.security import safe_format_message, sanitize_for_logging
 
 logger = logging.getLogger(__name__)
 
@@ -74,15 +74,15 @@ class ProfileService:
                 user_id=user.id,
                 chat_id=0,  # Profile analysis not tied to specific chat
                 analysis_result={
-                    'profile_analysis': analysis_result,
-                    'user_info': {
-                        'first_name': user.first_name,
-                        'last_name': user.last_name,
-                        'username': user.username,
-                        'is_bot': user.is_bot
+                    "profile_analysis": analysis_result,
+                    "user_info": {
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                        "username": user.username,
+                        "is_bot": user.is_bot,
                     },
-                    'log_type': 'profile_analysis'
-                }
+                    "log_type": "profile_analysis",
+                },
             )
 
             if analysis_result["is_suspicious"]:
@@ -91,7 +91,7 @@ class ProfileService:
                     existing_profile.suspicion_score = analysis_result["suspicion_score"]
                     existing_profile.detected_patterns = ",".join(analysis_result["patterns"])
                     existing_profile.is_suspicious = analysis_result["is_suspicious"]
-                    existing_profile.analysis_reason = "Suspicion score: " + str(analysis_result['suspicion_score'])
+                    existing_profile.analysis_reason = "Suspicion score: " + str(analysis_result["suspicion_score"])
                     existing_profile.updated_at = datetime.utcnow()
 
                     await self.db.commit()
@@ -160,7 +160,14 @@ class ProfileService:
             analysis["suspicion_score"] = self._calculate_suspicion_score(analysis)
             analysis["is_suspicious"] = analysis["suspicion_score"] > 0.2
             logger.info(
-                "Analysis result for user " + str(user.id) + ": score=" + str(analysis['suspicion_score']) + ", patterns=" + str(analysis['patterns']) + ", is_suspicious=" + str(analysis['is_suspicious'])
+                "Analysis result for user "
+                + str(user.id)
+                + ": score="
+                + str(analysis["suspicion_score"])
+                + ", patterns="
+                + str(analysis["patterns"])
+                + ", is_suspicious="
+                + str(analysis["is_suspicious"])
             )
 
         except Exception as e:
@@ -286,7 +293,7 @@ class ProfileService:
             has_bait_channel=analysis_result.get("has_bait_channel", False),
             suspicion_score=float(analysis_result.get("suspicion_score", 0.0)),
             detected_patterns=",".join(analysis_result.get("patterns", []) or []),
-            analysis_reason="Suspicion score: " + str(analysis_result.get('suspicion_score', 0.0)),
+            analysis_reason="Suspicion score: " + str(analysis_result.get("suspicion_score", 0.0)),
         )
 
         self.db.add(profile)
@@ -301,7 +308,7 @@ class ProfileService:
             from app.keyboards.inline import get_suspicious_profile_keyboard
 
             message = "⚠️ <b>Подозрительный профиль обнаружен</b>\n\n"
-            message += "<b>Пользователь:</b> " + str(user.first_name or 'Unknown') + "\n"
+            message += "<b>Пользователь:</b> " + str(user.first_name or "Unknown") + "\n"
             if user.username:
                 message += "<b>Username:</b> @" + str(user.username) + "\n"
             message += "<b>ID:</b> " + str(user.id) + "\n"

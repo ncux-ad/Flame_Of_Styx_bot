@@ -3,17 +3,18 @@
 """
 
 import logging
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from app.services.moderation import ModerationService
-from app.services.channels import ChannelService
-from app.services.profiles import ProfileService
+from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 from app.services.admin import AdminService
+from app.services.channels import ChannelService
+from app.services.moderation import ModerationService
+from app.services.profiles import ProfileService
 from app.utils.error_handling import handle_errors
 from app.utils.security import sanitize_for_logging
-from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,9 @@ async def handle_unban_command(
                 chat_info = (
                     await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
                 )
-                chat_display = f"@{chat_info.get('username')}" if chat_info.get("username") else chat_info.get("title", "Unknown Chat")
+                chat_display = (
+                    f"@{chat_info.get('username')}" if chat_info.get("username") else chat_info.get("title", "Unknown Chat")
+                )
 
                 text += f"{i}. <b>{user_display}</b> <code>({user_id})</code>\n"
                 text += f"   Причина: {reason}\n"
@@ -97,10 +100,16 @@ async def handle_unban_command(
                 success = await moderation_service.unban_user(user_id=user_id, chat_id=chat_id, admin_id=admin_id)
 
                 if success:
-                    await message.answer(f"✅ Пользователь <code>{sanitize_for_logging(str(user_id))}</code> разблокирован в чате <code>{sanitize_for_logging(str(chat_id))}</code>")
-                    logger.info(f"User {sanitize_for_logging(str(user_id))} unbanned by admin {sanitize_for_logging(str(admin_id))}")
+                    await message.answer(
+                        f"✅ Пользователь <code>{sanitize_for_logging(str(user_id))}</code> разблокирован в чате <code>{sanitize_for_logging(str(chat_id))}</code>"
+                    )
+                    logger.info(
+                        f"User {sanitize_for_logging(str(user_id))} unbanned by admin {sanitize_for_logging(str(admin_id))}"
+                    )
                 else:
-                    await message.answer(f"❌ Не удалось разблокировать пользователя <code>{sanitize_for_logging(str(user_id))}</code>")
+                    await message.answer(
+                        f"❌ Не удалось разблокировать пользователя <code>{sanitize_for_logging(str(user_id))}</code>"
+                    )
             else:
                 await message.answer("❌ Неверный номер пользователя")
             return
@@ -115,10 +124,16 @@ async def handle_unban_command(
 
             if success:
                 chat_info = f" в чате <code>{sanitize_for_logging(str(chat_id))}</code>" if chat_id else ""
-                await message.answer(f"✅ Пользователь <code>{sanitize_for_logging(str(user_id))}</code> разблокирован{chat_info}")
-                logger.info(f"User {sanitize_for_logging(str(user_id))} unbanned by admin {sanitize_for_logging(str(admin_id))}")
+                await message.answer(
+                    f"✅ Пользователь <code>{sanitize_for_logging(str(user_id))}</code> разблокирован{chat_info}"
+                )
+                logger.info(
+                    f"User {sanitize_for_logging(str(user_id))} unbanned by admin {sanitize_for_logging(str(admin_id))}"
+                )
             else:
-                await message.answer(f"❌ Не удалось разблокировать пользователя <code>{sanitize_for_logging(str(user_id))}</code>")
+                await message.answer(
+                    f"❌ Не удалось разблокировать пользователя <code>{sanitize_for_logging(str(user_id))}</code>"
+                )
 
         except ValueError:
             await message.answer("❌ Неверный формат ID пользователя или чата")
@@ -170,9 +185,13 @@ async def handle_force_unban_command(
                 # Пытаемся получить информацию о пользователе через Telegram API
                 user_info = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=int(username))
                 user_id = user_info.user.id
-                logger.info(f"Found user_id {sanitize_for_logging(str(user_id))} for username @{sanitize_for_logging(username)}")
+                logger.info(
+                    f"Found user_id {sanitize_for_logging(str(user_id))} for username @{sanitize_for_logging(username)}"
+                )
             except Exception as e:
-                await message.answer(f"❌ Не удалось найти пользователя @{sanitize_for_logging(username)}: {sanitize_for_logging(str(e))}")
+                await message.answer(
+                    f"❌ Не удалось найти пользователя @{sanitize_for_logging(username)}: {sanitize_for_logging(str(e))}"
+                )
                 return
         else:
             # Это user_id
@@ -202,9 +221,13 @@ async def handle_force_unban_command(
                 f"📍 <b>Область:</b> {chat_info}\n"
                 f"🔓 <b>Статус:</b> Разблокирован"
             )
-            logger.info(f"Force unban completed for user {sanitize_for_logging(str(user_id))} by admin {sanitize_for_logging(str(admin_id))}")
+            logger.info(
+                f"Force unban completed for user {sanitize_for_logging(str(user_id))} by admin {sanitize_for_logging(str(admin_id))}"
+            )
         else:
-            await message.answer(f"❌ Не удалось выполнить принудительный разбан пользователя <code>{sanitize_for_logging(str(user_id))}</code>")
+            await message.answer(
+                f"❌ Не удалось выполнить принудительный разбан пользователя <code>{sanitize_for_logging(str(user_id))}</code>"
+            )
 
     except Exception as e:
         logger.error(f"Error in force_unban command: {sanitize_for_logging(str(e))}")
@@ -254,7 +277,9 @@ async def handle_banned_command(
             chat_info = (
                 await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
             )
-            chat_display = f"@{chat_info.get('username')}" if chat_info.get("username") else chat_info.get("title", "Unknown Chat")
+            chat_display = (
+                f"@{chat_info.get('username')}" if chat_info.get("username") else chat_info.get("title", "Unknown Chat")
+            )
 
             text += f"{i}. <b>{user_display}</b> <code>({user_id})</code>\n"
             text += f"   Причина: {reason}\n"
@@ -308,10 +333,12 @@ async def handle_ban_history_command(
             chat_info = (
                 await channel_service.get_channel_info(chat_id) if chat_id else {"title": "Unknown Chat", "username": None}
             )
-            chat_display = f"@{chat_info.get('username')}" if chat_info.get("username") else chat_info.get("title", "Unknown Chat")
-            
+            chat_display = (
+                f"@{chat_info.get('username')}" if chat_info.get("username") else chat_info.get("title", "Unknown Chat")
+            )
+
             text += f"<b>💬 {chat_display}</b> <code>({chat_id})</code>\n"
-            
+
             for log_entry in chat_bans:
                 user_id = log_entry.user_id
                 reason = log_entry.reason or "Спам"
@@ -320,7 +347,7 @@ async def handle_ban_history_command(
 
                 # Получаем информацию о пользователе
                 user_info = await profile_service.get_user_info(int(str(user_id)))
-                
+
                 # Формируем отображение пользователя
                 if user_info.get("username"):
                     user_display = f"@{user_info.get('username')}"
@@ -334,9 +361,9 @@ async def handle_ban_history_command(
                 text += f"     Причина: {reason}\n"
                 text += f"     Статус: {is_active}\n"
                 text += f"     Дата: {date_text}\n\n"
-                
+
                 entry_number += 1
-            
+
             text += "\n"
 
         text += "💡 <b>Для синхронизации используйте:</b>\n"
@@ -374,28 +401,32 @@ async def handle_sync_bans_command(
             # Показываем только нативные каналы (где бот админ) для синхронизации
             # Используем прямое обращение к ChannelService
             all_channels = await channel_service.get_all_channels()
-            
+
             # Фильтруем только нативные каналы и группы комментариев
             native_channels = []
             comment_groups = []
-            
+
             for channel in all_channels:
                 if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
-                    comment_groups.append({
-                        "title": channel.title or f"Группа {channel.telegram_id}",
-                        "chat_id": str(channel.telegram_id),
-                        "username": channel.username,
-                    })
+                    comment_groups.append(
+                        {
+                            "title": channel.title or f"Группа {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "username": channel.username,
+                        }
+                    )
                 elif hasattr(channel, "is_native") and bool(channel.is_native):
-                    native_channels.append({
-                        "title": channel.title or f"Канал {channel.telegram_id}",
-                        "chat_id": str(channel.telegram_id),
-                        "username": channel.username,
-                    })
-            
+                    native_channels.append(
+                        {
+                            "title": channel.title or f"Канал {channel.telegram_id}",
+                            "chat_id": str(channel.telegram_id),
+                            "username": channel.username,
+                        }
+                    )
+
             # Объединяем нативные каналы и группы комментариев
             available_chats = native_channels + comment_groups
-            
+
             if not available_chats:
                 await message.answer("❌ Нет чатов где бот является администратором")
                 return
@@ -409,7 +440,7 @@ async def handle_sync_bans_command(
                 chat_id = chat["chat_id"]
                 chat_title = chat["title"]
                 chat_username = f"@{chat['username']}" if chat.get("username") else "Без username"
-                
+
                 text += f"{i}. <b>{chat_title}</b> {chat_username} <code>({chat_id})</code>\n"
 
             text += "\n💡 <b>Использование:</b>\n"
@@ -426,51 +457,59 @@ async def handle_sync_bans_command(
                 # По номеру
                 # Используем прямое обращение к ChannelService
                 all_channels = await channel_service.get_all_channels()
-                
+
                 # Фильтруем только нативные каналы и группы комментариев
                 native_channels = []
                 comment_groups = []
-                
+
                 for channel in all_channels:
                     if hasattr(channel, "is_comment_group") and bool(channel.is_comment_group):
-                        comment_groups.append({
-                            "title": channel.title or f"Группа {channel.telegram_id}",
-                            "chat_id": str(channel.telegram_id),
-                            "username": channel.username,
-                        })
+                        comment_groups.append(
+                            {
+                                "title": channel.title or f"Группа {channel.telegram_id}",
+                                "chat_id": str(channel.telegram_id),
+                                "username": channel.username,
+                            }
+                        )
                     elif hasattr(channel, "is_native") and bool(channel.is_native):
-                        native_channels.append({
-                            "title": channel.title or f"Канал {channel.telegram_id}",
-                            "chat_id": str(channel.telegram_id),
-                            "username": channel.username,
-                        })
-                
+                        native_channels.append(
+                            {
+                                "title": channel.title or f"Канал {channel.telegram_id}",
+                                "chat_id": str(channel.telegram_id),
+                                "username": channel.username,
+                            }
+                        )
+
                 # Объединяем нативные каналы и группы комментариев
                 available_chats = native_channels + comment_groups
                 recent_chats = available_chats[:5]
-                
+
                 chat_index = int(args[0]) - 1
-                
+
                 if 0 <= chat_index < len(recent_chats):
                     chat_id = int(recent_chats[chat_index]["chat_id"])
-                    
+
                     # Простая синхронизация - получаем заблокированных пользователей
                     banned_users = await moderation_service.get_banned_users(limit=100)
                     chat_banned = [user for user in banned_users if user.chat_id == chat_id]
-                    
-                    await message.answer(f"✅ Синхронизация завершена для чата {chat_id}\n\n📊 Найдено заблокированных пользователей: {len(chat_banned)}")
+
+                    await message.answer(
+                        f"✅ Синхронизация завершена для чата {chat_id}\n\n📊 Найдено заблокированных пользователей: {len(chat_banned)}"
+                    )
                 else:
                     await message.answer("❌ Неверный номер чата")
             else:
                 # По chat_id
                 try:
                     chat_id = int(args[0])
-                    
+
                     # Простая синхронизация - получаем заблокированных пользователей
                     banned_users = await moderation_service.get_banned_users(limit=100)
                     chat_banned = [user for user in banned_users if user.chat_id == chat_id]
-                    
-                    await message.answer(f"✅ Синхронизация завершена для чата {chat_id}\n\n📊 Найдено заблокированных пользователей: {len(chat_banned)}")
+
+                    await message.answer(
+                        f"✅ Синхронизация завершена для чата {chat_id}\n\n📊 Найдено заблокированных пользователей: {len(chat_banned)}"
+                    )
                 except ValueError:
                     await message.answer("❌ Неверный формат ID чата")
         else:
@@ -484,15 +523,15 @@ async def handle_sync_bans_command(
             except ValueError:
                 await message.answer("❌ Неверный формат ID пользователя или чата")
                 return
-            
+
             try:
                 # Проверяем статус пользователя в Telegram
                 member = await moderation_service.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
                 telegram_status = member.status
-                
+
                 # Проверяем статус в базе данных
                 is_banned_db = await moderation_service.is_user_banned(user_id)
-                
+
                 # Синхронизируем статус
                 if telegram_status in ["kicked", "left"] and not is_banned_db:
                     # Пользователь заблокирован в Telegram, но не в БД - добавляем в БД
@@ -504,12 +543,13 @@ async def handle_sync_bans_command(
                     await message.answer(f"✅ Пользователь {user_id} разблокирован")
                 else:
                     await message.answer(f"ℹ️ Статус пользователя {user_id} уже синхронизирован")
-                    
+
             except Exception as e:
                 await message.answer(f"❌ Ошибка синхронизации: {sanitize_for_logging(str(e))}")
 
     except Exception as e:
         logger.error(f"Error in sync_bans command: {sanitize_for_logging(str(e))}")
         import traceback
+
         logger.error(f"Sync_bans traceback: {traceback.format_exc()}")
         await message.answer(f"❌ Ошибка синхронизации банов: {sanitize_for_logging(str(e))}")

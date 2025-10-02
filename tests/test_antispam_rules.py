@@ -2,15 +2,16 @@
 Unit tests for anti-spam rules and detection logic.
 """
 
-import pytest
-from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
-from aiogram.types import Message, User, Chat, MessageEntity
+from unittest.mock import Mock, patch
 
-from app.services.antispam import AntiSpamService
-from app.services.profiles import ProfileService
-from app.services.links import LinkService
+import pytest
+from aiogram.types import Chat, Message, MessageEntity, User
+
 from app.config import Settings
+from app.services.antispam import AntiSpamService
+from app.services.links import LinkService
+from app.services.profiles import ProfileService
 
 
 @pytest.fixture
@@ -119,13 +120,13 @@ class TestAntiSpamRules:
     async def test_message_rate_limiting(self, mock_config, mock_message):
         """Test message rate limiting."""
         service = AntiSpamService(mock_config)
-        
+
         # Test normal message rate
         for i in range(5):
             result = await service.check_message_rate(mock_message)
             assert result["allowed"] is True
             assert result["reason"] == "OK"
-        
+
         # Test rate limit exceeded
         for i in range(10):
             result = await service.check_message_rate(mock_message)
@@ -139,15 +140,17 @@ class TestAntiSpamRules:
     async def test_link_detection(self, mock_config, mock_message):
         """Test link detection and counting."""
         service = AntiSpamService(mock_config)
-        
+
         # Test message with links
         mock_message.text = "Check this link: https://t.me/bot and this one: https://example.com"
         result = await service.check_links(mock_message)
         assert result["allowed"] is True
         assert result["link_count"] == 2
-        
+
         # Test too many links
-        mock_message.text = "Link1: https://t.me/bot1 Link2: https://t.me/bot2 Link3: https://t.me/bot3 Link4: https://t.me/bot4"
+        mock_message.text = (
+            "Link1: https://t.me/bot1 Link2: https://t.me/bot2 Link3: https://t.me/bot3 Link4: https://t.me/bot4"
+        )
         result = await service.check_links(mock_message)
         assert result["allowed"] is False
         assert result["link_count"] == 4
@@ -157,13 +160,13 @@ class TestAntiSpamRules:
     async def test_telegram_bot_links(self, mock_config, mock_message):
         """Test detection of t.me/bot links."""
         service = AntiSpamService(mock_config)
-        
+
         # Test t.me/bot link
         mock_message.text = "Check this bot: https://t.me/testbot"
         result = await service.check_links(mock_message)
         assert result["allowed"] is False
         assert "t.me/bot" in result["reason"].lower()
-        
+
         # Test regular t.me link (should be allowed)
         mock_message.text = "Check this channel: https://t.me/testchannel"
         result = await service.check_links(mock_message)
@@ -173,14 +176,14 @@ class TestAntiSpamRules:
     async def test_media_without_caption(self, mock_config, mock_message):
         """Test media messages without captions."""
         service = AntiSpamService(mock_config)
-        
+
         # Test photo without caption (should be allowed)
         mock_message.text = None
         mock_message.caption = None
         mock_message.photo = [Mock()]
         result = await service.check_media_caption(mock_message)
         assert result["allowed"] is True
-        
+
         # Test video without caption (should be allowed)
         mock_message.photo = None
         mock_message.video = Mock()
@@ -191,12 +194,12 @@ class TestAntiSpamRules:
     async def test_suspicious_profile_detection(self, mock_config, mock_user):
         """Test suspicious profile detection."""
         service = ProfileService(mock_config)
-        
+
         # Test normal profile
         result = await service.analyze_profile(mock_user)
         assert result["suspicious"] is False
         assert result["score"] < 0.5
-        
+
         # Test suspicious profile (bot-like username)
         mock_user.username = "testbot123"
         mock_user.first_name = "Test"
@@ -209,11 +212,11 @@ class TestAntiSpamRules:
     async def test_duplicate_message_detection(self, mock_config, mock_message):
         """Test duplicate message detection."""
         service = AntiSpamService(mock_config)
-        
+
         # Test first message
         result = await service.check_duplicate_message(mock_message)
         assert result["allowed"] is True
-        
+
         # Test duplicate message
         result = await service.check_duplicate_message(mock_message)
         assert result["allowed"] is False
@@ -223,12 +226,12 @@ class TestAntiSpamRules:
     async def test_spam_keywords_detection(self, mock_config, mock_message):
         """Test spam keywords detection."""
         service = AntiSpamService(mock_config)
-        
+
         # Test normal message
         mock_message.text = "Hello, how are you?"
         result = await service.check_spam_keywords(mock_message)
         assert result["allowed"] is True
-        
+
         # Test message with spam keywords
         mock_message.text = "FREE MONEY! CLICK HERE NOW! URGENT!"
         result = await service.check_spam_keywords(mock_message)
@@ -239,12 +242,12 @@ class TestAntiSpamRules:
     async def test_caps_lock_detection(self, mock_config, mock_message):
         """Test excessive caps detection."""
         service = AntiSpamService(mock_config)
-        
+
         # Test normal message
         mock_message.text = "Hello, how are you?"
         result = await service.check_caps_lock(mock_message)
         assert result["allowed"] is True
-        
+
         # Test message with excessive caps
         mock_message.text = "HELLO EVERYONE! THIS IS A TEST MESSAGE!"
         result = await service.check_caps_lock(mock_message)
@@ -255,12 +258,12 @@ class TestAntiSpamRules:
     async def test_emoji_spam_detection(self, mock_config, mock_message):
         """Test emoji spam detection."""
         service = AntiSpamService(mock_config)
-        
+
         # Test normal message with few emojis
         mock_message.text = "Hello! 😊 How are you? 👍"
         result = await service.check_emoji_spam(mock_message)
         assert result["allowed"] is True
-        
+
         # Test message with emoji spam
         mock_message.text = "😀😃😄😁😆😅😂🤣😊😇🙂🙃😉😌😍🥰😘😗😙😚😋😛😝😜🤪🤨🧐🤓😎🤩🥳😏😒😞😔😟😕🙁☹️😣😖😫😩🥺😢😭😤😠😡🤬🤯😳🥵🥶😱😨😰😥😓🤗🤔🤭🤫🤥😶😐😑😬🙄😯😦😧😮😲🥱😴🤤😪😵🤐🥴🤢🤮🤧😷🤒🤕🤑🤠😈👿👹👺🤡💩👻💀☠️👽👾🤖🎃😺😸😹😻😼😽🙀😿😾"
         result = await service.check_emoji_spam(mock_message)
@@ -271,13 +274,13 @@ class TestAntiSpamRules:
     async def test_combined_antispam_check(self, mock_config, mock_message):
         """Test combined anti-spam check."""
         service = AntiSpamService(mock_config)
-        
+
         # Test normal message
         mock_message.text = "Hello, how are you?"
         result = await service.check_message(mock_message)
         assert result["allowed"] is True
         assert result["reason"] == "OK"
-        
+
         # Test spam message (multiple violations)
         mock_message.text = "FREE MONEY! CLICK HERE NOW! https://t.me/bot URGENT! 😀😃😄😁😆😅😂🤣😊😇🙂🙃😉😌😍🥰😘😗😙😚😋😛😝😜🤪🤨🧐🤓😎🤩🥳😏😒😞😔😟😕🙁☹️😣😖😫😩🥺😢😭😤😠😡🤬🤯😳🥵🥶😱😨😰😥😓🤗🤔🤭🤫🤥😶😐😑😬🙄😯😦😧😮😲🥱😴🤤😪😵🤐🥴🤢🤮🤧😷🤒🤕🤑🤠😈👿👹👺🤡💩👻💀☠️👽👾🤖🎃😺😸😹😻😼😽🙀😿😾"
         result = await service.check_message(mock_message)
@@ -292,14 +295,14 @@ class TestProfileAnalysis:
     async def test_normal_profile(self, mock_config):
         """Test analysis of normal profile."""
         service = ProfileService(mock_config)
-        
+
         user = Mock(spec=User)
         user.id = 123456789
         user.first_name = "John"
         user.last_name = "Doe"
         user.username = "johndoe"
         user.is_bot = False
-        
+
         result = await service.analyze_profile(user)
         assert result["suspicious"] is False
         assert result["score"] < 0.5
@@ -309,14 +312,14 @@ class TestProfileAnalysis:
     async def test_bot_like_profile(self, mock_config):
         """Test analysis of bot-like profile."""
         service = ProfileService(mock_config)
-        
+
         user = Mock(spec=User)
         user.id = 123456789
         user.first_name = "Test"
         user.last_name = None
         user.username = "testbot123"
         user.is_bot = False
-        
+
         result = await service.analyze_profile(user)
         assert result["suspicious"] is True
         assert result["score"] >= 0.5
@@ -326,14 +329,14 @@ class TestProfileAnalysis:
     async def test_incomplete_profile(self, mock_config):
         """Test analysis of incomplete profile."""
         service = ProfileService(mock_config)
-        
+
         user = Mock(spec=User)
         user.id = 123456789
         user.first_name = "A"
         user.last_name = None
         user.username = None
         user.is_bot = False
-        
+
         result = await service.analyze_profile(user)
         assert result["suspicious"] is True
         assert result["score"] >= 0.5
@@ -345,7 +348,7 @@ class TestProfileAnalysis:
     async def test_suspicious_patterns(self, mock_config):
         """Test various suspicious patterns."""
         service = ProfileService(mock_config)
-        
+
         # Test profile with suspicious patterns
         user = Mock(spec=User)
         user.id = 123456789
@@ -353,7 +356,7 @@ class TestProfileAnalysis:
         user.last_name = "Bot"
         user.username = "assistant_bot"
         user.is_bot = False
-        
+
         result = await service.analyze_profile(user)
         assert result["suspicious"] is True
         assert result["score"] >= 0.5
@@ -367,14 +370,11 @@ class TestLinkService:
     async def test_extract_links(self, mock_config):
         """Test link extraction from message."""
         service = LinkService(mock_config)
-        
+
         message = Mock(spec=Message)
         message.text = "Check these links: https://t.me/bot and https://example.com"
-        message.entities = [
-            Mock(type="url", offset=20, length=16),
-            Mock(type="url", offset=41, length=19)
-        ]
-        
+        message.entities = [Mock(type="url", offset=20, length=16), Mock(type="url", offset=41, length=19)]
+
         links = await service.extract_links(message)
         assert len(links) == 2
         assert "https://t.me/bot" in links
@@ -384,15 +384,15 @@ class TestLinkService:
     async def test_is_telegram_bot_link(self, mock_config):
         """Test Telegram bot link detection."""
         service = LinkService(mock_config)
-        
+
         # Test t.me/bot link
         assert await service.is_telegram_bot_link("https://t.me/testbot") is True
         assert await service.is_telegram_bot_link("https://t.me/testbot?start=123") is True
-        
+
         # Test regular t.me link
         assert await service.is_telegram_bot_link("https://t.me/testchannel") is False
         assert await service.is_telegram_bot_link("https://t.me/testgroup") is False
-        
+
         # Test non-telegram links
         assert await service.is_telegram_bot_link("https://example.com") is False
         assert await service.is_telegram_bot_link("https://google.com") is False
@@ -401,15 +401,15 @@ class TestLinkService:
     async def test_count_links(self, mock_config):
         """Test link counting."""
         service = LinkService(mock_config)
-        
+
         message = Mock(spec=Message)
         message.text = "Link1: https://t.me/bot1 Link2: https://t.me/bot2 Link3: https://example.com"
         message.entities = [
             Mock(type="url", offset=7, length=17),
             Mock(type="url", offset=30, length=17),
-            Mock(type="url", offset=53, length=19)
+            Mock(type="url", offset=53, length=19),
         ]
-        
+
         count = await service.count_links(message)
         assert count == 3
 
@@ -417,25 +417,25 @@ class TestLinkService:
     async def test_check_links(self, mock_config):
         """Test link checking with limits."""
         service = LinkService(mock_config)
-        
+
         # Test within limits
         message = Mock(spec=Message)
         message.text = "Check this: https://example.com"
         message.entities = [Mock(type="url", offset=12, length=19)]
-        
+
         result = await service.check_links(message)
         assert result["allowed"] is True
         assert result["link_count"] == 1
-        
+
         # Test exceeding limits
         message.text = "Link1: https://t.me/bot1 Link2: https://t.me/bot2 Link3: https://t.me/bot3 Link4: https://t.me/bot4"
         message.entities = [
             Mock(type="url", offset=6, length=17),
             Mock(type="url", offset=29, length=17),
             Mock(type="url", offset=52, length=17),
-            Mock(type="url", offset=75, length=17)
+            Mock(type="url", offset=75, length=17),
         ]
-        
+
         result = await service.check_links(message)
         assert result["allowed"] is False
         assert result["link_count"] == 4

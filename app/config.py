@@ -4,8 +4,12 @@ from typing import List
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
-from app.constants import SUSPICION_THRESHOLD, DEFAULT_DB_PATH, DEFAULT_REDIS_URL
-from app.utils.security import validate_admin_id, validate_bot_token, validate_test_bot_token
+from app.constants import DEFAULT_DB_PATH, DEFAULT_REDIS_URL, SUSPICION_THRESHOLD
+from app.utils.security import (
+    validate_admin_id,
+    validate_bot_token,
+    validate_test_bot_token,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +34,14 @@ class Settings(BaseSettings):
     allow_photos_without_caption: bool = True  # Разрешать фото без подписи
     allow_videos_without_caption: bool = True  # Разрешать видео без подписи
     max_document_size_suspicious: int = 50000  # Максимальный размер документа для подозрения (байты)
-    
+
     # Настройки уведомлений
     show_limits_on_startup: bool = True  # Показывать лимиты при запуске бота
-    
+
     # Настройки Redis
     redis_url: str = Field(default=DEFAULT_REDIS_URL, description="URL подключения к Redis")
     redis_enabled: bool = Field(default=False, description="Включить Redis rate limiting")
-    
+
     # Настройки Redis Rate Limiting
     redis_user_limit: int = Field(default=10, ge=1, le=100, description="Лимит сообщений для пользователей")
     redis_admin_limit: int = Field(default=100, ge=10, le=1000, description="Лимит сообщений для администраторов")
@@ -124,10 +128,10 @@ class Settings(BaseSettings):
         """Валидация URL Redis."""
         if not v:
             raise ValueError("redis_url не может быть пустым")
-        
+
         if not v.startswith(("redis://", "rediss://")):
             raise ValueError("redis_url должен начинаться с redis:// или rediss://")
-        
+
         return v
 
     model_config = {"env_file": ".env", "extra": "ignore"}  # Игнорировать дополнительные поля
@@ -149,7 +153,7 @@ def _validate_config(config: Settings) -> None:
     # Проверяем, что admin_ids_list не пустой (только для production)
     if not config.admin_ids_list and not config.bot_token.startswith("test_token"):
         raise ValueError("Список админов пуст. Проверьте ADMIN_IDS.")
-    
+
     # Для тестового режима добавляем тестового админа
     if config.bot_token.startswith("test_token") and not config.admin_ids_list:
         config.admin_ids_list = [123456789]

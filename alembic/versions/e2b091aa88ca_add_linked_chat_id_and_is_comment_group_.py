@@ -5,6 +5,7 @@ Revises: 84664956487b
 Create Date: 2025-09-13 03:00:12.757539
 
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -24,9 +25,7 @@ def upgrade() -> None:
     op.add_column("channels", sa.Column("linked_chat_id", sa.Integer(), nullable=True))
 
     # Add is_comment_group column
-    op.add_column(
-        "channels", sa.Column("is_comment_group", sa.Boolean(), nullable=False, server_default="0")
-    )
+    op.add_column("channels", sa.Column("is_comment_group", sa.Boolean(), nullable=False, server_default="0"))
 
 
 def downgrade() -> None:

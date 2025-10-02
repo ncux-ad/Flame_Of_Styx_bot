@@ -690,20 +690,20 @@ class HelpService:
         if admin_only:
             return [cmd for cmd in self.commands.values() if cmd.admin_only]
         return list(self.commands.values())
-    
+
     async def get_help_text(self, user_id: Optional[int] = None) -> str:
         """Get help text for the user."""
         # Assume user is admin if user_id is provided
         is_admin = user_id is not None and user_id > 0
         return self.get_main_help(is_admin=is_admin)
-    
+
     async def get_instructions_text(self, user_id: Optional[int] = None) -> str:
         """Get instructions text for the user."""
         # Assume user is admin if user_id is provided
         is_admin = user_id is not None and user_id > 0
         if not is_admin:
             return "❌ <b>Доступ запрещен</b>\n\nЭта функция доступна только администраторам."
-        
+
         return """<b>ИНСТРУКЦИЯ ПО НАСТРОЙКЕ ПРАВ БОТА</b>
 
 🤖 <b>Что получают админы каналов при добавлении бота:</b>

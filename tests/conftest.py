@@ -22,9 +22,7 @@ def event_loop():
 def test_settings():
     """Test settings."""
     return Settings(
-        bot_token="123456789:ABCdefGHIjklMNOpqrsTUVwxyz123456789",
-        admin_ids="123456789,987654321",
-        db_path="test.db"
+        bot_token="123456789:ABCdefGHIjklMNOpqrsTUVwxyz123456789", admin_ids="123456789,987654321", db_path="test.db"
     )
 
 
@@ -45,9 +43,7 @@ def mock_dispatcher():
 @pytest.fixture
 def mock_user():
     """Mock user instance."""
-    return User(
-        id=123456789, is_bot=False, first_name="Test", last_name="User", username="testuser"
-    )
+    return User(id=123456789, is_bot=False, first_name="Test", last_name="User", username="testuser")
 
 
 @pytest.fixture
@@ -65,9 +61,7 @@ def mock_chat():
 @pytest.fixture
 def mock_message(mock_user, mock_chat):
     """Mock message instance."""
-    return Message(
-        message_id=1, from_user=mock_user, chat=mock_chat, date=1234567890, text="Test message"
-    )
+    return Message(message_id=1, from_user=mock_user, chat=mock_chat, date=1234567890, text="Test message")
 
 
 @pytest.fixture

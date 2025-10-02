@@ -30,7 +30,13 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def create_tables() -> None:
     """Create all tables."""
     # Import models here to avoid circular imports
-    from app.models import Bot, Channel, ModerationLog, SuspiciousProfile, User  # noqa: F401
+    from app.models import (  # noqa: F401
+        Bot,
+        Channel,
+        ModerationLog,
+        SuspiciousProfile,
+        User,
+    )
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

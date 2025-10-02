@@ -14,7 +14,7 @@ from app.utils.security import (
     sanitize_for_logging,
     sanitize_user_input,
 )
-from app.utils.validation import input_validator, ValidationError, ValidationSeverity
+from app.utils.validation import ValidationError, ValidationSeverity, input_validator
 
 logger = logging.getLogger(__name__)
 
@@ -110,11 +110,12 @@ class ValidationMiddleware(BaseMiddleware):
                         logger.warning(f"Command validation error: {error.field} - {error.message}")
                         errors.append(f"{error.field}: {error.message}")
             return errors
-        
+
         # 2. ВАЛИДАЦИЯ ИНТЕРАКТИВНЫХ ОТВЕТОВ (всегда)
         if message.from_user and message.text:
             try:
                 from app.handlers.admin import waiting_for_user_input
+
                 if message.from_user.id in waiting_for_user_input:
                     errors = []
                     if message.text:
@@ -126,7 +127,7 @@ class ValidationMiddleware(BaseMiddleware):
                     return errors
             except ImportError:
                 pass
-        
+
         # 3. ПРОВЕРКА ТИПА ЧАТА - в группах комментариев валидируем только подозрительные
         if message.chat and message.chat.type in ["group", "supergroup"]:
             # В группах валидируем только подозрительные сообщения
@@ -135,28 +136,28 @@ class ValidationMiddleware(BaseMiddleware):
             else:
                 # Обычные сообщения в группах пропускаем
                 return []
-        
+
         # 4. ВАЛИДАЦИЯ В ЛИЧНЫХ СООБЩЕНИЯХ (полная)
         if message.chat and message.chat.type == "private":
             return self._validate_private_message(message)
-        
+
         # 5. ВАЛИДАЦИЯ В КАНАЛАХ (только подозрительные)
         if message.chat and message.chat.type == "channel":
             if self._is_suspicious_message(message):
                 return self._validate_suspicious_message(message)
             else:
                 return []
-        
+
         # 6. ПО УМОЛЧАНИЮ - пропускаем
         return []
 
     def _is_suspicious_message(self, message: Message) -> bool:
         """
         Проверяет, является ли сообщение подозрительным.
-        
+
         Args:
             message: Сообщение для проверки
-            
+
         Returns:
             True если сообщение подозрительное
         """
@@ -175,76 +176,76 @@ class ValidationMiddleware(BaseMiddleware):
             # Много повторяющихся символов
             if any(message.text.count(c) > 5 for c in set(message.text)):
                 return True
-        
+
         # Проверяем медиа без подписи
         if (message.photo or message.video or message.document) and not message.caption:
             return True
-        
+
         # Проверяем размер файлов
         if message.document and message.document.file_size and message.document.file_size > 10 * 1024 * 1024:  # 10MB
             return True
-        
+
         return False
 
     def _validate_suspicious_message(self, message: Message) -> List[str]:
         """
         Валидирует подозрительное сообщение.
-        
+
         Args:
             message: Подозрительное сообщение
-            
+
         Returns:
             Список ошибок валидации
         """
         errors = []
-        
+
         # Базовые проверки
         if not message.text and not (message.photo or message.video or message.document):
             errors.append("message_content: Сообщение не содержит текста или медиа")
-        
+
         # Проверка текста
         if message.text:
             text_errors = input_validator._validate_text_content(message.text, "message_text")
             for error in text_errors:
                 if error.severity in [ValidationSeverity.CRITICAL, ValidationSeverity.HIGH]:
                     errors.append(f"{error.field}: {error.message}")
-        
+
         # Проверка медиа
         if message.photo or message.video or message.document:
             if not self._is_safe_media(message):
                 errors.append("Небезопасное медиа")
-        
+
         return errors
 
     def _validate_private_message(self, message: Message) -> List[str]:
         """
         Валидирует сообщение в личном чате (полная валидация).
-        
+
         Args:
             message: Сообщение в личном чате
-            
+
         Returns:
             Список ошибок валидации
         """
         errors = []
-        
+
         # Проверяем, что у сообщения есть текст
         if not message.text:
             if message.photo or message.video or message.document or message.voice or message.audio or message.sticker:
                 return []
             return ["message_text: Сообщение не содержит текста или медиа"]
-        
+
         validation_errors = input_validator.validate_message(message)
-        
+
         # Конвертируем в старый формат для совместимости
         for error in validation_errors:
             if error.severity == ValidationSeverity.CRITICAL:
                 logger.critical(f"Critical validation error: {error.field} - {error.message}")
             elif error.severity == ValidationSeverity.HIGH:
                 logger.warning(f"High severity validation error: {error.field} - {error.message}")
-            
+
             errors.append(f"{error.field}: {error.message}")
-        
+
         # Дополнительные проверки для медиа
         if message.photo or message.video or message.document:
             if not self._is_safe_media(message):
@@ -264,7 +265,7 @@ class ValidationMiddleware(BaseMiddleware):
         """
         # Используем новый валидатор
         validation_errors = input_validator.validate_callback_query(callback_query)
-        
+
         # Конвертируем в старый формат для совместимости
         errors = []
         for error in validation_errors:
@@ -273,7 +274,7 @@ class ValidationMiddleware(BaseMiddleware):
                 logger.critical(f"Critical validation error: {error.field} - {error.message}")
             elif error.severity == ValidationSeverity.HIGH:
                 logger.warning(f"High severity validation error: {error.field} - {error.message}")
-            
+
             errors.append(f"{error.field}: {error.message}")
 
         return errors
@@ -396,7 +397,9 @@ class ValidationMiddleware(BaseMiddleware):
             chat_id = event.chat.id if event.chat else None
             text = sanitize_for_logging(event.text) if event.text else None
 
-            logger.info(f"Message validated: user_id={user_id}, chat_id={chat_id}, " f"text='{text[:100] if text else 'None'}'")
+            logger.info(
+                f"Message validated: user_id={user_id}, chat_id={chat_id}, " f"text='{text[:100] if text else 'None'}'"
+            )
 
         elif isinstance(event, CallbackQuery):
             user_id = event.from_user.id if event.from_user else None
@@ -496,7 +499,7 @@ class CommandValidationMiddleware(BaseMiddleware):
 
         # Используем новый валидатор
         validation_errors = input_validator.validate_command(command, args)
-        
+
         # Конвертируем в старый формат для совместимости
         errors = []
         for error in validation_errors:
@@ -505,7 +508,7 @@ class CommandValidationMiddleware(BaseMiddleware):
                 logger.critical(f"Critical command validation error: {error.field} - {error.message}")
             elif error.severity == ValidationSeverity.HIGH:
                 logger.warning(f"High severity command validation error: {error.field} - {error.message}")
-            
+
             errors.append(f"{error.field}: {error.message}")
 
         return {"is_valid": len(errors) == 0, "errors": errors}

@@ -3,39 +3,40 @@
 """
 
 import logging
-from aiogram import Router, F
+
+from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
 from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
-from app.utils.security import sanitize_for_logging
-from app.services.bots import BotService
-from app.services.channels import ChannelService
 from app.keyboards.inline import get_spam_analysis_keyboard
+from app.models.moderation_log import ModerationAction
+from app.services.admin import AdminService
+from app.services.bots import BotService
+from app.services.bots_admin import BotsAdminService
+from app.services.callbacks import CallbacksService
+from app.services.channels import ChannelService
+from app.services.channels_admin import ChannelsAdminService
 from app.services.help import HelpService
 from app.services.limits import LimitsService
 from app.services.moderation import ModerationService
-from app.models.moderation_log import ModerationAction
 from app.services.profiles import ProfileService
-from app.services.admin import AdminService
 from app.services.status import StatusService
-from app.services.channels_admin import ChannelsAdminService
-from app.services.bots_admin import BotsAdminService
 from app.services.suspicious_admin import SuspiciousAdminService
-from app.services.callbacks import CallbacksService
 from app.utils.error_handling import ValidationError, handle_errors
-from app.utils.security import sanitize_for_logging, safe_format_message
+from app.utils.security import safe_format_message, sanitize_for_logging
 
 # Импортируем все хендлеры
 from .basic import basic_router
+from .bots import bots_router
 from .channels import channels_router
+from .interactive import interactive_router
 from .limits import limits_router
 from .moderation import moderation_router
-from .suspicious import suspicious_router
-from .interactive import interactive_router
+
 # from .spam_analysis import router as spam_analysis_router  # Перенесено в основной роутер
 from .rate_limit import rate_limit_router
-from .bots import bots_router
+from .suspicious import suspicious_router
 
 logger = logging.getLogger(__name__)
 
@@ -62,12 +63,14 @@ logger.info(f"Sub-routers: {[router.name for router in admin_router.sub_routers]
 
 logger.info("Admin filter will be applied to individual handlers")
 
+
 # Простой тестовый хендлер с фильтром админа
 @admin_router.message(Command("test_admin"), IsAdminOrSilentFilter())
 async def test_admin_handler(message: Message) -> None:
     """Простой тестовый хендлер для проверки работы admin router."""
     logger.info("TEST ADMIN HANDLER CALLED!")
     await message.answer("✅ Admin router работает!")
+
 
 # Тестовый хендлер для bots (перенесен из bots_router)
 @admin_router.message(Command("test_bots"))
@@ -76,13 +79,16 @@ async def test_bots_handler(message: Message) -> None:
     logger.info("TEST BOTS HANDLER CALLED!")
     await message.answer("✅ Bots функциональность работает!")
 
+
+from app.middlewares.silent_logging import send_silent_response
+
 # Импортируем необходимые сервисы для bots команд
 from app.services.bots_admin import BotsAdminService
-from app.services.channels_admin import ChannelsAdminService
 from app.services.channels import ChannelService
+from app.services.channels_admin import ChannelsAdminService
 from app.utils.error_handling import handle_errors
-from app.middlewares.silent_logging import send_silent_response
 from app.utils.security import sanitize_for_logging
+
 
 # Команда /bots (перенесена из bots_router)
 @admin_router.message(Command("bots"), IsAdminOrSilentFilter())
@@ -98,20 +104,21 @@ async def handle_bots_command(
         if not message.from_user:
             logger.warning("Bots command: no from_user")
             return
-        
+
         logger.info(f"Bots command from {sanitize_for_logging(str(message.from_user.id))}")
         logger.info(f"Bots admin service: {bots_admin_service}")
         logger.info(f"Admin ID: {admin_id}")
 
         bots_text = await bots_admin_service.get_bots_list()
         logger.info(f"Bots text length: {len(bots_text)}")
-        
+
         await send_silent_response(message, bots_text)
         logger.info(f"Bots list sent to {sanitize_for_logging(str(message.from_user.id))}")
 
     except Exception as e:
         logger.error(f"Error in bots command: {sanitize_for_logging(str(e))}")
         await send_silent_response(message, "❌ Ошибка получения списка ботов")
+
 
 # Команда /channels (перенесена из channels_router)
 @admin_router.message(Command("channels"), IsAdminOrSilentFilter())
@@ -136,6 +143,7 @@ async def handle_channels_command(
         logger.error(f"Error in channels command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка получения списка каналов")
 
+
 # Команда /sync_channels (перенесена из channels_router)
 @admin_router.message(Command("sync_channels"), IsAdminOrSilentFilter())
 @handle_errors(user_message="❌ Ошибка выполнения команды /sync_channels")
@@ -152,7 +160,7 @@ async def handle_sync_channels_command(
 
         # Получаем список каналов
         channels = await channel_service.get_all_channels()
-        
+
         if not channels:
             await message.answer("📋 Каналы не найдены")
             return
@@ -174,6 +182,7 @@ async def handle_sync_channels_command(
         logger.error(f"Error in sync_channels command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка синхронизации каналов")
 
+
 # Команда /find_chat (перенесена из channels_router)
 @admin_router.message(Command("find_chat"), IsAdminOrSilentFilter())
 @handle_errors(user_message="❌ Ошибка выполнения команды /find_chat")
@@ -186,7 +195,7 @@ async def handle_find_chat_command(
     try:
         if not message.from_user:
             return
-        
+
         # Получаем аргументы команды
         args = message.text.split()[1:] if message.text else []
         if not args:
@@ -198,7 +207,7 @@ async def handle_find_chat_command(
 
         # Ищем чат по ID или username
         chat_info = await channel_service.find_chat_by_identifier(chat_identifier)
-        
+
         if chat_info:
             response = f"📋 <b>Найден чат:</b>\n"
             response += f"• ID: <code>{chat_info.get('id', 'N/A')}</code>\n"
@@ -206,7 +215,7 @@ async def handle_find_chat_command(
             response += f"• Username: @{chat_info.get('username', 'N/A')}\n"
             response += f"• Тип: {chat_info.get('type', 'N/A')}\n"
             response += f"• Статус: {'✅ Антиспам активен' if chat_info.get('is_active', False) else '❌ Антиспам неактивен'}"
-            
+
             await message.answer(response)
             logger.info(f"Chat found: {chat_info.get('id')}")
         else:
@@ -226,14 +235,13 @@ async def handle_spam_analysis_command(message: Message) -> None:
     try:
         user_id = message.from_user.id if message.from_user else 0
         logger.info(f"Spam analysis menu requested by user {user_id}")
-        
+
         keyboard = get_spam_analysis_keyboard()
-        
+
         await message.answer(
-            "🔍 <b>Анализ данных спама</b>\n\n"
-            "Выберите действие для анализа собранных данных:",
+            "🔍 <b>Анализ данных спама</b>\n\n" "Выберите действие для анализа собранных данных:",
             reply_markup=keyboard,
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
         logger.info(f"Spam analysis menu sent to user {user_id}")
     except Exception as e:
@@ -246,51 +254,44 @@ async def handle_spam_analysis_command(message: Message) -> None:
 async def show_spam_stats(callback: CallbackQuery):
     """Показать статистику спама."""
     logger.info("SPAM_STATS CALLBACK CALLED!")
-    
+
     # Проверяем, что пользователь админ
     if not callback.from_user or callback.from_user.id != 439304619:
         logger.warning(f"Non-admin user {callback.from_user.id if callback.from_user else 'None'} tried to use spam_stats")
         return
-    
+
     try:
         from app.utils.pii_protection import secure_logger
-        
+
         # Получаем данные за последние 30 дней
         spam_data = secure_logger.get_spam_analysis_data(days=30)
-        
+
         if not spam_data:
             if callback.message:
                 await callback.message.edit_text(
                     "📊 <b>Статистика спама</b>\n\n"
                     "❌ Данные за последние 30 дней не найдены.\n"
                     "Убедитесь, что включено полное логирование.",
-                    parse_mode="HTML"
+                    parse_mode="HTML",
                 )
             return
-        
+
         # Простая статистика
         total_entries = len(spam_data)
         stats_text = (
-            f"📊 <b>Статистика спама</b>\n\n"
-            f"📅 Период: последние 30 дней\n"
-            f"📊 Всего записей: {total_entries}\n\n"
+            f"📊 <b>Статистика спама</b>\n\n" f"📅 Период: последние 30 дней\n" f"📊 Всего записей: {total_entries}\n\n"
         )
-        
+
         if callback.message:
-            await callback.message.edit_text(
-                stats_text,
-                reply_markup=get_spam_analysis_keyboard(),
-                parse_mode="HTML"
-            )
-        
+            await callback.message.edit_text(stats_text, reply_markup=get_spam_analysis_keyboard(), parse_mode="HTML")
+
     except Exception as e:
         logger.error(f"Ошибка получения статистики спама: {e}")
         if callback.message:
             await callback.message.edit_text(
-                "❌ <b>Ошибка получения статистики</b>\n\n"
-                f"Произошла ошибка: {str(e)}",
+                "❌ <b>Ошибка получения статистики</b>\n\n" f"Произошла ошибка: {str(e)}",
                 reply_markup=get_spam_analysis_keyboard(),
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
 
 
@@ -300,13 +301,12 @@ async def spam_back_to_menu(callback: CallbackQuery):
     logger.info("SPAM_BACK CALLBACK CALLED!")
     try:
         keyboard = get_spam_analysis_keyboard()
-        
+
         if callback.message:
             await callback.message.edit_text(
-                "🔍 <b>Анализ данных спама</b>\n\n"
-                "Выберите действие для анализа собранных данных:",
+                "🔍 <b>Анализ данных спама</b>\n\n" "Выберите действие для анализа собранных данных:",
                 reply_markup=keyboard,
-                parse_mode="HTML"
+                parse_mode="HTML",
             )
     except Exception as e:
         logger.error(f"Error in spam_back_to_menu: {e}")
@@ -319,10 +319,9 @@ async def spam_patterns_stub(callback: CallbackQuery):
     logger.info("SPAM_PATTERNS CALLBACK CALLED!")
     if callback.message:
         await callback.message.edit_text(
-            "🔍 <b>Паттерны спама</b>\n\n"
-            "Функция в разработке...",
+            "🔍 <b>Паттерны спама</b>\n\n" "Функция в разработке...",
             reply_markup=get_spam_analysis_keyboard(),
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
 
 
@@ -332,10 +331,9 @@ async def spam_export_stub(callback: CallbackQuery):
     logger.info("SPAM_EXPORT CALLBACK CALLED!")
     if callback.message:
         await callback.message.edit_text(
-            "📤 <b>Экспорт данных спама</b>\n\n"
-            "Функция в разработке...",
+            "📤 <b>Экспорт данных спама</b>\n\n" "Функция в разработке...",
             reply_markup=get_spam_analysis_keyboard(),
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
 
 
@@ -345,8 +343,7 @@ async def spam_cleanup_stub(callback: CallbackQuery):
     logger.info("SPAM_CLEANUP CALLBACK CALLED!")
     if callback.message:
         await callback.message.edit_text(
-            "🧹 <b>Очистка данных спама</b>\n\n"
-            "Функция в разработке...",
+            "🧹 <b>Очистка данных спама</b>\n\n" "Функция в разработке...",
             reply_markup=get_spam_analysis_keyboard(),
-            parse_mode="HTML"
+            parse_mode="HTML",
         )

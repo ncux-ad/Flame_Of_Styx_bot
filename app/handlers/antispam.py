@@ -154,7 +154,9 @@ async def handle_all_messages(
                 # Если нет бот-ссылок, но есть отправитель - анализируем его профиль
                 if message.from_user:
                     try:
-                        suspicious_profile = await profile_service.analyze_user_profile(user=message.from_user, admin_id=admin_id)
+                        suspicious_profile = await profile_service.analyze_user_profile(
+                            user=message.from_user, admin_id=admin_id
+                        )
                         if suspicious_profile:
                             logger.warning(
                                 f"Suspicious profile detected in channel: user_id={message.from_user.id}, score={suspicious_profile.suspicion_score}"
@@ -164,9 +166,9 @@ async def handle_all_messages(
         else:
             # Для личных сообщений - только rate limiting (уже обработан в middleware)
             if message.from_user:
-                logger.info(f"Private message from {message.from_user.id}: {sanitize_for_logging(message.text) if message.text else 'None'}")
+                logger.info(
+                    f"Private message from {message.from_user.id}: {sanitize_for_logging(message.text) if message.text else 'None'}"
+                )
 
     except Exception as e:
         logger.error(f"Error in anti-spam handler: {e}")
-
-

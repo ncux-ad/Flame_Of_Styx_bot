@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # Тестовый Redis для разработки
+  redis-test:
+    image: redis:7-alpine
+    container_name: antispam-redis-test
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - redis_test_data:/data
+
+volumes:
+  redis_test_data:
+    driver: local

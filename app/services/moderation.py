@@ -65,7 +65,7 @@ class ModerationService:
         """Unban user from chat."""
         try:
             logger.info(f"Starting unban process for user {user_id} in chat {chat_id}")
-            
+
             # Unban user in Telegram
             try:
                 await self.bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
@@ -235,19 +235,18 @@ class ModerationService:
         """Check if user is banned."""
         # Сначала проверяем активные баны в moderation_logs
         result = await self.db.execute(
-            select(ModerationLog)
-            .where(
+            select(ModerationLog).where(
                 ModerationLog.user_id == user_id,
                 ModerationLog.action == ModerationAction.BAN,
                 ModerationLog.is_active.is_(True),
             )
         )
         active_bans = result.scalars().all()
-        
+
         if active_bans:
             logger.info(f"User {user_id} has {len(active_bans)} active ban(s) in moderation_logs")
             return True
-        
+
         # Если нет активных банов в moderation_logs, проверяем users.is_banned
         result = await self.db.execute(select(UserModel.is_banned).where(UserModel.telegram_id == user_id))
         user = result.scalar_one_or_none()
@@ -283,30 +282,25 @@ class ModerationService:
         """Get ban history (all bans, active and inactive) from all chats."""
         # Получаем уникальные чаты с банами
         chat_result = await self.db.execute(
-            select(ModerationLog.chat_id)
-            .where(ModerationLog.action == ModerationAction.BAN)
-            .distinct()
+            select(ModerationLog.chat_id).where(ModerationLog.action == ModerationAction.BAN).distinct()
         )
         chat_ids = [row[0] for row in chat_result.fetchall()]
-        
+
         if not chat_ids:
             return []
-        
+
         # Получаем последние баны из каждого чата
         all_bans = []
         for chat_id in chat_ids:
             result = await self.db.execute(
                 select(ModerationLog)
-                .where(
-                    ModerationLog.action == ModerationAction.BAN,
-                    ModerationLog.chat_id == chat_id
-                )
+                .where(ModerationLog.action == ModerationAction.BAN, ModerationLog.chat_id == chat_id)
                 .order_by(ModerationLog.created_at.desc())
                 .limit(limit // len(chat_ids) + 1)  # Равномерно распределяем лимит
             )
             chat_bans = result.scalars().all()
             all_bans.extend(chat_bans)
-        
+
         # Сортируем по дате и ограничиваем общий лимит
         all_bans.sort(key=lambda x: x.created_at, reverse=True)
         return all_bans[:limit]
@@ -315,10 +309,7 @@ class ModerationService:
         """Get ban history for specific chat."""
         result = await self.db.execute(
             select(ModerationLog)
-            .where(
-                ModerationLog.action == ModerationAction.BAN,
-                ModerationLog.chat_id == chat_id
-            )
+            .where(ModerationLog.action == ModerationAction.BAN, ModerationLog.chat_id == chat_id)
             .order_by(ModerationLog.created_at.desc())
             .limit(limit)
         )
@@ -558,8 +549,8 @@ class ModerationService:
         if update_data:
             await self.db.execute(update(UserModel).where(UserModel.telegram_id == user_id).values(**update_data))
             await self.db.commit()
-            
-        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если разблокируем пользователя, 
+
+        # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если разблокируем пользователя,
         # деактивируем ВСЕ его активные баны
         if is_banned is False:
             await self._deactivate_all_user_bans(user_id)
@@ -569,8 +560,7 @@ class ModerationService:
         try:
             # Находим ВСЕ активные баны для пользователя
             result = await self.db.execute(
-                select(ModerationLog)
-                .where(
+                select(ModerationLog).where(
                     ModerationLog.user_id == user_id,
                     ModerationLog.action == ModerationAction.BAN,
                     ModerationLog.is_active.is_(True),

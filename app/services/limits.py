@@ -26,14 +26,14 @@ class LimitsService:
             self._cached_limits = self._load_limits()
 
         return self._cached_limits or {
-            "max_messages_per_minute": getattr(self.config, 'max_messages_per_minute', 10),
-            "max_links_per_message": getattr(self.config, 'max_links_per_message', 3),
-            "ban_duration_hours": getattr(self.config, 'ban_duration_hours', 24),
-            "suspicion_threshold": getattr(self.config, 'suspicion_threshold', 0.55),
-            "check_media_without_caption": getattr(self.config, 'check_media_without_caption', True),
-            "allow_videos_without_caption": getattr(self.config, 'allow_videos_without_caption', False),
-            "allow_photos_without_caption": getattr(self.config, 'allow_photos_without_caption', False),
-            "max_document_size_suspicious": getattr(self.config, 'max_document_size_suspicious', 1000000),
+            "max_messages_per_minute": getattr(self.config, "max_messages_per_minute", 10),
+            "max_links_per_message": getattr(self.config, "max_links_per_message", 3),
+            "ban_duration_hours": getattr(self.config, "ban_duration_hours", 24),
+            "suspicion_threshold": getattr(self.config, "suspicion_threshold", 0.55),
+            "check_media_without_caption": getattr(self.config, "check_media_without_caption", True),
+            "allow_videos_without_caption": getattr(self.config, "allow_videos_without_caption", False),
+            "allow_photos_without_caption": getattr(self.config, "allow_photos_without_caption", False),
+            "max_document_size_suspicious": getattr(self.config, "max_document_size_suspicious", 1000000),
         }
 
     def update_limit(self, limit_name: str, value: Any) -> bool:

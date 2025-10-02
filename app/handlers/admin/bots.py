@@ -3,20 +3,22 @@
 """
 
 import logging
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
+from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
+from app.middlewares.silent_logging import send_silent_response
 from app.services.bots_admin import BotsAdminService
 from app.utils.error_handling import handle_errors
 from app.utils.security import sanitize_for_logging
-from app.middlewares.silent_logging import send_silent_response
-from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 
 logger = logging.getLogger(__name__)
 
 # Создаем роутер для команд ботов
 bots_router = Router()
+
 
 @bots_router.message(Command("test_bots"))
 async def handle_test_bots_command(message: Message) -> None:
@@ -38,14 +40,14 @@ async def handle_bots_command(
         if not message.from_user:
             logger.warning("Bots command: no from_user")
             return
-        
+
         logger.info(f"Bots command from {sanitize_for_logging(str(message.from_user.id))}")
         logger.info(f"Bots admin service: {bots_admin_service}")
         logger.info(f"Admin ID: {admin_id}")
 
         bots_text = await bots_admin_service.get_bots_list()
         logger.info(f"Bots text length: {len(bots_text)}")
-        
+
         await send_silent_response(message, bots_text)
         logger.info(f"Bots list sent to {sanitize_for_logging(str(message.from_user.id))}")
 
@@ -79,7 +81,7 @@ async def handle_add_bot_command(
                 "❌ <b>Использование:</b> /add_bot &lt;bot_username&gt;\n\n"
                 "💡 <b>Примеры:</b>\n"
                 "• /add_bot @mybot\n"
-                "• /add_bot mybot"
+                "• /add_bot mybot",
             )
             return
 
@@ -118,7 +120,7 @@ async def handle_remove_bot_command(
                 "❌ <b>Использование:</b> /remove_bot &lt;bot_username&gt;\n\n"
                 "💡 <b>Примеры:</b>\n"
                 "• /remove_bot @mybot\n"
-                "• /remove_bot mybot"
+                "• /remove_bot mybot",
             )
             return
 

@@ -1,7 +1,7 @@
 """Lightweight monitoring system for Anti-Spam Bot."""
 
-from .metrics import MetricsCollector
-from .health import HealthChecker
 from .alerts import AlertManager
+from .health import HealthChecker
+from .metrics import MetricsCollector
 
 __all__ = ["MetricsCollector", "HealthChecker", "AlertManager"]

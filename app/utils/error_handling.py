@@ -8,7 +8,11 @@ from enum import Enum
 from functools import wraps
 from typing import Any, Callable, Dict, Optional, Union
 
-from aiogram.exceptions import TelegramAPIError, TelegramBadRequest, TelegramForbiddenError
+from aiogram.exceptions import (
+    TelegramAPIError,
+    TelegramBadRequest,
+    TelegramForbiddenError,
+)
 from aiogram.types import CallbackQuery, Message
 
 from app.constants import ERROR_MESSAGES, ErrorCodes

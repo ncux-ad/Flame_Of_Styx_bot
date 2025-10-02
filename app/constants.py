@@ -140,7 +140,6 @@ SENSITIVE_PATTERNS = [
     re.compile(r"password[=:\s]+[^\s]+", re.IGNORECASE),
     re.compile(r"secret[=:\s]+[^\s]+", re.IGNORECASE),
     re.compile(r"key[=:\s]+[a-zA-Z0-9_-]+", re.IGNORECASE),
-    
     # Паттерны для персональных данных
     re.compile(r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b"),  # Номера карт
     re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),  # SSN (американский)
@@ -148,14 +147,15 @@ SENSITIVE_PATTERNS = [
     re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),  # Email
     re.compile(r"\b(?:\+?7|8)?[\s\-]?\(?[0-9]{3}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}\b"),  # Телефоны (российские)
     re.compile(r"\b(?:\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}\b"),  # Телефоны (американские)
-    
     # Паттерны для адресов и личной информации
-    re.compile(r"\b(?:ул|улица|проспект|пр|переулок|пер|площадь|пл|бульвар|б-р)\s+[А-Яа-я\s\d]+", re.IGNORECASE),  # Адреса (русские)
-    re.compile(r"\b(?:street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|lane|ln)\s+[A-Za-z\s\d]+", re.IGNORECASE),  # Адреса (английские)
-    
+    re.compile(
+        r"\b(?:ул|улица|проспект|пр|переулок|пер|площадь|пл|бульвар|б-р)\s+[А-Яа-я\s\d]+", re.IGNORECASE
+    ),  # Адреса (русские)
+    re.compile(
+        r"\b(?:street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|lane|ln)\s+[A-Za-z\s\d]+", re.IGNORECASE
+    ),  # Адреса (английские)
     # Паттерны для имен и фамилий (базовые)
     re.compile(r"\b(?:имя|name|фамилия|surname|отчество|patronymic)\s*[=:]\s*[А-Яа-яA-Za-z\s]+", re.IGNORECASE),
-    
     # Паттерны для ID документов
     re.compile(r"\b(?:паспорт|passport|id|идентификатор)\s*[=:]\s*[A-Za-z0-9\s\-]+", re.IGNORECASE),
 ]

@@ -16,7 +16,7 @@ class LoggingMiddleware(BaseMiddleware):
 
         # Hash user_id for security
         hashed_user_id = hash_user_id(user_id) if user_id != "unknown" else "unknown"
-        
+
         # Санитизируем текст сообщения для защиты персональных данных
         raw_text = getattr(event, "text", "None") if hasattr(event, "text") else "None"
         text = sanitize_for_logging(raw_text) if raw_text != "None" else "None"

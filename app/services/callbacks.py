@@ -3,7 +3,8 @@ Callbacks Service - бизнес-логика для callback-ов
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from aiogram.types import CallbackQuery
 
 from app.services.moderation import ModerationService
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class CallbacksService:
     """Сервис для обработки callback-ов."""
-    
+
     def __init__(
         self,
         moderation_service: ModerationService,
@@ -24,12 +25,7 @@ class CallbacksService:
         self.moderation_service = moderation_service
         self.profile_service = profile_service
 
-    async def handle_ban_suspicious_user(
-        self, 
-        callback_query: CallbackQuery, 
-        user_id: int, 
-        admin_id: int
-    ) -> Dict[str, Any]:
+    async def handle_ban_suspicious_user(self, callback_query: CallbackQuery, user_id: int, admin_id: int) -> Dict[str, Any]:
         """Обработать бан подозрительного пользователя."""
         try:
             if not callback_query.from_user:
@@ -80,12 +76,7 @@ class CallbacksService:
                 "user_id": user_id,
             }
 
-    async def handle_watch_suspicious_user(
-        self, 
-        callback_query: CallbackQuery, 
-        user_id: int, 
-        admin_id: int
-    ) -> Dict[str, Any]:
+    async def handle_watch_suspicious_user(self, callback_query: CallbackQuery, user_id: int, admin_id: int) -> Dict[str, Any]:
         """Обработать добавление подозрительного пользователя в наблюдение."""
         try:
             if not callback_query.from_user:
@@ -112,12 +103,7 @@ class CallbacksService:
                 "user_id": user_id,
             }
 
-    async def handle_allow_suspicious_user(
-        self, 
-        callback_query: CallbackQuery, 
-        user_id: int, 
-        admin_id: int
-    ) -> Dict[str, Any]:
+    async def handle_allow_suspicious_user(self, callback_query: CallbackQuery, user_id: int, admin_id: int) -> Dict[str, Any]:
         """Обработать разрешение подозрительного пользователя (ложное срабатывание)."""
         try:
             if not callback_query.from_user:
@@ -155,19 +141,11 @@ class CallbacksService:
 
     def get_watch_success_message(self, user_id: int) -> str:
         """Получить сообщение об успешном добавлении в наблюдение."""
-        return (
-            f"👀 <b>Пользователь добавлен в наблюдение</b>\n\n"
-            f"ID: {user_id}\n"
-            f"Статус: Наблюдение"
-        )
+        return f"👀 <b>Пользователь добавлен в наблюдение</b>\n\n" f"ID: {user_id}\n" f"Статус: Наблюдение"
 
     def get_allow_success_message(self, user_id: int) -> str:
         """Получить сообщение об успешном разрешении."""
-        return (
-            f"✅ <b>Пользователь разрешен</b>\n\n"
-            f"ID: {user_id}\n"
-            f"Статус: Ложное срабатывание"
-        )
+        return f"✅ <b>Пользователь разрешен</b>\n\n" f"ID: {user_id}\n" f"Статус: Ложное срабатывание"
 
     def get_error_message(self, error_type: str) -> str:
         """Получить сообщение об ошибке."""

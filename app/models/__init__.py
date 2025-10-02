@@ -1,6 +1,5 @@
 """Database models."""
 
-
 from .bot import Bot
 from .channel import Channel
 from .moderation_log import ModerationLog

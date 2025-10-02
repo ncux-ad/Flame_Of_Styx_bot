@@ -7,6 +7,7 @@ import asyncio
 import json
 import logging
 import subprocess
+
 # import os  # Не используется
 # import time  # Не используется
 from pathlib import Path
@@ -200,42 +201,40 @@ class LimitsHotReload:
         """Уведомить администраторов об обновлении лимитов."""
         try:
             # Проверяем, это первый запуск или обновление
-            is_first_start = not hasattr(self, '_first_notification_sent')
-            
+            is_first_start = not hasattr(self, "_first_notification_sent")
+
             if is_first_start:
                 # Первый запуск - полное сообщение
                 message = "🤖 <b>AntiSpam Bot запущен</b>\n\n"
                 message += "✅ <b>Бот готов к работе</b>\n"
                 message += "🛡️ <b>Антиспам активен</b>\n"
                 message += "📊 <b>Мониторинг включен</b>\n\n"
-                
+
                 # Добавляем информацию о коммите
                 try:
                     # Получаем рабочую директорию динамически
                     import os
+
                     current_dir = os.getcwd()
-                    
+
                     # Проверяем, что мы в git репозитории
-                    if os.path.exists(os.path.join(current_dir, '.git')):
+                    if os.path.exists(os.path.join(current_dir, ".git")):
                         git_dir = current_dir
                     else:
                         # Пытаемся найти git репозиторий в родительских директориях
                         git_dir = None
                         check_dir = current_dir
                         for _ in range(5):  # Проверяем до 5 уровней вверх
-                            if os.path.exists(os.path.join(check_dir, '.git')):
+                            if os.path.exists(os.path.join(check_dir, ".git")):
                                 git_dir = check_dir
                                 break
                             check_dir = os.path.dirname(check_dir)
-                            if check_dir == '/':
+                            if check_dir == "/":
                                 break
-                    
+
                     if git_dir:
                         result = subprocess.run(
-                            ["/usr/bin/git", "rev-parse", "--short", "HEAD"],
-                            capture_output=True,
-                            text=True,
-                            cwd=git_dir
+                            ["/usr/bin/git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=git_dir
                         )
                         if result.returncode == 0:
                             commit_hash = result.stdout.strip()
@@ -246,13 +245,13 @@ class LimitsHotReload:
                         message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно (git repo не найден)</code>\n\n"
                 except Exception:
                     message += f"📝 <b>ID текущего коммита:</b> <code>неизвестно</code>\n\n"
-                
+
                 # Добавляем информацию о лимитах (если включено)
-                if getattr(self, 'show_limits_on_startup', True):
+                if getattr(self, "show_limits_on_startup", True):
                     message += "⚙️ <b>Текущие лимиты:</b>\n"
                     for key, value in new_limits.items():
                         message += f"• <b>{key}:</b> {value}\n"
-                
+
                 self._first_notification_sent = True
             else:
                 # Обновление лимитов

@@ -8,7 +8,11 @@ from typing import List, Optional
 from aiogram.types import CallbackQuery, Message
 
 from app.config import load_config
-from app.utils.security import safe_format_message, sanitize_for_logging, validate_user_id
+from app.utils.security import (
+    safe_format_message,
+    sanitize_for_logging,
+    validate_user_id,
+)
 
 logger = logging.getLogger(__name__)
 

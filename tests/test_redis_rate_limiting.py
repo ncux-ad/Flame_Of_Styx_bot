@@ -2,13 +2,14 @@
 Unit tests for Redis rate limiting functionality.
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+
+from app.config import Settings
 from app.middlewares.redis_rate_limit import RedisRateLimitMiddleware
 from app.services.redis import RedisService
-from app.config import Settings
 
 
 @pytest.fixture
@@ -82,9 +83,9 @@ class TestRedisRateLimitMiddleware:
             interval=60,
             strategy="fixed_window",
             block_duration=300,
-            redis_service=mock_redis_service
+            redis_service=mock_redis_service,
         )
-        
+
         assert middleware.user_limit == 10
         assert middleware.admin_limit == 50
         assert middleware.interval == 60
@@ -100,15 +101,15 @@ class TestRedisRateLimitMiddleware:
             interval=60,
             strategy="fixed_window",
             block_duration=300,
-            redis_service=mock_redis_service
+            redis_service=mock_redis_service,
         )
-        
+
         # Mock Redis responses
         mock_redis_service.get_user_message_count.return_value = 5
         mock_redis_service.is_user_blocked.return_value = False
-        
+
         result = await middleware.check_rate_limit(mock_message)
-        
+
         assert result["allowed"] is True
         assert result["reason"] == "OK"
         assert result["remaining"] == 5
@@ -123,16 +124,16 @@ class TestRedisRateLimitMiddleware:
             interval=60,
             strategy="fixed_window",
             block_duration=300,
-            redis_service=mock_redis_service
+            redis_service=mock_redis_service,
         )
-        
+
         # Mock Redis responses - user exceeded limit
         mock_redis_service.get_user_message_count.return_value = 15
         mock_redis_service.is_user_blocked.return_value = False
         mock_redis_service.block_user.return_value = True
-        
+
         result = await middleware.check_rate_limit(mock_message)
-        
+
         assert result["allowed"] is False
         assert "rate limit" in result["reason"].lower()
         assert result["remaining"] == 0
@@ -147,15 +148,15 @@ class TestRedisRateLimitMiddleware:
             interval=60,
             strategy="fixed_window",
             block_duration=300,
-            redis_service=mock_redis_service
+            redis_service=mock_redis_service,
         )
-        
+
         # Mock Redis responses - user is blocked
         mock_redis_service.is_user_blocked.return_value = True
         mock_redis_service.get_user_block_ttl.return_value = 250
-        
+
         result = await middleware.check_rate_limit(mock_message)
-        
+
         assert result["allowed"] is False
         assert "blocked" in result["reason"].lower()
         assert result["remaining"] == 0
@@ -170,22 +171,22 @@ class TestRedisRateLimitMiddleware:
             interval=60,
             strategy="fixed_window",
             block_duration=300,
-            redis_service=mock_redis_service
+            redis_service=mock_redis_service,
         )
-        
+
         # Mock admin message
         admin_message = Mock()
         admin_message.from_user = mock_admin_user
         admin_message.chat = Mock()
         admin_message.chat.id = -1001234567890
         admin_message.date = datetime.now()
-        
+
         # Mock Redis responses - admin within limits
         mock_redis_service.get_user_message_count.return_value = 25
         mock_redis_service.is_user_blocked.return_value = False
-        
+
         result = await middleware.check_rate_limit(admin_message)
-        
+
         assert result["allowed"] is True
         assert result["reason"] == "OK"
         assert result["remaining"] == 25
@@ -196,18 +197,18 @@ class TestRedisRateLimitMiddleware:
         # Mock Redis service as unavailable
         mock_redis_service = Mock(spec=RedisService)
         mock_redis_service.is_available.return_value = False
-        
+
         middleware = RedisRateLimitMiddleware(
             user_limit=10,
             admin_limit=50,
             interval=60,
             strategy="fixed_window",
             block_duration=300,
-            redis_service=mock_redis_service
+            redis_service=mock_redis_service,
         )
-        
+
         result = await middleware.check_rate_limit(mock_message)
-        
+
         # Should fallback to local rate limiting
         assert result["allowed"] is True
         assert result["reason"] == "OK"
@@ -221,15 +222,15 @@ class TestRedisRateLimitMiddleware:
             interval=60,
             strategy="fixed_window",
             block_duration=300,
-            redis_service=mock_redis_service
+            redis_service=mock_redis_service,
         )
-        
+
         # Mock Redis responses
         mock_redis_service.get_user_message_count.return_value = 5
         mock_redis_service.is_user_blocked.return_value = False
-        
+
         result = await middleware.check_rate_limit(mock_message)
-        
+
         assert result["allowed"] is True
         assert result["strategy"] == "fixed_window"
 
@@ -242,15 +243,15 @@ class TestRedisRateLimitMiddleware:
             interval=60,
             strategy="sliding_window",
             block_duration=300,
-            redis_service=mock_redis_service
+            redis_service=mock_redis_service,
         )
-        
+
         # Mock Redis responses
         mock_redis_service.get_user_message_count.return_value = 5
         mock_redis_service.is_user_blocked.return_value = False
-        
+
         result = await middleware.check_rate_limit(mock_message)
-        
+
         assert result["allowed"] is True
         assert result["strategy"] == "sliding_window"
 
@@ -263,15 +264,15 @@ class TestRedisRateLimitMiddleware:
             interval=60,
             strategy="token_bucket",
             block_duration=300,
-            redis_service=mock_redis_service
+            redis_service=mock_redis_service,
         )
-        
+
         # Mock Redis responses
         mock_redis_service.get_user_message_count.return_value = 5
         mock_redis_service.is_user_blocked.return_value = False
-        
+
         result = await middleware.check_rate_limit(mock_message)
-        
+
         assert result["allowed"] is True
         assert result["strategy"] == "token_bucket"
 
@@ -284,20 +285,20 @@ class TestRedisRateLimitMiddleware:
             interval=60,
             strategy="fixed_window",
             block_duration=300,
-            redis_service=mock_redis_service
+            redis_service=mock_redis_service,
         )
-        
+
         # Mock Redis responses
         mock_redis_service.get_user_message_count.return_value = 5
         mock_redis_service.is_user_blocked.return_value = False
         mock_redis_service.increment_user_message_count.return_value = 6
-        
+
         # Mock handler
         handler = AsyncMock()
-        
+
         # Process message
         await middleware(handler, mock_message, {})
-        
+
         # Verify handler was called
         handler.assert_called_once_with(mock_message, {})
 
@@ -310,20 +311,20 @@ class TestRedisRateLimitMiddleware:
             interval=60,
             strategy="fixed_window",
             block_duration=300,
-            redis_service=mock_redis_service
+            redis_service=mock_redis_service,
         )
-        
+
         # Mock Redis responses - user exceeded limit
         mock_redis_service.get_user_message_count.return_value = 15
         mock_redis_service.is_user_blocked.return_value = False
         mock_redis_service.block_user.return_value = True
-        
+
         # Mock handler
         handler = AsyncMock()
-        
+
         # Process message
         await middleware(handler, mock_message, {})
-        
+
         # Verify handler was NOT called
         handler.assert_not_called()
 
@@ -334,93 +335,93 @@ class TestRedisService:
     @pytest.mark.asyncio
     async def test_redis_service_initialization(self, mock_config):
         """Test Redis service initialization."""
-        with patch('app.services.redis.redis.Redis') as mock_redis:
+        with patch("app.services.redis.redis.Redis") as mock_redis:
             mock_redis.return_value.ping.return_value = True
-            
+
             service = RedisService(mock_config.redis_url)
-            
+
             assert service.redis_url == mock_config.redis_url
             assert service.is_available() is True
 
     @pytest.mark.asyncio
     async def test_redis_connection_failure(self, mock_config):
         """Test Redis connection failure handling."""
-        with patch('app.services.redis.redis.Redis') as mock_redis:
+        with patch("app.services.redis.redis.Redis") as mock_redis:
             mock_redis.return_value.ping.side_effect = Exception("Connection failed")
-            
+
             service = RedisService(mock_config.redis_url)
-            
+
             assert service.is_available() is False
 
     @pytest.mark.asyncio
     async def test_get_user_message_count(self, mock_config):
         """Test getting user message count."""
-        with patch('app.services.redis.redis.Redis') as mock_redis:
+        with patch("app.services.redis.redis.Redis") as mock_redis:
             mock_redis_instance = Mock()
             mock_redis_instance.ping.return_value = True
             mock_redis_instance.get.return_value = "5"
             mock_redis.return_value = mock_redis_instance
-            
+
             service = RedisService(mock_config.redis_url)
             count = await service.get_user_message_count(123456789, 60)
-            
+
             assert count == 5
 
     @pytest.mark.asyncio
     async def test_increment_user_message_count(self, mock_config):
         """Test incrementing user message count."""
-        with patch('app.services.redis.redis.Redis') as mock_redis:
+        with patch("app.services.redis.redis.Redis") as mock_redis:
             mock_redis_instance = Mock()
             mock_redis_instance.ping.return_value = True
             mock_redis_instance.incr.return_value = 6
             mock_redis_instance.expire.return_value = True
             mock_redis.return_value = mock_redis_instance
-            
+
             service = RedisService(mock_config.redis_url)
             count = await service.increment_user_message_count(123456789, 60)
-            
+
             assert count == 6
 
     @pytest.mark.asyncio
     async def test_is_user_blocked(self, mock_config):
         """Test checking if user is blocked."""
-        with patch('app.services.redis.redis.Redis') as mock_redis:
+        with patch("app.services.redis.redis.Redis") as mock_redis:
             mock_redis_instance = Mock()
             mock_redis_instance.ping.return_value = True
             mock_redis_instance.exists.return_value = 1
             mock_redis.return_value = mock_redis_instance
-            
+
             service = RedisService(mock_config.redis_url)
             blocked = await service.is_user_blocked(123456789)
-            
+
             assert blocked is True
 
     @pytest.mark.asyncio
     async def test_block_user(self, mock_config):
         """Test blocking user."""
-        with patch('app.services.redis.redis.Redis') as mock_redis:
+        with patch("app.services.redis.redis.Redis") as mock_redis:
             mock_redis_instance = Mock()
             mock_redis_instance.ping.return_value = True
             mock_redis_instance.setex.return_value = True
             mock_redis.return_value = mock_redis_instance
-            
+
             service = RedisService(mock_config.redis_url)
             result = await service.block_user(123456789, 300)
-            
+
             assert result is True
 
     @pytest.mark.asyncio
     async def test_get_user_block_ttl(self, mock_config):
         """Test getting user block TTL."""
-        with patch('app.services.redis.redis.Redis') as mock_redis:
+        with patch("app.services.redis.redis.Redis") as mock_redis:
             mock_redis_instance = Mock()
             mock_redis_instance.ping.return_value = True
             mock_redis_instance.ttl.return_value = 250
             mock_redis.return_value = mock_redis_instance
-            
+
             service = RedisService(mock_config.redis_url)
             ttl = await service.get_user_block_ttl(123456789)
-            
+
             assert ttl == 250
 
 

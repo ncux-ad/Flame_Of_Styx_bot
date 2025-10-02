@@ -3,7 +3,7 @@
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +47,12 @@ def get_suspicion_status(score: float) -> str:
 def format_date(date_obj) -> str:
     """Форматирует дату для отображения."""
     try:
-        if date_obj and hasattr(date_obj, 'strftime'):
-            return date_obj.strftime('%d.%m.%Y %H:%M')
+        if date_obj and hasattr(date_obj, "strftime"):
+            return date_obj.strftime("%d.%m.%Y %H:%M")
         else:
-            return 'Неизвестно'
+            return "Неизвестно"
     except Exception:
-        return 'Неизвестно'
+        return "Неизвестно"
 
 
 def truncate_text(text: str, max_length: int = 200) -> str:

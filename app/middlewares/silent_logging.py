@@ -4,10 +4,10 @@ Middleware для тихого логирования в каналах и гр�
 """
 
 import logging
-from typing import Any, Dict, Callable, Awaitable
+from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
-from aiogram.types import Message, CallbackQuery, TelegramObject
+from aiogram.types import CallbackQuery, Message, TelegramObject
 
 logger = logging.getLogger(__name__)
 
@@ -15,20 +15,17 @@ logger = logging.getLogger(__name__)
 class SilentLoggingMiddleware(BaseMiddleware):
     """
     Middleware для тихого логирования в каналах и группах.
-    
+
     Отправляет ответы только в личных сообщениях (private).
     В каналах и группах только логирует события.
     """
 
     async def __call__(
-        self,
-        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
-        event: TelegramObject,
-        data: Dict[str, Any]
+        self, handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]], event: TelegramObject, data: Dict[str, Any]
     ) -> Any:
         """
         Обрабатывает событие с тихим логированием.
-        
+
         Args:
             handler: Следующий обработчик
             event: Telegram событие
@@ -37,21 +34,21 @@ class SilentLoggingMiddleware(BaseMiddleware):
         # Определяем тип чата
         chat_type = None
         chat_id = None
-        
+
         if isinstance(event, Message):
             chat_type = event.chat.type
             chat_id = event.chat.id
         elif isinstance(event, CallbackQuery) and event.message:
             chat_type = event.message.chat.type
             chat_id = event.message.chat.id
-        
+
         # Логируем событие
         if chat_type and chat_id:
             if chat_type == "private":
                 logger.debug(f"Личное сообщение: {chat_type} {chat_id}")
             else:
                 logger.info(f"Тихое логирование: {chat_type} {chat_id}")
-        
+
         # Вызываем следующий обработчик
         return await handler(event, data)
 
@@ -59,10 +56,10 @@ class SilentLoggingMiddleware(BaseMiddleware):
 def should_send_response(event: TelegramObject) -> bool:
     """
     Определяет, нужно ли отправлять ответ пользователю.
-    
+
     Args:
         event: Telegram событие
-        
+
     Returns:
         True если нужно отправлять ответ, False иначе
     """
@@ -70,14 +67,14 @@ def should_send_response(event: TelegramObject) -> bool:
         return event.chat.type == "private"
     elif isinstance(event, CallbackQuery) and event.message:
         return event.message.chat.type == "private"
-    
+
     return False
 
 
 async def send_silent_response(event: TelegramObject, message: str) -> None:
     """
     Отправляет ответ с учетом тихого логирования.
-    
+
     Args:
         event: Telegram событие
         message: Сообщение для отправки
@@ -89,7 +86,7 @@ async def send_silent_response(event: TelegramObject, message: str) -> None:
         elif isinstance(event, CallbackQuery) and event.message:
             logger.info(f"Тихое логирование: {message} в {event.message.chat.type} {event.message.chat.id}")
         return
-    
+
     # В личных сообщениях отправляем ответ
     try:
         if isinstance(event, Message):
@@ -103,7 +100,7 @@ async def send_silent_response(event: TelegramObject, message: str) -> None:
 async def send_silent_callback_answer(event: CallbackQuery, text: str = None, show_alert: bool = False) -> None:
     """
     Отправляет ответ на callback query с учетом тихого логирования.
-    
+
     Args:
         event: CallbackQuery событие
         text: Текст ответа
@@ -114,7 +111,7 @@ async def send_silent_callback_answer(event: CallbackQuery, text: str = None, sh
         if event.message:
             logger.info(f"Тихое логирование callback: {text} в {event.message.chat.type} {event.message.chat.id}")
         return
-    
+
     # В личных сообщениях отправляем ответ
     try:
         await event.answer(text, show_alert=show_alert)
