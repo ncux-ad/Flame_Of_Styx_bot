@@ -96,7 +96,7 @@ class TestConfig:
         assert config.native_channel_ids_list == [-1001234567890, -1009876543210]
 
     def test_limits_dict(self):
-        """Test limits dictionary generation."""
+        """Test limits configuration."""
         config = Settings(
             bot_token="1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ",
             admin_ids="123456789",
@@ -106,7 +106,7 @@ class TestConfig:
             ban_duration_hours=48,
         )
 
-        limits = config.get_limits_dict()
-        assert limits["max_messages_per_minute"] == 15
-        assert limits["max_links_per_message"] == 5
-        assert limits["ban_duration_hours"] == 48
+        # Проверяем свойства напрямую
+        assert config.max_messages_per_minute == 15
+        assert config.max_links_per_message == 5
+        assert config.ban_duration_hours == 48

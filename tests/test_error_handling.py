@@ -337,9 +337,10 @@ class TestHandleErrorsDecorator:
             assert result is None
             mock_handle.assert_called_once()
             call_args = mock_handle.call_args
-            assert call_args[0][2]["message_text"] == "Test message"
-            assert call_args[0][3] == 123456789
-            assert call_args[0][4] == -1001234567890
+            # Аргументы: (e, context, user_id, chat_id)
+            assert call_args[0][1]["message_text"] == "Test message"  # context
+            assert call_args[0][2] == 123456789  # user_id
+            assert call_args[0][3] == -1001234567890  # chat_id
 
     @pytest.mark.asyncio
     async def test_handle_errors_with_callback_context(self):
@@ -347,8 +348,13 @@ class TestHandleErrorsDecorator:
         user = User(id=123456789, is_bot=False, first_name="Test")
         chat = Chat(id=-1001234567890, type="supergroup")
         message = Message(message_id=1, date=1234567890, chat=chat, from_user=user, text="Test message")
-        callback_query = CallbackQuery(id="test_callback", from_user=user, chat_instance="test_chat", data="test_data")
-        callback_query.message = message
+        callback_query = CallbackQuery(
+            id="test_callback", 
+            from_user=user, 
+            chat_instance="test_chat", 
+            data="test_data",
+            message=message
+        )
 
         @handle_errors(user_message="Test error message")
         async def test_function(cb: CallbackQuery):
@@ -360,9 +366,10 @@ class TestHandleErrorsDecorator:
             assert result is None
             mock_handle.assert_called_once()
             call_args = mock_handle.call_args
-            assert call_args[0][2]["callback_data"] == "test_data"
-            assert call_args[0][3] == 123456789
-            assert call_args[0][4] == -1001234567890
+            # Аргументы: (e, context, user_id, chat_id)
+            assert call_args[0][1]["callback_data"] == "test_data"  # context
+            assert call_args[0][2] == 123456789  # user_id
+            assert call_args[0][3] == -1001234567890  # chat_id
 
     @pytest.mark.asyncio
     async def test_handle_errors_reraise(self):
@@ -397,7 +404,7 @@ class TestSendErrorMessage:
     async def test_send_error_message_to_message(self):
         """Тест отправки сообщения об ошибке в Message"""
         # Создаем мок объекты вместо реальных Telegram объектов
-        mock_message = Mock()
+        mock_message = Mock(spec=Message)
         mock_message.answer = AsyncMock()
 
         error = ValidationError("Test validation error")
@@ -410,7 +417,7 @@ class TestSendErrorMessage:
     async def test_send_error_message_to_callback_query(self):
         """Тест отправки сообщения об ошибке в CallbackQuery"""
         # Создаем мок объекты вместо реальных Telegram объектов
-        mock_callback = Mock()
+        mock_callback = Mock(spec=CallbackQuery)
         mock_callback.answer = AsyncMock()
 
         error = ValidationError("Test validation error")
@@ -423,7 +430,7 @@ class TestSendErrorMessage:
     async def test_send_error_message_with_custom_message(self):
         """Тест отправки сообщения об ошибке с пользовательским сообщением"""
         # Создаем мок объекты вместо реальных Telegram объектов
-        mock_message = Mock()
+        mock_message = Mock(spec=Message)
         mock_message.answer = AsyncMock()
 
         error = ValidationError("Test validation error")
@@ -437,7 +444,7 @@ class TestSendErrorMessage:
     async def test_send_error_message_exception_handling(self):
         """Тест обработки исключений при отправке сообщения об ошибке"""
         # Создаем мок объекты вместо реальных Telegram объектов
-        mock_message = Mock()
+        mock_message = Mock(spec=Message)
         mock_message.answer = AsyncMock(side_effect=Exception("Send error"))
 
         error = ValidationError("Test validation error")

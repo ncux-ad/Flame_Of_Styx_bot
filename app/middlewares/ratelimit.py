@@ -20,6 +20,13 @@ class RateLimitMiddleware(BaseMiddleware):
             admin_limit: Maximum number of requests per interval for admins
             interval: Time interval in seconds
         """
+        if user_limit <= 0:
+            raise ValueError("user_limit должен быть положительным числом")
+        if admin_limit <= 0:
+            raise ValueError("admin_limit должен быть положительным числом")
+        if interval <= 0:
+            raise ValueError("interval должен быть положительным числом")
+            
         self.user_limit = user_limit
         self.admin_limit = admin_limit
         self.interval = interval

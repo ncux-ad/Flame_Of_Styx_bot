@@ -37,6 +37,9 @@ class Settings(BaseSettings):
 
     # Настройки уведомлений
     show_limits_on_startup: bool = True  # Показывать лимиты при запуске бота
+    
+    # Игнорируемые каналы
+    ignore_channel_ids: str = Field(default="", description="Список игнорируемых каналов через запятую")
 
     # Настройки Redis
     redis_url: str = Field(default=DEFAULT_REDIS_URL, description="URL подключения к Redis")

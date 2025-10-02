@@ -35,71 +35,61 @@ class TestInputValidator:
         validator = InputValidator()
 
         # Test valid command
-        result = validator.validate_command("/help")
-        assert result["valid"] is True
-        assert result["reason"] == "OK"
+        result = validator.validate_command("/help", [])
+        assert len(result) == 0  # No errors
 
         # Test valid command with arguments
-        result = validator.validate_command("/suspicious_analyze 123456789")
-        assert result["valid"] is True
-        assert result["reason"] == "OK"
+        result = validator.validate_command("/suspicious_analyze", ["123456789"])
+        assert len(result) == 0  # No errors
 
     def test_validate_command_invalid_characters(self, mock_config):
         """Test command validation with invalid characters."""
         validator = InputValidator()
 
         # Test command with suspicious characters
-        result = validator.validate_command("/help<script>alert('xss')</script>")
-        assert result["valid"] is False
-        assert "suspicious" in result["reason"].lower()
+        result = validator.validate_command("/help<script>alert('xss')</script>", [])
+        assert len(result) > 0  # Should have errors
 
     def test_validate_command_too_long(self, mock_config):
         """Test command validation with too long input."""
         validator = InputValidator()
 
         # Test very long command
-        long_command = "/help " + "a" * 1000
-        result = validator.validate_command(long_command)
-        assert result["valid"] is False
-        assert "too long" in result["reason"].lower()
+        long_command = "/" + "a" * 100
+        result = validator.validate_command(long_command, [])
+        assert len(result) > 0  # Should have errors
 
     def test_validate_command_empty(self, mock_config):
         """Test command validation with empty input."""
         validator = InputValidator()
 
         # Test empty command
-        result = validator.validate_command("")
-        assert result["valid"] is False
-        assert "empty" in result["reason"].lower()
+        result = validator.validate_command("", [])
+        assert len(result) > 0  # Should have errors
 
-    def test_validate_interactive_input_basic(self, mock_config):
-        """Test basic interactive input validation."""
+    def test_validate_phone_number_basic(self, mock_config):
+        """Test basic phone number validation."""
         validator = InputValidator()
 
-        # Test valid interactive input
-        result = validator.validate_interactive_input("123456789")
-        assert result["valid"] is True
-        assert result["reason"] == "OK"
+        # Test valid phone number
+        result = validator.validate_phone_number("+1234567890")
+        assert len(result) == 0  # No errors
 
-        # Test valid username
-        result = validator.validate_interactive_input("@testuser")
-        assert result["valid"] is True
-        assert result["reason"] == "OK"
+        # Test invalid phone number
+        result = validator.validate_phone_number("invalid")
+        assert len(result) > 0  # Should have errors
 
-    def test_validate_interactive_input_invalid(self, mock_config):
-        """Test interactive input validation with invalid input."""
+    def test_validate_email_basic(self, mock_config):
+        """Test basic email validation."""
         validator = InputValidator()
 
-        # Test empty input
-        result = validator.validate_interactive_input("")
-        assert result["valid"] is False
-        assert "empty" in result["reason"].lower()
+        # Test valid email
+        result = validator.validate_email("test@example.com")
+        assert len(result) == 0  # No errors
 
-        # Test too long input
-        long_input = "a" * 1000
-        result = validator.validate_interactive_input(long_input)
-        assert result["valid"] is False
-        assert "too long" in result["reason"].lower()
+        # Test invalid email
+        result = validator.validate_email("invalid-email")
+        assert len(result) > 0  # Should have errors
 
 
 class TestConfig:
