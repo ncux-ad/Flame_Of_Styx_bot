@@ -32,7 +32,7 @@ from .limits import limits_router
 from .moderation import moderation_router
 from .suspicious import suspicious_router
 from .interactive import interactive_router
-from .spam_analysis import router as spam_analysis_router
+# from .spam_analysis import router as spam_analysis_router  # Перенесено в основной роутер
 from .rate_limit import rate_limit_router
 from .bots import bots_router
 
@@ -48,7 +48,7 @@ admin_router.include_router(limits_router)
 admin_router.include_router(moderation_router)
 admin_router.include_router(suspicious_router)
 admin_router.include_router(interactive_router)
-admin_router.include_router(spam_analysis_router)
+# admin_router.include_router(spam_analysis_router)  # Перенесено в основной роутер из-за проблем Aiogram 3.x
 admin_router.include_router(rate_limit_router)
 admin_router.include_router(bots_router)
 
@@ -217,13 +217,25 @@ async def handle_find_chat_command(
         await message.answer("❌ Ошибка поиска чата")
 
 
-# Тестовая команда spam_analysis напрямую в admin_router
+# Команда spam_analysis перенесена из подроутера (проблема Aiogram 3.x с подроутерами)
 @admin_router.message(Command("spam_analysis"))
-async def test_spam_analysis_handler(message: Message) -> None:
-    """Тестовый хендлер для spam_analysis."""
-    logger.info("TEST SPAM_ANALYSIS HANDLER CALLED!")
-    await message.answer(
-        "🔍 <b>Анализ данных спама</b>\n\n"
-        "Выберите действие для анализа собранных данных:",
-        parse_mode="HTML"
-    )
+async def handle_spam_analysis_command(message: Message) -> None:
+    """Показать меню анализа спама."""
+    logger.info("SPAM_ANALYSIS HANDLER CALLED!")
+    try:
+        user_id = message.from_user.id if message.from_user else 0
+        logger.info(f"Spam analysis menu requested by user {user_id}")
+        
+        from app.keyboards.inline import get_spam_analysis_keyboard
+        keyboard = get_spam_analysis_keyboard()
+        
+        await message.answer(
+            "🔍 <b>Анализ данных спама</b>\n\n"
+            "Выберите действие для анализа собранных данных:",
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+        logger.info(f"Spam analysis menu sent to user {user_id}")
+    except Exception as e:
+        logger.error(f"Error in spam_analysis_menu: {e}")
+        await message.answer("❌ Ошибка при загрузке меню анализа спама")
