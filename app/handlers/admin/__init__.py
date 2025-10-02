@@ -3,7 +3,7 @@
 """
 
 import logging
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
@@ -11,6 +11,7 @@ from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 from app.utils.security import sanitize_for_logging
 from app.services.bots import BotService
 from app.services.channels import ChannelService
+from app.keyboards.inline import get_spam_analysis_keyboard
 from app.services.help import HelpService
 from app.services.limits import LimitsService
 from app.services.moderation import ModerationService
@@ -226,7 +227,6 @@ async def handle_spam_analysis_command(message: Message) -> None:
         user_id = message.from_user.id if message.from_user else 0
         logger.info(f"Spam analysis menu requested by user {user_id}")
         
-        from app.keyboards.inline import get_spam_analysis_keyboard
         keyboard = get_spam_analysis_keyboard()
         
         await message.answer(
@@ -239,3 +239,66 @@ async def handle_spam_analysis_command(message: Message) -> None:
     except Exception as e:
         logger.error(f"Error in spam_analysis_menu: {e}")
         await message.answer("❌ Ошибка при загрузке меню анализа спама")
+
+
+# Callback handlers для spam_analysis (перенесены из подроутера)
+@admin_router.callback_query(F.data == "spam_stats")
+async def show_spam_stats(callback: CallbackQuery):
+    """Показать статистику спама."""
+    try:
+        from app.utils.pii_protection import secure_logger
+        
+        # Получаем данные за последние 30 дней
+        spam_data = secure_logger.get_spam_analysis_data(days=30)
+        
+        if not spam_data:
+            if callback.message:
+                await callback.message.edit_text(
+                    "📊 <b>Статистика спама</b>\n\n"
+                    "❌ Данные за последние 30 дней не найдены.\n"
+                    "Убедитесь, что включено полное логирование.",
+                    parse_mode="HTML"
+                )
+            return
+        
+        # Простая статистика
+        total_entries = len(spam_data)
+        stats_text = (
+            f"📊 <b>Статистика спама</b>\n\n"
+            f"📅 Период: последние 30 дней\n"
+            f"📊 Всего записей: {total_entries}\n\n"
+        )
+        
+        if callback.message:
+            await callback.message.edit_text(
+                stats_text,
+                reply_markup=get_spam_analysis_keyboard(),
+                parse_mode="HTML"
+            )
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения статистики спама: {e}")
+        if callback.message:
+            await callback.message.edit_text(
+                "❌ <b>Ошибка получения статистики</b>\n\n"
+                f"Произошла ошибка: {str(e)}",
+                reply_markup=get_spam_analysis_keyboard(),
+                parse_mode="HTML"
+            )
+
+
+@admin_router.callback_query(F.data == "spam_back")
+async def spam_back_to_menu(callback: CallbackQuery):
+    """Вернуться к главному меню анализа спама."""
+    try:
+        keyboard = get_spam_analysis_keyboard()
+        
+        if callback.message:
+            await callback.message.edit_text(
+                "🔍 <b>Анализ данных спама</b>\n\n"
+                "Выберите действие для анализа собранных данных:",
+                reply_markup=keyboard,
+                parse_mode="HTML"
+            )
+    except Exception as e:
+        logger.error(f"Error in spam_back_to_menu: {e}")
