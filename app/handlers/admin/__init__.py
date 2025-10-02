@@ -215,3 +215,15 @@ async def handle_find_chat_command(
     except Exception as e:
         logger.error(f"Error in find_chat command: {sanitize_for_logging(str(e))}")
         await message.answer("❌ Ошибка поиска чата")
+
+
+# Тестовая команда spam_analysis напрямую в admin_router
+@admin_router.message(Command("spam_analysis"))
+async def test_spam_analysis_handler(message: Message) -> None:
+    """Тестовый хендлер для spam_analysis."""
+    logger.info("TEST SPAM_ANALYSIS HANDLER CALLED!")
+    await message.answer(
+        "🔍 <b>Анализ данных спама</b>\n\n"
+        "Выберите действие для анализа собранных данных:",
+        parse_mode="HTML"
+    )
