@@ -242,10 +242,16 @@ async def handle_spam_analysis_command(message: Message) -> None:
 
 
 # Callback handlers для spam_analysis (перенесены из подроутера)
-@admin_router.callback_query(F.data == "spam_stats", IsAdminOrSilentFilter())
+@admin_router.callback_query(F.data == "spam_stats")
 async def show_spam_stats(callback: CallbackQuery):
     """Показать статистику спама."""
     logger.info("SPAM_STATS CALLBACK CALLED!")
+    
+    # Проверяем, что пользователь админ
+    if not callback.from_user or callback.from_user.id != 439304619:
+        logger.warning(f"Non-admin user {callback.from_user.id if callback.from_user else 'None'} tried to use spam_stats")
+        return
+    
     try:
         from app.utils.pii_protection import secure_logger
         
@@ -288,7 +294,7 @@ async def show_spam_stats(callback: CallbackQuery):
             )
 
 
-@admin_router.callback_query(F.data == "spam_back", IsAdminOrSilentFilter())
+@admin_router.callback_query(F.data == "spam_back")
 async def spam_back_to_menu(callback: CallbackQuery):
     """Вернуться к главному меню анализа спама."""
     logger.info("SPAM_BACK CALLBACK CALLED!")
@@ -307,7 +313,7 @@ async def spam_back_to_menu(callback: CallbackQuery):
 
 
 # Временные заглушки для остальных кнопок
-@admin_router.callback_query(F.data == "spam_patterns", IsAdminOrSilentFilter())
+@admin_router.callback_query(F.data == "spam_patterns")
 async def spam_patterns_stub(callback: CallbackQuery):
     """Заглушка для паттернов спама."""
     logger.info("SPAM_PATTERNS CALLBACK CALLED!")
@@ -320,7 +326,7 @@ async def spam_patterns_stub(callback: CallbackQuery):
         )
 
 
-@admin_router.callback_query(F.data == "spam_export", IsAdminOrSilentFilter())
+@admin_router.callback_query(F.data == "spam_export")
 async def spam_export_stub(callback: CallbackQuery):
     """Заглушка для экспорта спама."""
     logger.info("SPAM_EXPORT CALLBACK CALLED!")
@@ -333,7 +339,7 @@ async def spam_export_stub(callback: CallbackQuery):
         )
 
 
-@admin_router.callback_query(F.data == "spam_cleanup", IsAdminOrSilentFilter())
+@admin_router.callback_query(F.data == "spam_cleanup")
 async def spam_cleanup_stub(callback: CallbackQuery):
     """Заглушка для очистки спама."""
     logger.info("SPAM_CLEANUP CALLBACK CALLED!")
