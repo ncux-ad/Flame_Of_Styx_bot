@@ -297,13 +297,14 @@ class InputValidator:
                     value=len(user.first_name)
                 ))
             
-            # Проверка на подозрительные символы в имени
-            if not re.match(r'^[a-zA-Zа-яА-Я\s\-\.\']+$', user.first_name):
+            # Проверка на реально опасные символы в имени (разрешаем эмодзи и Unicode)
+            dangerous_chars = r'[<>{}\\|`\x00-\x1f\x7f-\x9f]'
+            if re.search(dangerous_chars, user.first_name):
                 errors.append(ValidationError(
                     field="first_name",
-                    message="Имя содержит недопустимые символы",
+                    message="Имя содержит потенциально опасные символы",
                     severity=ValidationSeverity.MEDIUM,
-                    code="invalid_first_name_chars",
+                    code="dangerous_first_name_chars",
                     value=user.first_name
                 ))
         
@@ -318,13 +319,14 @@ class InputValidator:
                     value=len(user.last_name)
                 ))
             
-            # Проверка на подозрительные символы в фамилии
-            if not re.match(r'^[a-zA-Zа-яА-Я\s\-\.\']+$', user.last_name):
+            # Проверка на реально опасные символы в фамилии (разрешаем эмодзи и Unicode)
+            dangerous_chars = r'[<>{}\\|`\x00-\x1f\x7f-\x9f]'
+            if re.search(dangerous_chars, user.last_name):
                 errors.append(ValidationError(
                     field="last_name",
-                    message="Фамилия содержит недопустимые символы",
+                    message="Фамилия содержит потенциально опасные символы",
                     severity=ValidationSeverity.MEDIUM,
-                    code="invalid_last_name_chars",
+                    code="dangerous_last_name_chars",
                     value=user.last_name
                 ))
         
