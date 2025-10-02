@@ -23,7 +23,7 @@ router = Router()
 # router.callback_query.filter(IsAdminOrSilentFilter())
 
 
-@router.message(Command("spam_analysis"), IsAdminOrSilentFilter())
+@router.message(Command("spam_analysis"))
 async def spam_analysis_menu(message: Message):
     """Показать меню анализа спама."""
     try:
