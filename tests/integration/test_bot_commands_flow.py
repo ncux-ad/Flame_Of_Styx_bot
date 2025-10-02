@@ -456,15 +456,12 @@ class TestBotCommandsFlow:
         """Тест обработки callback query"""
         from aiogram.types import CallbackQuery
         
-        # Создаем callback query
-        callback_query = CallbackQuery(
-            id="test_callback_123",
-            from_user=test_admin_user,
-            chat_instance="test_chat_instance",
-            data="spam_stats"
-        )
-        
-        # Мокаем message для callback
+        # Создаем callback query (MagicMock для избежания frozen instance)
+        callback_query = MagicMock()
+        callback_query.id = "test_callback_123"
+        callback_query.from_user = test_admin_user
+        callback_query.chat_instance = "test_chat_instance"
+        callback_query.data = "spam_stats"
         callback_query.message = MagicMock()
         callback_query.message.edit_text = AsyncMock()
         

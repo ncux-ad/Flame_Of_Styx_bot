@@ -135,15 +135,12 @@ class TestHandlersServicesIntegration:
     @pytest.mark.asyncio
     async def test_callback_query_integration(self, test_config, mock_bot, test_db_session, test_admin_user, test_chat):
         """Тест интеграции callback query с сервисами"""
-        # Создаем callback query
-        callback_query = CallbackQuery(
-            id="test_callback",
-            from_user=test_admin_user,
-            chat_instance="test_chat",
-            data="spam_stats"
-        )
-        
-        # Мокаем message для callback
+        # Создаем callback query (MagicMock для избежания frozen instance)
+        callback_query = MagicMock()
+        callback_query.id = "test_callback"
+        callback_query.from_user = test_admin_user
+        callback_query.chat_instance = "test_chat"
+        callback_query.data = "spam_stats"
         callback_query.message = MagicMock()
         callback_query.message.edit_text = AsyncMock()
         
@@ -288,7 +285,7 @@ class TestHandlersServicesIntegration:
         
         # Сервисы должны иметь одинаковые зависимости
         assert moderation_service.bot is moderation_service_2.bot
-        assert moderation_service.db_session is moderation_service_2.db_session
+        assert moderation_service.db is moderation_service_2.db
 
 
 class TestRealWorldScenarios:
@@ -298,13 +295,13 @@ class TestRealWorldScenarios:
     async def test_admin_workflow(self, test_config, mock_bot, test_db_session, create_test_message, test_admin_user, test_chat):
         """Тест полного админского workflow"""
         # 1. Админ проверяет статус бота
-        status_message = create_test_message("/status", test_admin_user, test_chat)
+        status_message = create_test_message("/status", user_id=test_admin_user.id, chat_id=test_chat.id, is_admin=True)
         
         # 2. Админ банит пользователя
-        ban_message = create_test_message("/ban 123456789 Spam", test_admin_user, test_chat)
+        ban_message = create_test_message("/ban 123456789 Spam", user_id=test_admin_user.id, chat_id=test_chat.id, is_admin=True)
         
         # 3. Админ проверяет список забаненных
-        banned_message = create_test_message("/banned", test_admin_user, test_chat)
+        banned_message = create_test_message("/banned", user_id=test_admin_user.id, chat_id=test_chat.id, is_admin=True)
         
         # Создаем сервисы
         moderation_service = ModerationService(mock_bot, test_db_session)
@@ -344,7 +341,7 @@ class TestRealWorldScenarios:
     @pytest.mark.asyncio
     async def test_error_recovery_workflow(self, test_config, mock_bot, test_db_session, create_test_message, test_admin_user, test_chat):
         """Тест восстановления после ошибок"""
-        message = create_test_message("/status", test_admin_user, test_chat)
+        message = create_test_message("/status", user_id=test_admin_user.id, chat_id=test_chat.id, is_admin=True)
         message.answer = AsyncMock()
         
         # Создаем сервис который сначала падает, потом работает

@@ -187,6 +187,9 @@ class DIMiddleware(BaseMiddleware):
             if redis_service:
                 self._services["redis_service"] = redis_service
 
+            # Устанавливаем флаг инициализации
+            self._initialized = True
+            
             logger.info(f"DI services initialized: {list(self._services.keys())}")
 
         except Exception as e:

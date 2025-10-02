@@ -191,7 +191,7 @@ class TestDependencyInjection:
         }
         
         # Redis отключен в тестовой конфигурации
-        with patch('app.middlewares.di_middleware.RedisService') as mock_redis_class:
+        with patch('app.services.redis.RedisService') as mock_redis_class:
             # Эмулируем ошибку инициализации Redis
             mock_redis_class.side_effect = Exception("Redis not available")
             
@@ -266,7 +266,7 @@ class TestDependencyInjection:
         # Инициализируем сервисы один раз
         await di_middleware._initialize_services(data)
         
-        message = create_test_message(text="/test", user=test_user, chat=test_chat)
+        message = create_test_message(text="/test", user_id=test_user.id, chat_id=test_chat.id, is_admin=False)
         
         # Первый обработчик
         services_1 = {}

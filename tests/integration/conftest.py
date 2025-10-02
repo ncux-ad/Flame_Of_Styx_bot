@@ -226,6 +226,26 @@ def create_test_callback():
 def create_test_update():
     """Фабрика для создания тестовых Update объектов"""
     def _create_update(message=None, callback_query=None, update_id: int = 1):
+        # Создаем правильную структуру для Update
+        update_data = {
+            "update_id": update_id,
+            "message": message,
+            "callback_query": callback_query,
+            "edited_message": None,
+            "channel_post": None,
+            "edited_channel_post": None,
+            "inline_query": None,
+            "chosen_inline_result": None,
+            "shipping_query": None,
+            "pre_checkout_query": None,
+            "poll": None,
+            "poll_answer": None,
+            "my_chat_member": None,
+            "chat_member": None,
+            "chat_join_request": None
+        }
+        
+        # Создаем MagicMock с правильными атрибутами
         update = MagicMock()
         update.update_id = update_id
         update.message = message
@@ -242,6 +262,10 @@ def create_test_update():
         update.my_chat_member = None
         update.chat_member = None
         update.chat_join_request = None
+        
+        # Добавляем методы для совместимости с Pydantic
+        update.model_dump = MagicMock(return_value=update_data)
+        update.model_validate = MagicMock(return_value=update)
         
         return update
     
