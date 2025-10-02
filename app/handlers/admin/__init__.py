@@ -228,14 +228,16 @@ async def handle_spam_analysis_command(message: Message) -> None:
         logger.info(f"Spam analysis menu requested by user {user_id}")
         
         keyboard = get_spam_analysis_keyboard()
+        logger.info(f"Keyboard created: {keyboard}")
         
-        await message.answer(
+        sent_message = await message.answer(
             "🔍 <b>Анализ данных спама</b>\n\n"
             "Выберите действие для анализа собранных данных:",
             reply_markup=keyboard,
             parse_mode="HTML"
         )
-        logger.info(f"Spam analysis menu sent to user {user_id}")
+        logger.info(f"Spam analysis menu sent to user {user_id}, message_id: {sent_message.message_id}")
+        logger.info(f"Message has keyboard: {sent_message.reply_markup is not None}")
     except Exception as e:
         logger.error(f"Error in spam_analysis_menu: {e}")
         await message.answer("❌ Ошибка при загрузке меню анализа спама")
