@@ -23,6 +23,23 @@ repos:
       - id: isort
         args: ["--profile", "black", "--check-only", "--diff"]
 
+  - repo: local
+    hooks:
+      - id: bandit
+        name: bandit
+        entry: bandit
+        language: system
+        args: ["-r", "app/", "-ll"]
+        types: [python]
+        pass_filenames: false
+        
+      - id: safety
+        name: safety
+        entry: safety
+        language: system
+        args: ["check", "--ignore=77745,77744,76752,77680,78162"]
+        pass_filenames: false
+
   # flake8 отключен - используем только black и isort
   # - repo: https://github.com/pycqa/flake8
   #   rev: 6.0.0
