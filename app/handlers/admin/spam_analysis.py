@@ -25,14 +25,20 @@ router.callback_query.filter(IsAdminOrSilentFilter())
 @router.message(Command("spam_analysis"))
 async def spam_analysis_menu(message: Message):
     """Показать меню анализа спама."""
-    keyboard = get_spam_analysis_keyboard()
-    
-    await message.answer(
-        "🔍 **Анализ данных спама**\n\n"
-        "Выберите действие для анализа собранных данных:",
-        reply_markup=keyboard,
-        parse_mode="Markdown"
-    )
+    try:
+        logger.info(f"Spam analysis menu requested by user {message.from_user.id}")
+        keyboard = get_spam_analysis_keyboard()
+        
+        await message.answer(
+            "🔍 <b>Анализ данных спама</b>\n\n"
+            "Выберите действие для анализа собранных данных:",
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+        logger.info(f"Spam analysis menu sent to user {message.from_user.id}")
+    except Exception as e:
+        logger.error(f"Error in spam_analysis_menu: {e}")
+        await message.answer("❌ Ошибка при загрузке меню анализа спама")
 
 
 @router.callback_query(F.data == "spam_stats")
