@@ -145,7 +145,7 @@ def benchmark_data_generator():
                 "title": f"Test Channel {i}",
                 "username": f"testchannel{i}",
                 "is_native": i % 3 == 0,  # 33% native
-                "status": "allowed" if i % 5 != 0 else "blocked",  # 80% allowed
+                "status": "ALLOWED" if i % 5 != 0 else "BLOCKED",  # 80% allowed
             }
             for i in range(count)
         ]

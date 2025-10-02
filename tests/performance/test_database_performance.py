@@ -24,9 +24,10 @@ class TestDatabasePerformance:
                 users = []
                 for i in range(100):
                     user = User()
-                    user.telegram_id = 100000000 + i
-                    user.username = f"user_{i}"
-                    user.first_name = f"User{i}"
+                    user.telegram_id = 200000000 + i  # Изменен диапазон для избежания конфликтов
+                    user.username = f"perf_user_{i}"
+                    user.first_name = f"PerfUser{i}"
+                    user.last_name = f"PerfLast{i}"
                     user.is_banned = False
                     users.append(user)
                     perf_db_session.add(user)
