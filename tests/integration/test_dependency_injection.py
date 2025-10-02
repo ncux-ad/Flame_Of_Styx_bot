@@ -149,7 +149,7 @@ class TestDependencyInjection:
         # Тест с одним админом
         from app.config import Settings
         config_single = Settings(
-            bot_token="123456789:test_token",
+            bot_token="123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890",
             admin_ids="123456789",
             db_path="/tmp/test.db"
         )
@@ -168,7 +168,7 @@ class TestDependencyInjection:
         
         # Тест с несколькими админами
         config_multiple = Settings(
-            bot_token="123456789:test_token",
+            bot_token="123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890",
             admin_ids="123456789,987654321,555666777",
             db_path="/tmp/test.db"
         )
@@ -288,13 +288,17 @@ class TestDependencyInjection:
             return "Handler 2"
         
         # Выполняем оба обработчика
-        await di_middleware(handler_1, message, data.copy())
-        await di_middleware(handler_2, message, data.copy())
+        data1 = data.copy()
+        data2 = data.copy()
+        await di_middleware(handler_1, message, data1)
+        await di_middleware(handler_2, message, data2)
         
-        # Сервисы должны быть одними и теми же экземплярами
-        assert 'moderation_service' in data
+        # Сервисы должны быть в data после вызова middleware
+        assert 'moderation_service' in data1
+        assert 'moderation_service' in data2
         # Проверяем что это ModerationService
-        assert isinstance(data['moderation_service'], ModerationService)
+        assert isinstance(data1['moderation_service'], ModerationService)
+        assert isinstance(data2['moderation_service'], ModerationService)
 
 
 class TestServiceIntegration:

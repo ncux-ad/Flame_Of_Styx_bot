@@ -271,6 +271,11 @@ def create_test_update():
         update.bot = None
         update._bot = None
         
+        # Переопределяем model_validate чтобы он возвращал сам объект
+        def mock_model_validate(data, context=None):
+            return update
+        update.model_validate = mock_model_validate
+        
         return update
     
     return _create_update

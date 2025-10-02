@@ -88,7 +88,7 @@ class TestMiddlewareChain:
             'config': AsyncMock()
         }
         
-        update = type('Update', (), {'message': message})()
+        update = create_test_update(message=message)
         
         # Первые запросы должны проходить
         for i in range(5):
@@ -139,7 +139,7 @@ class TestMiddlewareChain:
             })()
         }
         
-        update = type('Update', (), {'message': message})()
+        update = create_test_update(message=message)
         
         with patch('app.middlewares.di_middleware.DIMiddleware._initialize_services') as mock_init:
             # Мокаем инициализацию сервисов
@@ -174,7 +174,7 @@ class TestMiddlewareChain:
             'config': AsyncMock()
         }
         
-        update = type('Update', (), {'message': message})()
+        update = create_test_update(message=message)
         
         # Исключение не должно ломать всю цепочку
         try:
@@ -270,7 +270,7 @@ class TestMiddlewareIntegration:
             })()
         }
         
-        update = type('Update', (), {'message': message})()
+        update = create_test_update(message=message)
         
         with patch('app.middlewares.di_middleware.DIMiddleware._initialize_services'):
             await test_dispatcher.feed_update(bot=data['bot'], update=update)
@@ -314,11 +314,11 @@ class TestMiddlewareIntegration:
         }
         
         # Обрабатываем валидное сообщение
-        valid_update = type('Update', (), {'message': valid_message})()
+        valid_update = create_test_update(message=valid_message)
         await test_dispatcher.feed_update(bot=data['bot'], update=valid_update)
         
         # Обрабатываем подозрительное сообщение
-        suspicious_update = type('Update', (), {'message': suspicious_message})()
+        suspicious_update = create_test_update(message=suspicious_message)
         
         with patch('app.middlewares.validation.input_validator') as mock_validator:
             # Настраиваем валидатор для блокировки подозрительного сообщения

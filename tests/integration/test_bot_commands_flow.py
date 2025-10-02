@@ -99,7 +99,7 @@ class TestBotCommandsFlow:
         test_dispatcher.include_router(router)
         message.answer = AsyncMock()
         
-        update = Update(update_id=2, message=message)
+        update = create_test_update(message=message, update_id=2)
         
         with patch('app.middlewares.di_middleware.DIMiddleware._initialize_services') as mock_init_services:
             async def mock_init(data):
@@ -393,7 +393,7 @@ class TestBotCommandsFlow:
         test_dispatcher.include_router(router)
         message.answer = AsyncMock()
         
-        update = Update(update_id=40, message=message)
+        update = create_test_update(message=message, update_id=40)
         
         await test_dispatcher.feed_update(bot=mock_bot, update=update)
         
@@ -548,7 +548,7 @@ class TestEndToEndScenarios:
             )
             message.answer = AsyncMock()
             
-            update = Update(update_id=70+i, message=message)
+            update = create_test_update(message=message, update_id=70+i)
             await test_dispatcher.feed_update(bot=mock_bot, update=update)
         
         # Проверяем что весь workflow выполнен
@@ -591,7 +591,7 @@ class TestEndToEndScenarios:
             )
             message.answer = AsyncMock()
             
-            update = Update(update_id=80+i, message=message)
+            update = create_test_update(message=message, update_id=80+i)
             await test_dispatcher.feed_update(bot=mock_bot, update=update)
         
         # Проверяем пользовательский путь

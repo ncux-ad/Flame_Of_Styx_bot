@@ -45,6 +45,9 @@ class TestHandlersServicesIntegration:
             # Импортируем и вызываем обработчик
             from app.handlers.admin.basic import handle_status_command
             
+            # Устанавливаем message.answer как AsyncMock
+            message.answer = AsyncMock()
+            
             await handle_status_command(
                 message=message,
                 status_service=status_service,
@@ -79,6 +82,9 @@ class TestHandlersServicesIntegration:
             
             # Импортируем и вызываем обработчик
             from app.handlers.admin.basic import handle_help_command
+            
+            # Устанавливаем message.answer как AsyncMock
+            message.answer = AsyncMock()
             
             await handle_help_command(
                 message=message,
