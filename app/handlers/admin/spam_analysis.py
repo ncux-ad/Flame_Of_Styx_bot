@@ -18,11 +18,12 @@ from app.utils.pii_protection import secure_logger
 logger = logging.getLogger(__name__)
 
 router = Router()
-router.message.filter(IsAdminOrSilentFilter())
-router.callback_query.filter(IsAdminOrSilentFilter())
+# Фильтр применяется на уровне admin_router
+# router.message.filter(IsAdminOrSilentFilter())
+# router.callback_query.filter(IsAdminOrSilentFilter())
 
 
-@router.message(Command("spam_analysis"))
+@router.message(Command("spam_analysis"), IsAdminOrSilentFilter())
 async def spam_analysis_menu(message: Message):
     """Показать меню анализа спама."""
     try:
