@@ -4,7 +4,7 @@
 
 import logging
 
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.types import Message
 
 from app.services.bots import BotService
@@ -88,7 +88,7 @@ async def handle_channel_posts(
         logger.error(f"Error processing channel post: {e}")
 
 
-@antispam_router.message()
+@antispam_router.message(~F.text.startswith("/"))
 async def handle_all_messages(
     message: Message,
     moderation_service: ModerationService,
