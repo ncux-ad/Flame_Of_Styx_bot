@@ -402,12 +402,15 @@ async def handle_test_alert_command(message: Message, alert_service: AlertServic
 @admin_router.message(Command("alert_error"))
 async def handle_test_error_alert_command(message: Message, alert_service: AlertService) -> None:
     """Тестировать алерт об ошибке"""
+    print("🚨 DEBUG: handle_test_error_alert_command called!")
     try:
+        print("🚨 DEBUG: Calling alert_service.send_error_alert...")
         success = await alert_service.send_error_alert(
             title="Тестовая ошибка",
             message="Это тестовое сообщение об ошибке",
             data={"error_type": "test", "severity": "high"},
         )
+        print(f"🚨 DEBUG: send_error_alert returned: {success}")
 
         if success:
             await message.answer("✅ Тестовый алерт об ошибке отправлен!")
@@ -415,6 +418,7 @@ async def handle_test_error_alert_command(message: Message, alert_service: Alert
             await message.answer("❌ Ошибка отправки алерта об ошибке")
 
     except Exception as e:
+        print(f"🚨 DEBUG: Exception in handle_test_error_alert_command: {e}")
         await message.answer(f"❌ Ошибка тестирования алерта об ошибке: {e}")
 
 
