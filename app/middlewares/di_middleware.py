@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings
 from app.services.admin import AdminService
+from app.services.alerts import AlertService
 from app.services.bots import BotService
 from app.services.bots_admin import BotsAdminService
 from app.services.callbacks import CallbacksService
@@ -122,6 +123,9 @@ class DIMiddleware(BaseMiddleware):
                 channel_service=channel_service,
             )
 
+            # Создаем AlertService
+            alert_service = AlertService(bot, config)
+
             # Создаем сервисы с зависимостями
             admin_service = AdminService(
                 moderation_service=moderation_service,
@@ -181,6 +185,7 @@ class DIMiddleware(BaseMiddleware):
                 "suspicious_admin_service": suspicious_admin_service,
                 "callbacks_service": callbacks_service,
                 "link_service": link_service,
+                "alert_service": alert_service,
             }
 
             # Добавляем Redis только если он успешно инициализирован
@@ -189,7 +194,7 @@ class DIMiddleware(BaseMiddleware):
 
             # Устанавливаем флаг инициализации
             self._initialized = True
-            
+
             logger.info(f"DI services initialized: {list(self._services.keys())}")
 
         except Exception as e:
@@ -245,6 +250,7 @@ class DIMiddleware(BaseMiddleware):
             "SuspiciousAdminService": "suspicious_admin_service",
             "CallbacksService": "callbacks_service",
             "LinkService": "link_service",
+            "AlertService": "alert_service",
         }
 
         return type_mapping.get(type_name, type_name.lower())

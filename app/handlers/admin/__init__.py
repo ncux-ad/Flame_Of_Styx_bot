@@ -26,6 +26,8 @@ from app.services.suspicious_admin import SuspiciousAdminService
 from app.utils.error_handling import ValidationError, handle_errors
 from app.utils.security import safe_format_message, sanitize_for_logging
 
+from .alerts import alerts_router
+
 # Импортируем все хендлеры
 from .basic import basic_router
 from .bots import bots_router
@@ -53,6 +55,7 @@ admin_router.include_router(interactive_router)
 # admin_router.include_router(spam_analysis_router)  # Перенесено в основной роутер из-за проблем Aiogram 3.x
 admin_router.include_router(rate_limit_router)
 admin_router.include_router(bots_router)
+admin_router.include_router(alerts_router)
 
 logger.info(f"Admin router configured with {len(admin_router.sub_routers)} sub-routers")
 logger.info(f"Sub-routers: {[router.name for router in admin_router.sub_routers]}")
@@ -278,9 +281,7 @@ async def show_spam_stats(callback: CallbackQuery):
 
         # Простая статистика
         total_entries = len(spam_data)
-        stats_text = (
-            f"📊 <b>Статистика спама</b>\n\n" f"📅 Период: последние 30 дней\n" f"📊 Всего записей: {total_entries}\n\n"
-        )
+        stats_text = f"📊 <b>Статистика спама</b>\n\n" f"📅 Период: последние 30 дней\n" f"📊 Всего записей: {total_entries}\n\n"
 
         if callback.message:
             await callback.message.edit_text(stats_text, reply_markup=get_spam_analysis_keyboard(), parse_mode="HTML")
