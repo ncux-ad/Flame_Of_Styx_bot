@@ -6,7 +6,7 @@ from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
 
-from app.filters.is_admin import IsAdminOrSilentFilter
+from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 from app.services.alerts import AlertLevel, AlertService, AlertType
 
 alerts_router = Router()
