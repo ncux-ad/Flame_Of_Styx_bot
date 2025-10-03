@@ -15,6 +15,7 @@ alerts_router = Router()
 @alerts_router.message(Command("alerts"))
 async def handle_alerts_command(message: Message, alert_service: AlertService) -> None:
     """Показать статистику алертов"""
+    print("🚨 DEBUG: handle_alerts_command called!")
     try:
         stats = await alert_service.get_alert_stats()
 
