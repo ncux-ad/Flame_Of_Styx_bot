@@ -10,10 +10,9 @@ from app.filters.is_admin_or_silent import IsAdminOrSilentFilter
 from app.services.alerts import AlertLevel, AlertService, AlertType
 
 alerts_router = Router()
-alerts_router.message.filter(IsAdminOrSilentFilter())
 
 
-@alerts_router.message(Command("alerts"))
+@alerts_router.message(Command("alerts"), IsAdminOrSilentFilter())
 async def handle_alerts_command(message: Message, alert_service: AlertService) -> None:
     """Показать статистику алертов"""
     try:
@@ -32,7 +31,7 @@ async def handle_alerts_command(message: Message, alert_service: AlertService) -
         await message.answer(f"❌ Ошибка получения статистики алертов: {e}")
 
 
-@alerts_router.message(Command("test_alert"))
+@alerts_router.message(Command("test_alert"), IsAdminOrSilentFilter())
 async def handle_test_alert_command(message: Message, alert_service: AlertService) -> None:
     """Тестировать отправку алерта"""
     try:
@@ -52,7 +51,7 @@ async def handle_test_alert_command(message: Message, alert_service: AlertServic
         await message.answer(f"❌ Ошибка тестирования алерта: {e}")
 
 
-@alerts_router.message(Command("alert_error"))
+@alerts_router.message(Command("alert_error"), IsAdminOrSilentFilter())
 async def handle_test_error_alert_command(message: Message, alert_service: AlertService) -> None:
     """Тестировать алерт об ошибке"""
     try:
@@ -71,7 +70,7 @@ async def handle_test_error_alert_command(message: Message, alert_service: Alert
         await message.answer(f"❌ Ошибка тестирования алерта об ошибке: {e}")
 
 
-@alerts_router.message(Command("alert_warning"))
+@alerts_router.message(Command("alert_warning"), IsAdminOrSilentFilter())
 async def handle_test_warning_alert_command(message: Message, alert_service: AlertService) -> None:
     """Тестировать алерт-предупреждение"""
     try:
@@ -90,7 +89,7 @@ async def handle_test_warning_alert_command(message: Message, alert_service: Ale
         await message.answer(f"❌ Ошибка тестирования алерта-предупреждения: {e}")
 
 
-@alerts_router.message(Command("alert_success"))
+@alerts_router.message(Command("alert_success"), IsAdminOrSilentFilter())
 async def handle_test_success_alert_command(message: Message, alert_service: AlertService) -> None:
     """Тестировать алерт об успехе"""
     try:
