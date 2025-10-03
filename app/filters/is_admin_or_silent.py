@@ -32,13 +32,18 @@ class IsAdminOrSilentFilter(BaseFilter):
             if not user_id:
                 return False
 
+            # Get fresh admin IDs from config
+            current_config = load_config()
+            admin_ids = current_config.admin_ids_list
+
             # Check if user is in admin list
-            is_admin = user_id in self.admin_ids
+            is_admin = user_id in admin_ids
 
             # Log admin filter results for debugging
             logger = __import__("logging").getLogger(__name__)
             if isinstance(obj, Message):
-                logger.info(f"Admin filter: user {user_id}, is_admin: {is_admin}, text: {obj.text}")
+                logger.info(f"Admin filter: user {user_id}, is_admin: {is_admin}, admin_ids: {admin_ids}, text: {obj.text}")
+                logger.info(f"DEBUG: user_id={user_id}, admin_ids={admin_ids}, is_admin={is_admin}")
                 if obj.text and "bots" in obj.text.lower():
                     logger.info(f"BOTS COMMAND DETECTED: user {user_id}, is_admin: {is_admin}, admin_ids: {self.admin_ids}")
 

@@ -12,7 +12,7 @@ from app.services.alerts import AlertLevel, AlertService, AlertType
 alerts_router = Router()
 
 
-@alerts_router.message(Command("alerts"), IsAdminOrSilentFilter())
+@alerts_router.message(Command("alerts"))
 async def handle_alerts_command(message: Message, alert_service: AlertService) -> None:
     """Показать статистику алертов"""
     try:
