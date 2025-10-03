@@ -31,7 +31,7 @@ async def handle_alerts_command(message: Message, alert_service: AlertService) -
         await message.answer(f"❌ Ошибка получения статистики алертов: {e}")
 
 
-@alerts_router.message(Command("test_alert"), IsAdminOrSilentFilter())
+@alerts_router.message(Command("test_alert"))
 async def handle_test_alert_command(message: Message, alert_service: AlertService) -> None:
     """Тестировать отправку алерта"""
     try:
@@ -51,7 +51,7 @@ async def handle_test_alert_command(message: Message, alert_service: AlertServic
         await message.answer(f"❌ Ошибка тестирования алерта: {e}")
 
 
-@alerts_router.message(Command("alert_error"), IsAdminOrSilentFilter())
+@alerts_router.message(Command("alert_error"))
 async def handle_test_error_alert_command(message: Message, alert_service: AlertService) -> None:
     """Тестировать алерт об ошибке"""
     try:
@@ -70,7 +70,7 @@ async def handle_test_error_alert_command(message: Message, alert_service: Alert
         await message.answer(f"❌ Ошибка тестирования алерта об ошибке: {e}")
 
 
-@alerts_router.message(Command("alert_warning"), IsAdminOrSilentFilter())
+@alerts_router.message(Command("alert_warning"))
 async def handle_test_warning_alert_command(message: Message, alert_service: AlertService) -> None:
     """Тестировать алерт-предупреждение"""
     try:
@@ -89,7 +89,7 @@ async def handle_test_warning_alert_command(message: Message, alert_service: Ale
         await message.answer(f"❌ Ошибка тестирования алерта-предупреждения: {e}")
 
 
-@alerts_router.message(Command("alert_success"), IsAdminOrSilentFilter())
+@alerts_router.message(Command("alert_success"))
 async def handle_test_success_alert_command(message: Message, alert_service: AlertService) -> None:
     """Тестировать алерт об успехе"""
     try:
